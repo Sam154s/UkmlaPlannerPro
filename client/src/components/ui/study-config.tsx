@@ -5,16 +5,16 @@ import { Slider } from "@/components/ui/slider";
 
 interface StudyConfigProps {
   weeklyHours: number;
-  yearMultiplier: number;
+  yearGroup: number;
   onWeeklyHoursChange: (hours: number) => void;
-  onYearMultiplierChange: (multiplier: number) => void;
+  onYearGroupChange: (group: number) => void;
 }
 
 export function StudyConfig({
   weeklyHours,
-  yearMultiplier,
+  yearGroup,
   onWeeklyHoursChange,
-  onYearMultiplierChange,
+  onYearGroupChange,
 }: StudyConfigProps) {
   return (
     <Card>
@@ -41,23 +41,24 @@ export function StudyConfig({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="year-multiplier">Year Multiplier</Label>
+          <Label htmlFor="year-group">Year Group</Label>
           <div className="flex items-center space-x-2">
             <Slider
-              id="year-multiplier"
-              min={0.5}
-              max={2}
-              step={0.1}
-              value={[yearMultiplier]}
-              onValueChange={(value) => onYearMultiplierChange(value[0])}
+              id="year-group"
+              min={1}
+              max={5}
+              step={1}
+              value={[yearGroup]}
+              onValueChange={(value) => onYearGroupChange(value[0])}
               className="flex-1"
             />
             <Input
               type="number"
-              value={yearMultiplier}
-              onChange={(e) => onYearMultiplierChange(Number(e.target.value))}
+              value={yearGroup}
+              onChange={(e) => onYearGroupChange(Number(e.target.value))}
               className="w-20"
-              step={0.1}
+              min={1}
+              max={5}
             />
           </div>
         </div>

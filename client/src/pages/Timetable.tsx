@@ -9,14 +9,14 @@ import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 
 export default function Timetable() {
   const [weeklyHours, setWeeklyHours] = useState(10);
-  const [yearMultiplier, setYearMultiplier] = useState(1);
+  const [yearGroup, setYearGroup] = useState(1);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [events, setEvents] = useState<any[]>([]);
 
   const handleGenerate = () => {
     const blocks = generateSpiralTimetable({
       weeklyStudyHours: weeklyHours,
-      yearMultiplier,
+      yearMultiplier: yearGroup, 
       favouriteSubjects: selectedSubjects,
       subjectsData: masterSubjects
     });
@@ -58,9 +58,9 @@ export default function Timetable() {
         <div className="space-y-4">
           <StudyConfig
             weeklyHours={weeklyHours}
-            yearMultiplier={yearMultiplier}
+            yearGroup={yearGroup}
             onWeeklyHoursChange={setWeeklyHours}
-            onYearMultiplierChange={setYearMultiplier}
+            onYearGroupChange={setYearGroup}
           />
 
           <SelectSubjects
