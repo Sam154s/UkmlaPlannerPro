@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import masterSubjects, { SubjectCondition } from '@/data/masterSubjects';
+import masterSubjects, { Topic } from '@/data/masterSubjects';
 
 export default function SubjectsRatings() {
   const [ratings, setRatings] = useState(() => {
@@ -12,16 +12,16 @@ export default function SubjectsRatings() {
 
   const handleRatingChange = (
     subject: string,
-    condition: string,
-    field: keyof SubjectCondition,
+    topicName: string,
+    field: keyof Topic['ratings'],
     value: number
   ) => {
     const newRatings = {
       ...ratings,
       [subject]: {
         ...ratings[subject],
-        [condition]: {
-          ...ratings[subject]?.[condition],
+        [topicName]: {
+          ...ratings[subject]?.[topicName],
           [field]: value
         }
       }
@@ -42,15 +42,15 @@ export default function SubjectsRatings() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Object.entries(masterSubjects).map(([subject, conditions]) => (
-          <Card key={subject} className="border-purple-100 hover:border-purple-200 transition-colors duration-200">
+        {masterSubjects.map((subject) => (
+          <Card key={subject.name} className="border-purple-100 hover:border-purple-200 transition-colors duration-200">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-lg">
-              <CardTitle className="text-primary">{subject}</CardTitle>
+              <CardTitle className="text-primary">{subject.name}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
-              {conditions.map((condition) => (
-                <div key={condition.conditionName} className="space-y-4">
-                  <h3 className="font-medium text-primary">{condition.conditionName}</h3>
+              {subject.topics.map((topic) => (
+                <div key={topic.name} className="space-y-4">
+                  <h3 className="font-medium text-primary">{topic.name}</h3>
 
                   <div className="space-y-4">
                     {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
@@ -64,11 +64,11 @@ export default function SubjectsRatings() {
                           max={10}
                           step={1}
                           value={[
-                            ratings[subject]?.[condition.conditionName]?.[field as keyof SubjectCondition] ??
-                            condition[field as keyof SubjectCondition]
+                            ratings[subject.name]?.[topic.name]?.[field as keyof Topic['ratings']] ??
+                            topic.ratings[field as keyof Topic['ratings']]
                           ]}
                           onValueChange={([value]) =>
-                            handleRatingChange(subject, condition.conditionName, field as keyof SubjectCondition, value)
+                            handleRatingChange(subject.name, topic.name, field as keyof Topic['ratings'], value)
                           }
                         />
                       </div>

@@ -33,11 +33,11 @@ export default function Timetable() {
 
   const getSubjectColor = (subject: string) => {
     const colors = {
-      Cardiology: '#8b5cf6',
-      Respiratory: '#6366f1',
-      Neurology: '#3b82f6',
-      Endocrinology: '#06b6d4',
-      Gastroenterology: '#0ea5e9'
+      "Acute and Emergency": '#8b5cf6',
+      "Cancer": '#6366f1',
+      "Cardiovascular": '#3b82f6',
+      "Child health": '#06b6d4',
+      "Neuroscience": '#0ea5e9'
     };
     return colors[subject as keyof typeof colors] || '#666';
   };
@@ -64,7 +64,7 @@ export default function Timetable() {
           />
 
           <SelectSubjects
-            subjects={Object.keys(masterSubjects)}
+            subjects={masterSubjects.map(subject => subject.name)}
             selectedSubjects={selectedSubjects}
             onChange={setSelectedSubjects}
           />
