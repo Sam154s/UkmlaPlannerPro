@@ -44,10 +44,6 @@ export function FloatingChat() {
       const response = await apiRequest('POST', '/api/chat', { message });
       const data = await response.json();
 
-      if (data.message) {
-        throw new Error(data.message);
-      }
-
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.response
@@ -55,7 +51,7 @@ export function FloatingChat() {
     } catch (error: any) {
       toast({
         title: "Chat Error",
-        description: error.message,
+        description: error.message || "I encountered an issue processing your message. Please try again.",
         variant: "destructive"
       });
       console.error('Chat error:', error);
