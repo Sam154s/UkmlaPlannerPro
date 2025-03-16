@@ -1,9 +1,10 @@
 import { SubjectsData } from '../data/masterSubjects';
-import { BASE_BLOCK_COUNTS, calculateBlocksForYear, HOURS_PER_BLOCK, BLOCKS_PER_WEEK } from '../data/studyBlockCounts';
+import { BASE_BLOCK_COUNTS, calculateBlocksForYear, HOURS_PER_BLOCK } from '../data/studyBlockCounts';
 
 interface SpiralConfig {
   weeklyStudyHours: number;
   yearGroup: number;
+  daysPerWeek: number;
   favouriteSubjects: string[];
   subjectsData: SubjectsData;
   revisionCount?: number;
@@ -22,11 +23,11 @@ interface StudyBlock {
   endTime: string;
 }
 
-const DAILY_START_TIME = "09:00";
+const DAILY_START_TIME = "07:00";
 const TOPICS_PER_SESSION = 3;
 const FAVORITE_SUBJECT_PRIORITY_BOOST = 1.5;
 
-// Calculate base time needed for a topic based on its ratings
+// Helper function to calculate topic importance score
 function calculateTopicImportance(topic: any): number {
   return (
     topic.ratings.difficulty +
@@ -67,16 +68,19 @@ function findRelatedTopics(
 }
 
 export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
-  const { weeklyStudyHours, yearGroup, favouriteSubjects, subjectsData, revisionCount = 0 } = config;
+  const { weeklyStudyHours, yearGroup, daysPerWeek, favouriteSubjects, subjectsData, revisionCount = 0 } = config;
   const blocks: StudyBlock[] = [];
 
   // Start from today
   const startDate = new Date();
   let currentDate = new Date(startDate);
 
-  // Calculate blocks per week (e.g., 10 hours = 5 blocks)
-  const blocksPerWeek = Math.floor(weeklyStudyHours / HOURS_PER_BLOCK);
-  const blocksPerDay = Math.ceil(blocksPerWeek / 5); // Distribute across 5 weekdays
+  // Calculate blocks per week based on weekly hours
+  const hoursPerDay = weeklyStudyHours / daysPerWeek;
+
+  // Get available weekdays based on daysPerWeek
+  const availableDays = Array.from({ length: 7 }, (_, i) => i + 1) // 1 = Monday, 7 = Sunday
+    .slice(0, daysPerWeek);
 
   // Calculate and sort subjects by priority
   const subjectPriorities = subjectsData.map(subject => {
@@ -98,21 +102,32 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   // Process each subject sequentially
   for (const subjectData of subjectPriorities) {
     let remainingBlocks = subjectData.totalBlocks;
-    let currentWeekBlocks = 0;
+    let dailyHoursUsed = 0;
+    let currentDayIndex = 0;
 
     // Complete this subject before moving to the next
     while (remainingBlocks > 0) {
-      // Skip weekends
-      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+      // Check if we need to move to the next available day
+      if (dailyHoursUsed >= hoursPerDay || currentDayIndex >= daysPerWeek) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        dailyHoursUsed = 0;
+        currentDayIndex = (currentDayIndex + 1) % daysPerWeek;
+        continue;
+      }
+
+      // Skip days not in availableDays
+      while (!availableDays.includes(currentDate.getDay() || 7)) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      // Reset week counter if needed
-      if (currentWeekBlocks >= blocksPerWeek) {
-        currentDate.setDate(currentDate.getDate() + (8 - currentDate.getDay())); // Move to next Monday
-        currentWeekBlocks = 0;
-        continue;
-      }
+      // Calculate remaining hours for the day
+      const remainingHoursToday = hoursPerDay - dailyHoursUsed;
+
+      // Determine block duration (prefer 2 hours, but allow 1 hour if needed)
+      const blockHours = Math.min(
+        remainingHoursToday >= 2 ? 2 : 1,
+        remainingBlocks * HOURS_PER_BLOCK
+      );
 
       // Calculate topics for this block
       const progress = (subjectData.totalBlocks - remainingBlocks) / subjectData.totalBlocks;
@@ -149,25 +164,20 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       blocks.push({
         subject: subjectData.subject,
         topics: sessionTopics,
-        hours: HOURS_PER_BLOCK,
+        hours: blockHours,
         date: currentDate.toISOString().split('T')[0],
-        startTime: addHours(DAILY_START_TIME, (currentWeekBlocks % blocksPerDay) * HOURS_PER_BLOCK),
-        endTime: addHours(DAILY_START_TIME, ((currentWeekBlocks % blocksPerDay) + 1) * HOURS_PER_BLOCK)
+        startTime: addHours(DAILY_START_TIME, dailyHoursUsed),
+        endTime: addHours(DAILY_START_TIME, dailyHoursUsed + blockHours)
       });
 
       remainingBlocks--;
-      currentWeekBlocks++;
-
-      // Move to next day if we've completed today's blocks
-      if (currentWeekBlocks % blocksPerDay === 0) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
+      dailyHoursUsed += blockHours;
     }
 
-    // Add a day break between subjects if we haven't finished the current day
-    if (currentWeekBlocks % blocksPerDay !== 0) {
+    // Add a day break between subjects if needed
+    if (dailyHoursUsed > 0) {
       currentDate.setDate(currentDate.getDate() + 1);
-      currentWeekBlocks = Math.ceil(currentWeekBlocks / blocksPerDay) * blocksPerDay;
+      dailyHoursUsed = 0;
     }
   }
 

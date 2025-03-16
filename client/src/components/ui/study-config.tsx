@@ -6,15 +6,19 @@ import { Slider } from "@/components/ui/slider";
 interface StudyConfigProps {
   weeklyHours: number;
   yearGroup: number;
+  daysPerWeek: number;
   onWeeklyHoursChange: (hours: number) => void;
   onYearGroupChange: (group: number) => void;
+  onDaysPerWeekChange: (days: number) => void;
 }
 
 export function StudyConfig({
   weeklyHours,
   yearGroup,
+  daysPerWeek,
   onWeeklyHoursChange,
   onYearGroupChange,
+  onDaysPerWeekChange,
 }: StudyConfigProps) {
   return (
     <Card>
@@ -59,6 +63,29 @@ export function StudyConfig({
               className="w-20"
               min={1}
               max={5}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="days-per-week">Study Days Per Week</Label>
+          <div className="flex items-center space-x-2">
+            <Slider
+              id="days-per-week"
+              min={1}
+              max={7}
+              step={1}
+              value={[daysPerWeek]}
+              onValueChange={(value) => onDaysPerWeekChange(value[0])}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              value={daysPerWeek}
+              onChange={(e) => onDaysPerWeekChange(Number(e.target.value))}
+              className="w-20"
+              min={1}
+              max={7}
             />
           </div>
         </div>

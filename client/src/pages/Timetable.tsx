@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
@@ -16,6 +17,7 @@ import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 export default function Timetable() {
   const [weeklyHours, setWeeklyHours] = useState(10);
   const [yearGroup, setYearGroup] = useState(1);
+  const [daysPerWeek, setDaysPerWeek] = useState(5);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [revisionCount, setRevisionCount] = useState(0);
@@ -24,6 +26,7 @@ export default function Timetable() {
     const blocks = generateSpiralTimetable({
       weeklyStudyHours: weeklyHours,
       yearGroup,
+      daysPerWeek,
       favouriteSubjects: selectedSubjects,
       subjectsData: masterSubjects,
       revisionCount: revisionCount
@@ -41,6 +44,20 @@ export default function Timetable() {
 
     setEvents(calendarEvents);
     setRevisionCount(prev => prev + 1);
+  };
+
+  const handleEventDrop = (eventDropInfo: any) => {
+    const { event } = eventDropInfo;
+    setEvents(prev => prev.map((ev: any) => {
+      if (ev.start === event.oldStart && ev.end === event.oldEnd) {
+        return {
+          ...ev,
+          start: event.start,
+          end: event.end
+        };
+      }
+      return ev;
+    }));
   };
 
   const getSubjectColor = (subject: string) => {
@@ -122,8 +139,10 @@ export default function Timetable() {
           <StudyConfig
             weeklyHours={weeklyHours}
             yearGroup={yearGroup}
+            daysPerWeek={daysPerWeek}
             onWeeklyHoursChange={setWeeklyHours}
             onYearGroupChange={setYearGroup}
+            onDaysPerWeekChange={setDaysPerWeek}
           />
 
           <SelectSubjects
@@ -146,7 +165,7 @@ export default function Timetable() {
       <div className="md:col-span-3">
         <div className="bg-white rounded-lg shadow-lg border border-purple-100">
           <FullCalendar
-            plugins={[timeGridPlugin]}
+            plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             headerToolbar={{
               left: 'prev,next',
@@ -155,13 +174,15 @@ export default function Timetable() {
             }}
             events={events}
             eventContent={renderEventContent}
+            editable={true}
+            eventDrop={handleEventDrop}
             allDaySlot={false}
-            slotMinTime="09:00:00"
-            slotMaxTime="18:00:00"
+            slotMinTime="07:00:00"
+            slotMaxTime="23:00:00"
             height="auto"
             expandRows={true}
             stickyHeaderDates={true}
-            weekends={false}
+            weekends={true}
           />
         </div>
       </div>
