@@ -7,7 +7,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, ChevronRight, ChevronLeft } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { MainNav } from "./main-nav";
 import { cn } from "@/lib/utils";
 
@@ -36,9 +36,9 @@ export function SiteSidebar() {
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
+              <Menu className="h-4 w-4" />
             ) : (
-              <ChevronLeft className="h-4 w-4" />
+              <X className="h-4 w-4" />
             )}
           </Button>
 
