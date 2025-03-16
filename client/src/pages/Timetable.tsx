@@ -4,6 +4,12 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 
@@ -16,16 +22,20 @@ export default function Timetable() {
   const handleGenerate = () => {
     const blocks = generateSpiralTimetable({
       weeklyStudyHours: weeklyHours,
-      yearMultiplier: yearGroup, 
+      yearMultiplier: yearGroup,
       favouriteSubjects: selectedSubjects,
       subjectsData: masterSubjects
     });
 
     const calendarEvents = blocks.map(block => ({
-      title: `${block.subject} (${block.hours}hrs)`,
+      title: `${block.subject}: ${block.topic}`,
       start: `${block.date}T${block.startTime}`,
       end: `${block.date}T${block.endTime}`,
-      backgroundColor: getSubjectColor(block.subject)
+      backgroundColor: getSubjectColor(block.subject),
+      extendedProps: {
+        type: block.type,
+        connectionTopics: block.connectionTopics
+      }
     }));
 
     setEvents(calendarEvents);
@@ -40,6 +50,38 @@ export default function Timetable() {
       "Neuroscience": '#0ea5e9'
     };
     return colors[subject as keyof typeof colors] || '#666';
+  };
+
+  const renderEventContent = (eventInfo: any) => {
+    const isConnectionSession = eventInfo.event.extendedProps.type === 'connection';
+    const connectionTopics = eventInfo.event.extendedProps.connectionTopics;
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="w-full h-full p-1">
+              <div className="text-sm font-medium">{eventInfo.event.title}</div>
+              {isConnectionSession && (
+                <div className="text-xs mt-1 opacity-75">Connection Session</div>
+              )}
+            </div>
+          </TooltipTrigger>
+          {isConnectionSession && connectionTopics && (
+            <TooltipContent>
+              <div className="space-y-2">
+                <p className="font-medium">Related Topics:</p>
+                <ul className="list-disc list-inside">
+                  {connectionTopics.map((topic: string, index: number) => (
+                    <li key={index} className="text-sm">{topic}</li>
+                  ))}
+                </ul>
+              </div>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   return (
@@ -91,6 +133,7 @@ export default function Timetable() {
               right: 'timeGridWeek'
             }}
             events={events}
+            eventContent={renderEventContent}
             allDaySlot={false}
             slotMinTime="09:00:00"
             slotMaxTime="18:00:00"
