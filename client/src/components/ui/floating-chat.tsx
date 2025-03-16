@@ -38,7 +38,7 @@ export function FloatingChat() {
     try {
       const response = await apiRequest('POST', '/api/chat', { message });
       const data = await response.json();
-      
+
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.response
@@ -46,9 +46,10 @@ export function FloatingChat() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to get AI response",
+        description: "Sorry, the AI assistant is unavailable at the moment. Please try again later.",
         variant: "destructive"
       });
+      console.error('Chat error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +58,7 @@ export function FloatingChat() {
   if (!isOpen) {
     return (
       <Button
-        className="fixed bottom-4 right-4 h-12 w-12 rounded-full p-0"
+        className="fixed bottom-4 right-4 h-12 w-12 rounded-full p-0 z-50"
         onClick={() => setIsOpen(true)}
       >
         <MessageCircle className="h-6 w-6" />
@@ -71,6 +72,7 @@ export function FloatingChat() {
       ${isMinimized ? 'w-64 h-12' : 'w-80 h-[500px]'}
       transition-all duration-200 ease-in-out
       flex flex-col
+      z-50
     `}>
       <CardHeader className="p-3 flex flex-row items-center space-x-2">
         <CardTitle className="text-sm flex-1">AI Assistant</CardTitle>
@@ -94,7 +96,7 @@ export function FloatingChat() {
 
       {!isMinimized && (
         <>
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div
