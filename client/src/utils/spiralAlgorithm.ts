@@ -74,9 +74,12 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const startDate = new Date();
   let currentDate = new Date(startDate);
 
+  // Calculate available blocks per week based on weekly hours
+  const availableBlocksPerWeek = weeklyStudyHours / HOURS_PER_BLOCK;
+
   // Calculate study blocks for each subject
-  const subjectStudyBlocks = subjectsData.map(subject => {
-    const baseBlocks = BASE_BLOCK_COUNTS[subject.name] || 10; // Default to 10 if not specified
+  let subjectStudyBlocks = subjectsData.map(subject => {
+    const baseBlocks = BASE_BLOCK_COUNTS[subject.name] || 10;
     const adjustedBlocks = calculateBlocksForYear(baseBlocks, yearGroup);
     const isFavorite = favouriteSubjects.includes(subject.name);
 
@@ -88,6 +91,16 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     };
   });
 
+  // Calculate total blocks and scaling factor
+  const totalBlocks = subjectStudyBlocks.reduce((acc, subject) => acc + subject.totalBlocks, 0);
+  const scalingFactor = availableBlocksPerWeek / totalBlocks;
+
+  // Scale blocks to match weekly hours
+  subjectStudyBlocks = subjectStudyBlocks.map(subject => ({
+    ...subject,
+    totalBlocks: Math.max(1, Math.round(subject.totalBlocks * scalingFactor))
+  }));
+
   // Sort subjects (favorites first, then by block count)
   subjectStudyBlocks.sort((a, b) => {
     if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
@@ -96,7 +109,6 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
 
   // Process each subject sequentially
   subjectStudyBlocks.forEach(subjectData => {
-    const blocksPerDay = Math.min(3, weeklyStudyHours / HOURS_PER_BLOCK);
     let remainingBlocks = subjectData.totalBlocks;
 
     while (remainingBlocks > 0) {
@@ -105,59 +117,59 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const dailyBlocks = Math.min(blocksPerDay, remainingBlocks);
+      // Calculate topics for this block
+      const progress = (subjectData.totalBlocks - remainingBlocks) / subjectData.totalBlocks;
+      const topicStartIndex = Math.floor(progress * subjectData.topics.length);
+      const sessionTopics = [];
 
-      for (let blockIndex = 0; blockIndex < dailyBlocks; blockIndex++) {
-        const startTime = addHours(DAILY_START_TIME, blockIndex * HOURS_PER_BLOCK);
-        const endTime = addHours(startTime, HOURS_PER_BLOCK);
-
-        // Select topics for this block based on progress
-        const progress = (subjectData.totalBlocks - remainingBlocks) / subjectData.totalBlocks;
-        const topicStartIndex = Math.floor(progress * subjectData.topics.length);
-        const sessionTopics = [];
-
-        // Add main topics
-        for (let i = 0; i < TOPICS_PER_SESSION; i++) {
-          const topicIndex = (topicStartIndex + i) % subjectData.topics.length;
-          const topic = subjectData.topics[topicIndex];
-          sessionTopics.push({
-            name: topic.name,
-            type: 'main' as const
-          });
-        }
-
-        // Add connection topics
-        const lastTopic = subjectData.topics[topicStartIndex];
-        const excludeTopics = sessionTopics.map(t => `${subjectData.subject}: ${t.name}`);
-        const connections = findRelatedTopics(
-          subjectData.subject,
-          lastTopic.name,
-          subjectsData,
-          excludeTopics
-        );
-
+      // Add main topics
+      for (let i = 0; i < TOPICS_PER_SESSION; i++) {
+        const topicIndex = (topicStartIndex + i) % subjectData.topics.length;
+        const topic = subjectData.topics[topicIndex];
         sessionTopics.push({
-          name: lastTopic.name,
-          type: 'connection' as const,
-          connectionTopics: connections
-        });
-
-        blocks.push({
-          subject: subjectData.subject,
-          topics: sessionTopics,
-          hours: HOURS_PER_BLOCK,
-          date: currentDate.toISOString().split('T')[0],
-          startTime,
-          endTime
+          name: topic.name,
+          type: 'main' as const
         });
       }
 
-      remainingBlocks -= dailyBlocks;
-      currentDate.setDate(currentDate.getDate() + 1);
+      // Add connection topics
+      const lastTopic = subjectData.topics[topicStartIndex];
+      const excludeTopics = sessionTopics.map(t => `${subjectData.subject}: ${t.name}`);
+      const connections = findRelatedTopics(
+        subjectData.subject,
+        lastTopic.name,
+        subjectsData,
+        excludeTopics
+      );
+
+      sessionTopics.push({
+        name: lastTopic.name,
+        type: 'connection' as const,
+        connectionTopics: connections
+      });
+
+      // Add block to schedule
+      blocks.push({
+        subject: subjectData.subject,
+        topics: sessionTopics,
+        hours: HOURS_PER_BLOCK,
+        date: currentDate.toISOString().split('T')[0],
+        startTime: addHours(DAILY_START_TIME, blocks.length % 3 * HOURS_PER_BLOCK),
+        endTime: addHours(DAILY_START_TIME, (blocks.length % 3 + 1) * HOURS_PER_BLOCK)
+      });
+
+      remainingBlocks--;
+
+      // Move to next day if we've completed 3 blocks
+      if (blocks.length % 3 === 0) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
 
     // Add a day break between subjects
-    currentDate.setDate(currentDate.getDate() + 1);
+    if (blocks.length % 3 !== 0) {
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
   });
 
   return blocks.sort((a, b) => {
