@@ -32,26 +32,34 @@ export default function SubjectsRatings() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold text-primary">Subjects & Ratings</h1>
-      
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+          Subjects & Ratings
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Adjust difficulty ratings for your subjects
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {Object.entries(masterSubjects).map(([subject, conditions]) => (
-          <Card key={subject}>
-            <CardHeader>
-              <CardTitle>{subject}</CardTitle>
+          <Card key={subject} className="border-purple-100 hover:border-purple-200 transition-colors duration-200">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-lg">
+              <CardTitle className="text-primary">{subject}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               {conditions.map((condition) => (
                 <div key={condition.conditionName} className="space-y-4">
-                  <h3 className="font-medium">{condition.conditionName}</h3>
-                  
+                  <h3 className="font-medium text-primary">{condition.conditionName}</h3>
+
                   <div className="space-y-4">
                     {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
                       <div key={field} className="space-y-2">
-                        <Label className="capitalize">
+                        <Label className="capitalize text-sm text-muted-foreground">
                           {field.replace(/([A-Z])/g, ' $1').trim()}
                         </Label>
                         <Slider
+                          className="[&_[role=slider]]:bg-gradient-to-r [&_[role=slider]]:from-purple-600 [&_[role=slider]]:to-blue-500"
                           min={1}
                           max={10}
                           step={1}

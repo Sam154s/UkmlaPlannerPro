@@ -33,20 +33,27 @@ export default function Timetable() {
 
   const getSubjectColor = (subject: string) => {
     const colors = {
-      Cardiology: '#ff6b6b',
-      Respiratory: '#4ecdc4',
-      Neurology: '#45b7d1',
-      Endocrinology: '#96ceb4',
-      Gastroenterology: '#ffeead'
+      Cardiology: '#8b5cf6',
+      Respiratory: '#6366f1',
+      Neurology: '#3b82f6',
+      Endocrinology: '#06b6d4',
+      Gastroenterology: '#0ea5e9'
     };
     return colors[subject as keyof typeof colors] || '#666';
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-4">
       {/* Sidebar */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-primary">Study Planner</h2>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+            Study Planner
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Configure your study schedule
+          </p>
+        </div>
 
         <div className="space-y-4">
           <StudyConfig
@@ -63,7 +70,7 @@ export default function Timetable() {
           />
 
           <Button 
-            className="w-full"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 transition-all duration-200"
             onClick={handleGenerate}
             disabled={weeklyHours <= 0}
           >
@@ -74,7 +81,7 @@ export default function Timetable() {
 
       {/* Calendar */}
       <div className="md:col-span-3">
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg shadow-lg border border-purple-100">
           <FullCalendar
             plugins={[timeGridPlugin]}
             initialView="timeGridWeek"
