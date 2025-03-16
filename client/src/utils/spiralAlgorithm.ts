@@ -10,54 +10,40 @@ interface SpiralConfig {
 
 interface StudyBlock {
   subject: string;
-  topic: string;
-  type: 'main' | 'connection';
+  topics: {
+    name: string;
+    type: 'main' | 'connection';
+    connectionTopics?: string[];
+  }[];
   hours: number;
   date: string;
   startTime: string;
   endTime: string;
-  connectionTopics?: string[];
 }
 
 const HOURS_PER_SESSION = 2;
 const DAILY_START_TIME = "09:00";
-const CONNECTION_SESSION_RATIO = 0.2;
-const BASE_TIME_PER_TOPIC = 1;
+const BASE_TIME_PER_TOPIC = 0.5; // Base hours per topic
 const TIME_REDUCTION_PER_REVISION = 0.2;
-const FAVORITE_SUBJECT_PRIORITY_BOOST = 2;
+const FAVORITE_SUBJECT_PRIORITY_BOOST = 1.5;
+const TOPICS_PER_SESSION = 3; // Number of topics to cover in each session
 
-// Helper function to calculate topic base time
-function calculateTopicBaseTime(topic: any): number {
-  const complexityScore = (
+// Calculate base time needed for a topic based on its ratings
+function calculateTopicTime(topic: any): number {
+  const ratingSum = (
     topic.ratings.difficulty +
     topic.ratings.clinicalImportance +
     topic.ratings.examRelevance
-  ) / 3;
-  return BASE_TIME_PER_TOPIC * (complexityScore / 5);
+  );
+  return BASE_TIME_PER_TOPIC * (ratingSum / 15); // Scale based on total possible rating (30)
 }
 
-// Helper function to calculate subject total time
-function calculateSubjectTime(
-  subject: any, 
-  yearGroup: number, 
-  revisionCount: number = 0,
-  isFavorite: boolean = false
-): number {
-  let totalTime = subject.topics.reduce((acc: number, topic: any) => {
-    return acc + calculateTopicBaseTime(topic);
-  }, 0);
-
-  const yearMultiplier = Math.max(0.4, 1 - ((yearGroup - 1) * 0.15));
-  const revisionMultiplier = Math.max(0.3, 1 - (revisionCount * TIME_REDUCTION_PER_REVISION));
-  const favoriteMultiplier = isFavorite ? FAVORITE_SUBJECT_PRIORITY_BOOST : 1;
-
-  return totalTime * yearMultiplier * revisionMultiplier * favoriteMultiplier;
-}
-
+// Find related topics for connections
 function findRelatedTopics(
   currentSubject: string,
   currentTopic: string,
-  subjectsData: SubjectsData
+  subjectsData: SubjectsData,
+  excludeTopics: string[] = []
 ): string[] {
   const relatedTopics: string[] = [];
   const currentTopicData = subjectsData
@@ -68,7 +54,7 @@ function findRelatedTopics(
 
   subjectsData.forEach(subject => {
     subject.topics.forEach(topic => {
-      if (subject.name === currentSubject && topic.name === currentTopic) return;
+      if (excludeTopics.includes(`${subject.name}: ${topic.name}`)) return;
 
       const difficultyDiff = Math.abs(topic.ratings.difficulty - currentTopicData.ratings.difficulty);
       const importanceDiff = Math.abs(topic.ratings.clinicalImportance - currentTopicData.ratings.clinicalImportance);
@@ -79,7 +65,7 @@ function findRelatedTopics(
     });
   });
 
-  return relatedTopics.slice(0, 3);
+  return relatedTopics.slice(0, 2); // Return top 2 related topics
 }
 
 export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
@@ -90,50 +76,92 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const startDate = new Date();
   let currentDate = new Date(startDate);
 
-  // Calculate and sort subjects by priority
+  // Calculate available sessions per week
+  const sessionsPerWeek = Math.floor(weeklyStudyHours / HOURS_PER_SESSION);
+
+  // Calculate subject priorities and total time needed
   const subjectPriorities = subjectsData.map(subject => {
     const isFavorite = favouriteSubjects.includes(subject.name);
+    const totalTopicTime = subject.topics.reduce((acc, topic) => {
+      return acc + calculateTopicTime(topic);
+    }, 0);
+
+    // Apply multipliers
+    const yearAdjustment = Math.max(0.4, 1 - ((yearMultiplier - 1) * 0.15));
+    const revisionAdjustment = Math.max(0.3, 1 - (revisionCount * TIME_REDUCTION_PER_REVISION));
+    const favoriteMultiplier = isFavorite ? FAVORITE_SUBJECT_PRIORITY_BOOST : 1;
+
     return {
       subject: subject.name,
       topics: subject.topics,
-      totalTime: calculateSubjectTime(subject, yearMultiplier, revisionCount, isFavorite),
+      totalTime: totalTopicTime * yearAdjustment * revisionAdjustment * favoriteMultiplier,
       isFavorite
     };
   });
 
-  // Sort by favorite status first, then by total time
+  // Calculate total time and scale factor to match weekly hours
+  const totalTimeNeeded = subjectPriorities.reduce((acc, subject) => acc + subject.totalTime, 0);
+  const scaleFactor = weeklyStudyHours / totalTimeNeeded;
+
+  // Scale times to match weekly hours
+  subjectPriorities.forEach(subject => {
+    subject.totalTime *= scaleFactor;
+  });
+
+  // Sort subjects (favorites first, then by time needed)
   subjectPriorities.sort((a, b) => {
-    if (a.isFavorite !== b.isFavorite) {
-      return a.isFavorite ? -1 : 1;
-    }
+    if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
     return b.totalTime - a.totalTime;
   });
 
-  // Process each subject sequentially
+  // Generate blocks for each subject
   subjectPriorities.forEach(subjectData => {
     const sessionsNeeded = Math.ceil(subjectData.totalTime / HOURS_PER_SESSION);
-    const mainSessions = Math.floor(sessionsNeeded * (1 - CONNECTION_SESSION_RATIO));
-    const connectionSessions = Math.floor(sessionsNeeded * CONNECTION_SESSION_RATIO);
+    const topicsPerSession = Math.min(TOPICS_PER_SESSION, Math.ceil(subjectData.topics.length / sessionsNeeded));
 
-    // Add main sessions
-    for (let i = 0; i < mainSessions; i++) {
+    for (let session = 0; session < sessionsNeeded; session++) {
       // Skip weekends
       while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const dailySessionIndex = Math.min(2, Math.floor(i % 3));
+      const sessionStartIndex = (session * topicsPerSession) % subjectData.topics.length;
+      const sessionTopics = [];
+
+      // Add main topics for this session
+      for (let i = 0; i < topicsPerSession; i++) {
+        const topicIndex = (sessionStartIndex + i) % subjectData.topics.length;
+        const topic = subjectData.topics[topicIndex];
+        sessionTopics.push({
+          name: topic.name,
+          type: 'main' as const
+        });
+
+        // Add connection topics for the last main topic in the session
+        if (i === topicsPerSession - 1) {
+          const excludeTopics = sessionTopics.map(t => `${subjectData.subject}: ${t.name}`);
+          const connections = findRelatedTopics(
+            subjectData.subject,
+            topic.name,
+            subjectsData,
+            excludeTopics
+          );
+
+          sessionTopics.push({
+            name: topic.name,
+            type: 'connection' as const,
+            connectionTopics: connections
+          });
+        }
+      }
+
+      const dailySessionIndex = session % 3;
       const startTime = addHours(DAILY_START_TIME, dailySessionIndex * HOURS_PER_SESSION);
       const endTime = addHours(startTime, HOURS_PER_SESSION);
 
-      // Select topic based on progress through the subject
-      const topicIndex = Math.floor((i / mainSessions) * subjectData.topics.length);
-      const topic = subjectData.topics[topicIndex];
-
       blocks.push({
         subject: subjectData.subject,
-        topic: topic.name,
-        type: 'main',
+        topics: sessionTopics,
         hours: HOURS_PER_SESSION,
         date: currentDate.toISOString().split('T')[0],
         startTime,
@@ -141,34 +169,6 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       });
 
       // Move to next day if we've completed 3 sessions
-      if (dailySessionIndex === 2) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    }
-
-    // Add connection sessions
-    for (let i = 0; i < connectionSessions; i++) {
-      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      const dailySessionIndex = Math.min(2, Math.floor(i % 3));
-      const startTime = addHours(DAILY_START_TIME, dailySessionIndex * HOURS_PER_SESSION);
-      const endTime = addHours(startTime, HOURS_PER_SESSION);
-
-      const mainTopic = subjectData.topics[i % subjectData.topics.length];
-
-      blocks.push({
-        subject: subjectData.subject,
-        topic: mainTopic.name,
-        type: 'connection',
-        hours: HOURS_PER_SESSION,
-        date: currentDate.toISOString().split('T')[0],
-        startTime,
-        endTime,
-        connectionTopics: findRelatedTopics(subjectData.subject, mainTopic.name, subjectsData)
-      });
-
       if (dailySessionIndex === 2) {
         currentDate.setDate(currentDate.getDate() + 1);
       }

@@ -30,18 +30,16 @@ export default function Timetable() {
     });
 
     const calendarEvents = blocks.map(block => ({
-      title: `${block.subject}: ${block.topic}`,
+      title: block.subject,
       start: `${block.date}T${block.startTime}`,
       end: `${block.date}T${block.endTime}`,
       backgroundColor: getSubjectColor(block.subject),
       extendedProps: {
-        type: block.type,
-        connectionTopics: block.connectionTopics
+        topics: block.topics
       }
     }));
 
     setEvents(calendarEvents);
-    // Increment revision count after generating new timetable
     setRevisionCount(prev => prev + 1);
   };
 
@@ -57,8 +55,7 @@ export default function Timetable() {
   };
 
   const renderEventContent = (eventInfo: any) => {
-    const isConnectionSession = eventInfo.event.extendedProps.type === 'connection';
-    const connectionTopics = eventInfo.event.extendedProps.connectionTopics;
+    const topics = eventInfo.event.extendedProps.topics;
 
     return (
       <TooltipProvider>
@@ -66,18 +63,33 @@ export default function Timetable() {
           <TooltipTrigger asChild>
             <div className="w-full h-full p-1">
               <div className="text-sm font-medium">{eventInfo.event.title}</div>
-              {isConnectionSession && (
-                <div className="text-xs mt-1 opacity-75">Connection Session</div>
+              {topics.length > 0 && (
+                <div className="text-xs mt-1 opacity-75">
+                  {topics[0].name}...
+                </div>
               )}
             </div>
           </TooltipTrigger>
-          {isConnectionSession && connectionTopics && (
-            <TooltipContent>
+          {topics.length > 0 && (
+            <TooltipContent className="w-64">
               <div className="space-y-2">
-                <p className="font-medium">Related Topics:</p>
-                <ul className="list-disc list-inside">
-                  {connectionTopics.map((topic: string, index: number) => (
-                    <li key={index} className="text-sm">{topic}</li>
+                <p className="font-medium">Topics:</p>
+                <ul className="space-y-2">
+                  {topics.map((topic: any, index: number) => (
+                    <li key={index} className="text-sm">
+                      {topic.type === 'main' ? (
+                        <span>{topic.name}</span>
+                      ) : (
+                        <div className="mt-1 pl-4 border-l-2 border-purple-200">
+                          <p className="font-medium text-xs text-purple-600">Connections:</p>
+                          <ul className="list-disc list-inside">
+                            {topic.connectionTopics?.map((relatedTopic: string, idx: number) => (
+                              <li key={idx} className="text-xs">{relatedTopic}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
