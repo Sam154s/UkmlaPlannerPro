@@ -55,6 +55,19 @@
   color: #374151;
 }
 
+/* Remove background differences and shadows */
+.fc .fc-timegrid-axis,
+.fc .fc-timegrid-slot,
+.fc .fc-timegrid-slot-lane {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Consistent borders */
+.fc .fc-timegrid-divider {
+  display: none !important;
+}
+
 .fc .fc-timegrid-event {
   border-radius: 0.5rem;
   padding: 0.5rem;
@@ -69,11 +82,20 @@
 
 .fc .fc-timegrid-now-indicator-line {
   border-color: #ef4444;
+  opacity: 0.3;
 }
 
 .fc .fc-timegrid-now-indicator-arrow {
   border-color: #ef4444;
   border-width: 5px;
+  opacity: 0.3;
+}
+
+/* Remove any potential background differences */
+.fc .fc-timegrid-col,
+.fc .fc-timegrid-body,
+.fc .fc-timegrid-slots {
+  background: white !important;
 }
 
 /* Pastel color palette for different subjects */
