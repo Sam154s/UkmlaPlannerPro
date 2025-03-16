@@ -23,7 +23,7 @@ export default function Timetable() {
   const handleGenerate = () => {
     const blocks = generateSpiralTimetable({
       weeklyStudyHours: weeklyHours,
-      yearMultiplier: yearGroup,
+      yearGroup,
       favouriteSubjects: selectedSubjects,
       subjectsData: masterSubjects,
       revisionCount: revisionCount
