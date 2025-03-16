@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import masterSubjects, { Topic } from '@/data/masterSubjects';
 
 export default function SubjectsRatings() {
@@ -47,35 +54,53 @@ export default function SubjectsRatings() {
             <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-lg">
               <CardTitle className="text-primary">{subject.name}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              {subject.topics.map((topic) => (
-                <div key={topic.name} className="space-y-4">
-                  <h3 className="font-medium text-primary">{topic.name}</h3>
-
-                  <div className="space-y-4">
-                    {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
-                      <div key={field} className="space-y-2">
-                        <Label className="capitalize text-sm text-muted-foreground">
-                          {field.replace(/([A-Z])/g, ' $1').trim()}
-                        </Label>
-                        <Slider
-                          className="[&_[role=slider]]:bg-gradient-to-r [&_[role=slider]]:from-purple-600 [&_[role=slider]]:to-blue-500"
-                          min={1}
-                          max={10}
-                          step={1}
-                          value={[
-                            ratings[subject.name]?.[topic.name]?.[field as keyof Topic['ratings']] ??
-                            topic.ratings[field as keyof Topic['ratings']]
-                          ]}
-                          onValueChange={([value]) =>
-                            handleRatingChange(subject.name, topic.name, field as keyof Topic['ratings'], value)
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <CardContent className="pt-6">
+              <Accordion type="single" collapsible className="space-y-2">
+                {subject.topics.map((topic) => (
+                  <AccordionItem key={topic.name} value={topic.name}>
+                    <AccordionTrigger className="text-sm font-medium text-primary hover:text-primary/80">
+                      {topic.name}
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
+                        <div key={field} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <Label className="capitalize text-sm text-muted-foreground">
+                              {field.replace(/([A-Z])/g, ' $1').trim()}
+                            </Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={
+                                ratings[subject.name]?.[topic.name]?.[field as keyof Topic['ratings']] ??
+                                topic.ratings[field as keyof Topic['ratings']]
+                              }
+                              onChange={(e) =>
+                                handleRatingChange(subject.name, topic.name, field as keyof Topic['ratings'], Number(e.target.value))
+                              }
+                              className="w-16 h-8 text-center"
+                            />
+                          </div>
+                          <Slider
+                            className="[&_[role=slider]]:bg-gradient-to-r [&_[role=slider]]:from-purple-600 [&_[role=slider]]:to-blue-500"
+                            min={1}
+                            max={10}
+                            step={1}
+                            value={[
+                              ratings[subject.name]?.[topic.name]?.[field as keyof Topic['ratings']] ??
+                              topic.ratings[field as keyof Topic['ratings']]
+                            ]}
+                            onValueChange={([value]) =>
+                              handleRatingChange(subject.name, topic.name, field as keyof Topic['ratings'], value)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </CardContent>
           </Card>
         ))}
