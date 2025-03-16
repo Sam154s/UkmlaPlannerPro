@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Timetable from "@/pages/Timetable";
 import SubjectsRatings from "@/pages/SubjectsRatings";
+import Dashboard from "@/pages/Dashboard";
 import { SiteSidebar } from "@/components/ui/site-sidebar";
 import { FloatingChat } from "@/components/ui/floating-chat";
 
@@ -15,7 +16,8 @@ function Router() {
       <div className="md:pl-64">
         <main className="p-4">
           <Switch>
-            <Route path="/" component={Timetable} />
+            <Route path="/" component={Dashboard} />
+            <Route path="/timetable" component={Timetable} />
             <Route path="/subjects" component={SubjectsRatings} />
             <Route component={NotFound} />
           </Switch>
