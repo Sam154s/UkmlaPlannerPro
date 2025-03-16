@@ -22,7 +22,7 @@ export function SiteSidebar() {
       {/* Desktop Sidebar */}
       <div
         className={cn(
-          "hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300",
+          "hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300 z-50",
           shouldExpand ? "md:w-64" : "md:w-16",
         )}
         onMouseEnter={() => setIsHovered(true)}
@@ -54,6 +54,17 @@ export function SiteSidebar() {
           </div>
         </div>
       </div>
+
+      {/* Overlay when sidebar is expanded */}
+      {shouldExpand && (
+        <div 
+          className="hidden md:block fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          onClick={() => {
+            setIsCollapsed(true);
+            setIsHovered(false);
+          }}
+        />
+      )}
 
       {/* Mobile Sidebar */}
       <Sheet>
