@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -6,20 +7,50 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, ChevronRight, ChevronLeft } from "lucide-react";
 import { MainNav } from "./main-nav";
+import { cn } from "@/lib/utils";
 
 export function SiteSidebar() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const shouldExpand = !isCollapsed || isHovered;
+
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className="flex flex-col flex-grow border-r bg-white pt-5 overflow-y-auto">
-          <div className="flex items-center flex-shrink-0 px-4">
-            <h1 className="text-xl font-bold">UKMLA Planner</h1>
+      <div
+        className={cn(
+          "hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300",
+          shouldExpand ? "md:w-64" : "md:w-16",
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex flex-col flex-grow pt-5 overflow-y-auto relative bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 text-white hover:bg-white/20"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+
+          <div className={cn(
+            "flex items-center flex-shrink-0 px-4 transition-opacity duration-200",
+            !shouldExpand && "opacity-0"
+          )}>
+            <h1 className="text-xl font-bold text-white">UKMLA Planner</h1>
           </div>
+
           <div className="mt-5 flex-grow flex flex-col px-3">
-            <MainNav />
+            <MainNav isCollapsed={!shouldExpand} />
           </div>
         </div>
       </div>
@@ -35,12 +66,12 @@ export function SiteSidebar() {
             <Menu className="h-6 w-6" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64">
+        <SheetContent side="left" className="w-64 bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500">
           <SheetHeader>
-            <SheetTitle className="text-left">UKMLA Planner</SheetTitle>
+            <SheetTitle className="text-left text-white">UKMLA Planner</SheetTitle>
           </SheetHeader>
           <div className="mt-5 flex-grow flex flex-col">
-            <MainNav />
+            <MainNav isCollapsed={false} />
           </div>
         </SheetContent>
       </Sheet>
