@@ -15,7 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain } from "lucide-react";
+import { GitBranchPlus } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
@@ -41,11 +42,14 @@ export default function AuthPage() {
       <div className="p-8 flex items-center justify-center">
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-2 text-center">
+            <div className="flex justify-center mb-4">
+              <Logo className="w-12 h-12 text-purple-600" />
+            </div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
-              Welcome to UKMLA Planner
+              Welcome to Helix
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sign in to access your personalized study plan
+              Your intelligent medical learning companion
             </p>
           </div>
 
@@ -168,12 +172,12 @@ export default function AuthPage() {
 
       <div className="hidden md:block bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500 p-8">
         <div className="h-full flex flex-col items-center justify-center text-white space-y-8">
-          <Brain className="w-24 h-24" />
+          <GitBranchPlus className="w-24 h-24" />
           <div className="space-y-4 text-center max-w-md">
-            <h2 className="text-2xl font-bold">Smart Medical Learning Assistant</h2>
+            <h2 className="text-2xl font-bold">Neural Learning Enhancement</h2>
             <p>
-              Create personalized study schedules using our advanced spiral revision
-              algorithm. Track your progress and optimize your learning journey.
+              Experience Helix's advanced spiral revision algorithm that mimics neural pathways, 
+              helping you build stronger connections and retain medical knowledge more effectively.
             </p>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { MainNav } from "./main-nav";
 import { cn } from "@/lib/utils";
+import { Logo } from "./logo";
 
 export function SiteSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -43,10 +44,11 @@ export function SiteSidebar() {
           </Button>
 
           <div className={cn(
-            "flex items-center flex-shrink-0 px-4 transition-opacity duration-200",
+            "flex items-center gap-3 flex-shrink-0 px-4 transition-opacity duration-200",
             !shouldExpand && "opacity-0"
           )}>
-            <h1 className="text-xl font-bold text-white">UKMLA Planner</h1>
+            <Logo />
+            <h1 className="text-xl font-bold text-white">Helix</h1>
           </div>
 
           <div className="mt-5 flex-grow flex flex-col px-3">
@@ -79,7 +81,10 @@ export function SiteSidebar() {
         </SheetTrigger>
         <SheetContent side="left" className="w-64 bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500">
           <SheetHeader>
-            <SheetTitle className="text-left text-white">UKMLA Planner</SheetTitle>
+            <SheetTitle className="text-left text-white flex items-center gap-3">
+              <Logo />
+              Helix
+            </SheetTitle>
           </SheetHeader>
           <div className="mt-5 flex-grow flex flex-col">
             <MainNav isCollapsed={false} />
