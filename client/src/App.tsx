@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Timetable from "@/pages/Timetable";
 import SubjectsRatings from "@/pages/SubjectsRatings";
 import { SiteSidebar } from "@/components/ui/site-sidebar";
+import { FloatingChat } from "@/components/ui/floating-chat";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
           </Switch>
         </main>
       </div>
+      <FloatingChat />
     </div>
   );
 }
