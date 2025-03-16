@@ -74,11 +74,11 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const startDate = new Date();
   let currentDate = new Date(startDate);
 
-  // Calculate available blocks per week based on weekly hours
-  const availableBlocksPerWeek = weeklyStudyHours / HOURS_PER_BLOCK;
+  // Calculate blocks per week based on weekly hours
+  const blocksPerWeek = Math.floor(weeklyStudyHours / HOURS_PER_BLOCK);
 
-  // Calculate study blocks for each subject
-  let subjectStudyBlocks = subjectsData.map(subject => {
+  // Calculate and sort subjects by priority
+  const subjectPriorities = subjectsData.map(subject => {
     const baseBlocks = BASE_BLOCK_COUNTS[subject.name] || 10;
     const adjustedBlocks = calculateBlocksForYear(baseBlocks, yearGroup);
     const isFavorite = favouriteSubjects.includes(subject.name);
@@ -89,32 +89,29 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       totalBlocks: isFavorite ? Math.ceil(adjustedBlocks * FAVORITE_SUBJECT_PRIORITY_BOOST) : adjustedBlocks,
       isFavorite
     };
-  });
-
-  // Calculate total blocks and scaling factor
-  const totalBlocks = subjectStudyBlocks.reduce((acc, subject) => acc + subject.totalBlocks, 0);
-  const scalingFactor = availableBlocksPerWeek / totalBlocks;
-
-  // Scale blocks to match weekly hours
-  subjectStudyBlocks = subjectStudyBlocks.map(subject => ({
-    ...subject,
-    totalBlocks: Math.max(1, Math.round(subject.totalBlocks * scalingFactor))
-  }));
-
-  // Sort subjects (favorites first, then by block count)
-  subjectStudyBlocks.sort((a, b) => {
+  }).sort((a, b) => {
     if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
     return b.totalBlocks - a.totalBlocks;
   });
 
   // Process each subject sequentially
-  subjectStudyBlocks.forEach(subjectData => {
+  for (const subjectData of subjectPriorities) {
     let remainingBlocks = subjectData.totalBlocks;
+    let blockCount = 0;
 
+    // Complete this subject before moving to the next
     while (remainingBlocks > 0) {
       // Skip weekends
       while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
         currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Check if we've reached the weekly block limit
+      if (blockCount >= blocksPerWeek) {
+        // Move to next week
+        currentDate.setDate(currentDate.getDate() + (8 - currentDate.getDay())); // Move to next Monday
+        blockCount = 0;
+        continue;
       }
 
       // Calculate topics for this block
@@ -154,23 +151,24 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
         topics: sessionTopics,
         hours: HOURS_PER_BLOCK,
         date: currentDate.toISOString().split('T')[0],
-        startTime: addHours(DAILY_START_TIME, blocks.length % 3 * HOURS_PER_BLOCK),
-        endTime: addHours(DAILY_START_TIME, (blocks.length % 3 + 1) * HOURS_PER_BLOCK)
+        startTime: addHours(DAILY_START_TIME, blockCount * HOURS_PER_BLOCK),
+        endTime: addHours(DAILY_START_TIME, (blockCount + 1) * HOURS_PER_BLOCK)
       });
 
       remainingBlocks--;
+      blockCount++;
 
-      // Move to next day if we've completed 3 blocks
-      if (blocks.length % 3 === 0) {
+      // If we've completed today's blocks, move to next day
+      if (blockCount % Math.min(blocksPerWeek, 3) === 0) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
     }
 
     // Add a day break between subjects
-    if (blocks.length % 3 !== 0) {
+    if (blockCount % Math.min(blocksPerWeek, 3) !== 0) {
       currentDate.setDate(currentDate.getDate() + 1);
     }
-  });
+  }
 
   return blocks.sort((a, b) => {
     const dateComparison = a.date.localeCompare(b.date);
