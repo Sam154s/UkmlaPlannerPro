@@ -43,59 +43,55 @@ export default function Timetable() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-primary">Study Planner</h2>
-            
-            <div className="space-y-4">
-              <StudyConfig
-                weeklyHours={weeklyHours}
-                yearMultiplier={yearMultiplier}
-                onWeeklyHoursChange={setWeeklyHours}
-                onYearMultiplierChange={setYearMultiplier}
-              />
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Sidebar */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-primary">Study Planner</h2>
 
-              <SelectSubjects
-                subjects={Object.keys(masterSubjects)}
-                selectedSubjects={selectedSubjects}
-                onChange={setSelectedSubjects}
-              />
+        <div className="space-y-4">
+          <StudyConfig
+            weeklyHours={weeklyHours}
+            yearMultiplier={yearMultiplier}
+            onWeeklyHoursChange={setWeeklyHours}
+            onYearMultiplierChange={setYearMultiplier}
+          />
 
-              <Button 
-                className="w-full"
-                onClick={handleGenerate}
-                disabled={weeklyHours <= 0}
-              >
-                Generate Timetable
-              </Button>
-            </div>
-          </div>
+          <SelectSubjects
+            subjects={Object.keys(masterSubjects)}
+            selectedSubjects={selectedSubjects}
+            onChange={setSelectedSubjects}
+          />
 
-          {/* Calendar */}
-          <div className="md:col-span-3">
-            <div className="bg-white rounded-lg shadow">
-              <FullCalendar
-                plugins={[timeGridPlugin]}
-                initialView="timeGridWeek"
-                headerToolbar={{
-                  left: 'prev,next',
-                  center: 'title',
-                  right: 'timeGridWeek'
-                }}
-                events={events}
-                allDaySlot={false}
-                slotMinTime="09:00:00"
-                slotMaxTime="18:00:00"
-                height="auto"
-                expandRows={true}
-                stickyHeaderDates={true}
-                weekends={false}
-              />
-            </div>
-          </div>
+          <Button 
+            className="w-full"
+            onClick={handleGenerate}
+            disabled={weeklyHours <= 0}
+          >
+            Generate Timetable
+          </Button>
+        </div>
+      </div>
+
+      {/* Calendar */}
+      <div className="md:col-span-3">
+        <div className="bg-white rounded-lg shadow">
+          <FullCalendar
+            plugins={[timeGridPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={{
+              left: 'prev,next',
+              center: 'title',
+              right: 'timeGridWeek'
+            }}
+            events={events}
+            allDaySlot={false}
+            slotMinTime="09:00:00"
+            slotMaxTime="18:00:00"
+            height="auto"
+            expandRows={true}
+            stickyHeaderDates={true}
+            weekends={false}
+          />
         </div>
       </div>
     </div>
