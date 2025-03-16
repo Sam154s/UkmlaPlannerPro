@@ -128,3 +128,10 @@
   background-color: #f3f4f6 !important;
   color: #374151 !important;
 }
+
+/* Responsive calendar sizing */
+@media (max-width: 640px) {
+  .fc .fc-timeGridDay-view {
+    width: 100% !important;
+  }
+}
