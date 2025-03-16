@@ -33,9 +33,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         response: completion.choices[0]?.message?.content || "No response" 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("OpenAI API error:", error);
-      res.status(500).json({ error: "Failed to get AI response" });
+
+      // Check if it's a rate limit error
+      if (error?.status === 429) {
+        res.status(429).json({ 
+          error: "The AI service is currently at capacity. Please try again in a few minutes." 
+        });
+      } else {
+        res.status(500).json({ 
+          error: "There was an issue connecting to the AI service. Please try again." 
+        });
+      }
     }
   });
 

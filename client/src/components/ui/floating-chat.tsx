@@ -39,14 +39,18 @@ export function FloatingChat() {
       const response = await apiRequest('POST', '/api/chat', { message });
       const data = await response.json();
 
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.response
       }]);
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Sorry, the AI assistant is unavailable at the moment. Please try again later.",
+        title: "AI Assistant Error",
+        description: error.message || "Sorry, the AI assistant is unavailable at the moment. Please try again later.",
         variant: "destructive"
       });
       console.error('Chat error:', error);
