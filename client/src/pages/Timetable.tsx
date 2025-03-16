@@ -11,7 +11,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Menu, X } from 'lucide-react';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 import '../styles/calendar.css';
@@ -24,7 +23,6 @@ export default function Timetable() {
   const [events, setEvents] = useState<any[]>([]);
   const [revisionCount, setRevisionCount] = useState(0);
   const [calendarRef, setCalendarRef] = useState<any>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -79,8 +77,6 @@ export default function Timetable() {
       const calendarApi = calendarRef.getApi();
       calendarApi.today();
     }
-
-    setIsSidebarOpen(false);
   };
 
   const handleEventDrop = (eventDropInfo: any) => {
@@ -155,110 +151,78 @@ export default function Timetable() {
   };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Toggle Button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed top-4 left-4 z-50 rounded-full shadow-lg bg-white"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? (
-          <X className="h-4 w-4" />
-        ) : (
-          <Menu className="h-4 w-4" />
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+          Study Planner
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Configure your study schedule
+        </p>
+        {revisionCount > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Revision cycle: {revisionCount}
+          </p>
         )}
-      </Button>
+      </div>
 
-      {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 w-80 h-full bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-6 space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
-              Study Planner
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Configure your study schedule
-            </p>
-            {revisionCount > 0 && (
-              <p className="text-sm text-muted-foreground">
-                Revision cycle: {revisionCount}
-              </p>
-            )}
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StudyConfig
+          weeklyHours={weeklyHours}
+          yearGroup={yearGroup}
+          daysPerWeek={daysPerWeek}
+          onWeeklyHoursChange={setWeeklyHours}
+          onYearGroupChange={setYearGroup}
+          onDaysPerWeekChange={setDaysPerWeek}
+        />
 
-          <div className="space-y-4">
-            <StudyConfig
-              weeklyHours={weeklyHours}
-              yearGroup={yearGroup}
-              daysPerWeek={daysPerWeek}
-              onWeeklyHoursChange={setWeeklyHours}
-              onYearGroupChange={setYearGroup}
-              onDaysPerWeekChange={setDaysPerWeek}
-            />
+        <div className="space-y-4">
+          <SelectSubjects
+            subjects={masterSubjects.map(subject => subject.name)}
+            selectedSubjects={selectedSubjects}
+            onChange={setSelectedSubjects}
+          />
 
-            <SelectSubjects
-              subjects={masterSubjects.map(subject => subject.name)}
-              selectedSubjects={selectedSubjects}
-              onChange={setSelectedSubjects}
-            />
-
-            <Button 
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 transition-all duration-200"
-              onClick={handleGenerate}
-              disabled={weeklyHours <= 0}
-            >
-              Generate Timetable
-            </Button>
-          </div>
+          <Button 
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 transition-all duration-200"
+            onClick={handleGenerate}
+            disabled={weeklyHours <= 0}
+          >
+            Generate Timetable
+          </Button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="p-4">
-        <div className="bg-white rounded-xl shadow-lg border border-purple-100/50">
-          <FullCalendar
-            ref={setCalendarRef}
-            plugins={[timeGridPlugin, interactionPlugin]}
-            initialView={windowWidth < 640 ? "timeGridDay" : "timeGridWeek"}
-            initialDate={new Date()}
-            headerToolbar={{
-              left: 'prev,next',
-              center: 'title',
-              right: windowWidth < 640 ? 'timeGridDay' : 'timeGridWeek'
-            }}
-            events={events}
-            eventContent={renderEventContent}
-            editable={true}
-            eventDrop={handleEventDrop}
-            allDaySlot={false}
-            slotMinTime="07:00:00"
-            slotMaxTime="23:00:00"
-            height="auto"
-            expandRows={true}
-            stickyHeaderDates={true}
-            weekends={true}
-            nowIndicator={true}
-            dayHeaderFormat={{ weekday: 'long' }}
-            slotLabelFormat={{
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            }}
-          />
-        </div>
+      <div className="bg-white rounded-xl shadow-lg border border-purple-100/50">
+        <FullCalendar
+          ref={setCalendarRef}
+          plugins={[timeGridPlugin, interactionPlugin]}
+          initialView={windowWidth < 640 ? "timeGridDay" : "timeGridWeek"}
+          initialDate={new Date()}
+          headerToolbar={{
+            left: 'prev,next',
+            center: 'title',
+            right: windowWidth < 640 ? 'timeGridDay' : 'timeGridWeek'
+          }}
+          events={events}
+          eventContent={renderEventContent}
+          editable={true}
+          eventDrop={handleEventDrop}
+          allDaySlot={false}
+          slotMinTime="07:00:00"
+          slotMaxTime="23:00:00"
+          height="auto"
+          expandRows={true}
+          stickyHeaderDates={true}
+          weekends={true}
+          nowIndicator={true}
+          dayHeaderFormat={{ weekday: 'long' }}
+          slotLabelFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }}
+        />
       </div>
     </div>
   );

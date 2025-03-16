@@ -12,7 +12,7 @@ import { MainNav } from "./main-nav";
 import { cn } from "@/lib/utils";
 
 export function SiteSidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
   const shouldExpand = !isCollapsed || isHovered;

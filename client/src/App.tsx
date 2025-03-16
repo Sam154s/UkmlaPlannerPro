@@ -13,7 +13,7 @@ function Router() {
   return (
     <div className="min-h-screen bg-background">
       <SiteSidebar />
-      <div className="md:pl-64">
+      <div className="md:pl-16">
         <main className="p-4">
           <Switch>
             <Route path="/" component={Dashboard} />
