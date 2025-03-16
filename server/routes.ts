@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 import OpenAI from "openai";
 
 if (!process.env.OPENAI_API_KEY) {
@@ -26,6 +27,9 @@ function getFallbackResponse(message: string): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes
+  setupAuth(app);
+
   app.post("/api/chat", async (req, res) => {
     try {
       const { message } = req.body;
@@ -62,7 +66,6 @@ Always maintain a helpful and supportive tone. If you don't know something, be h
       console.error("OpenAI API error:", error);
 
       if (error?.status === 429) {
-        // Return a more conversational fallback response instead of an error
         res.json({ 
           response: getFallbackResponse(req.body.message)
         });
