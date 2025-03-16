@@ -39,11 +39,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if it's a rate limit error
       if (error?.status === 429) {
         res.status(429).json({ 
-          error: "The AI service is currently at capacity. Please try again in a few minutes." 
+          message: "The AI service is currently at capacity. Please try again in a few minutes." 
         });
       } else {
         res.status(500).json({ 
-          error: "There was an issue connecting to the AI service. Please try again." 
+          message: "There was an issue connecting to the AI service. Please try again." 
         });
       }
     }
