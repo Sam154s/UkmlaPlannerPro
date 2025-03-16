@@ -74,8 +74,9 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const startDate = new Date();
   let currentDate = new Date(startDate);
 
-  // Calculate blocks per week based on weekly hours
+  // Calculate blocks per week (e.g., 10 hours = 5 blocks)
   const blocksPerWeek = Math.floor(weeklyStudyHours / HOURS_PER_BLOCK);
+  const blocksPerDay = Math.ceil(blocksPerWeek / 5); // Distribute across 5 weekdays
 
   // Calculate and sort subjects by priority
   const subjectPriorities = subjectsData.map(subject => {
@@ -97,7 +98,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   // Process each subject sequentially
   for (const subjectData of subjectPriorities) {
     let remainingBlocks = subjectData.totalBlocks;
-    let blockCount = 0;
+    let currentWeekBlocks = 0;
 
     // Complete this subject before moving to the next
     while (remainingBlocks > 0) {
@@ -106,11 +107,10 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      // Check if we've reached the weekly block limit
-      if (blockCount >= blocksPerWeek) {
-        // Move to next week
+      // Reset week counter if needed
+      if (currentWeekBlocks >= blocksPerWeek) {
         currentDate.setDate(currentDate.getDate() + (8 - currentDate.getDay())); // Move to next Monday
-        blockCount = 0;
+        currentWeekBlocks = 0;
         continue;
       }
 
@@ -151,22 +151,23 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
         topics: sessionTopics,
         hours: HOURS_PER_BLOCK,
         date: currentDate.toISOString().split('T')[0],
-        startTime: addHours(DAILY_START_TIME, blockCount * HOURS_PER_BLOCK),
-        endTime: addHours(DAILY_START_TIME, (blockCount + 1) * HOURS_PER_BLOCK)
+        startTime: addHours(DAILY_START_TIME, (currentWeekBlocks % blocksPerDay) * HOURS_PER_BLOCK),
+        endTime: addHours(DAILY_START_TIME, ((currentWeekBlocks % blocksPerDay) + 1) * HOURS_PER_BLOCK)
       });
 
       remainingBlocks--;
-      blockCount++;
+      currentWeekBlocks++;
 
-      // If we've completed today's blocks, move to next day
-      if (blockCount % Math.min(blocksPerWeek, 3) === 0) {
+      // Move to next day if we've completed today's blocks
+      if (currentWeekBlocks % blocksPerDay === 0) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
     }
 
-    // Add a day break between subjects
-    if (blockCount % Math.min(blocksPerWeek, 3) !== 0) {
+    // Add a day break between subjects if we haven't finished the current day
+    if (currentWeekBlocks % blocksPerDay !== 0) {
       currentDate.setDate(currentDate.getDate() + 1);
+      currentWeekBlocks = Math.ceil(currentWeekBlocks / blocksPerDay) * blocksPerDay;
     }
   }
 
