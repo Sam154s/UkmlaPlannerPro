@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -21,6 +21,28 @@ export default function Timetable() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [revisionCount, setRevisionCount] = useState(0);
+  const [calendarRef, setCalendarRef] = useState<any>(null);
+
+  // Effect to update calendar view at midnight
+  useEffect(() => {
+    if (!calendarRef) return;
+
+    const updateCalendarView = () => {
+      const calendarApi = calendarRef.getApi();
+      calendarApi.today(); // Go to today's date
+      calendarApi.render(); // Re-render the calendar
+    };
+
+    // Check for date change every minute
+    const interval = setInterval(() => {
+      const now = new Date();
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        updateCalendarView();
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [calendarRef]);
 
   const handleGenerate = () => {
     const blocks = generateSpiralTimetable({
@@ -44,6 +66,12 @@ export default function Timetable() {
 
     setEvents(calendarEvents);
     setRevisionCount(prev => prev + 1);
+
+    // Go to today's view after generating new timetable
+    if (calendarRef) {
+      const calendarApi = calendarRef.getApi();
+      calendarApi.today();
+    }
   };
 
   const handleEventDrop = (eventDropInfo: any) => {
@@ -165,8 +193,10 @@ export default function Timetable() {
       <div className="md:col-span-3">
         <div className="bg-white rounded-lg shadow-lg border border-purple-100">
           <FullCalendar
+            ref={setCalendarRef}
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
+            initialDate={new Date()} // Always start from today
             headerToolbar={{
               left: 'prev,next',
               center: 'title',
@@ -183,6 +213,7 @@ export default function Timetable() {
             expandRows={true}
             stickyHeaderDates={true}
             weekends={true}
+            nowIndicator={true} // Show current time indicator
           />
         </div>
       </div>
