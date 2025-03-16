@@ -1,10 +1,10 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
   weeklyHours: integer("weekly_hours"),
   yearGroup: integer("year_group"),
@@ -14,8 +14,11 @@ export const users = pgTable("users", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  email: true,
   password: true,
+}).extend({
+  confirmPassword: z.string()
+    .min(1, "Please confirm your password")
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

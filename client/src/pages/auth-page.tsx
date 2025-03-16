@@ -65,12 +65,12 @@ export default function AuthPage() {
                 >
                   <FormField
                     control={loginForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input type="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -112,12 +112,12 @@ export default function AuthPage() {
                 >
                   <FormField
                     control={registerForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input type="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -130,6 +130,20 @@ export default function AuthPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
                           <Input type="password" {...field} />
                         </FormControl>

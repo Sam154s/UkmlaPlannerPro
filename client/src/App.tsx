@@ -11,12 +11,15 @@ import SubjectsRatings from "@/pages/SubjectsRatings";
 import Dashboard from "@/pages/Dashboard";
 import { SiteSidebar } from "@/components/ui/site-sidebar";
 import { FloatingChat } from "@/components/ui/floating-chat";
+import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
-      <SiteSidebar />
-      <div className="md:pl-16 relative z-0">
+      {user && <SiteSidebar />}
+      <div className={user ? "md:pl-16 relative z-0" : ""}>
         <main className="p-4">
           <Switch>
             <Route path="/auth" component={AuthPage} />
@@ -27,7 +30,7 @@ function Router() {
           </Switch>
         </main>
       </div>
-      <FloatingChat />
+      {user && <FloatingChat />}
     </div>
   );
 }
