@@ -1,0 +1,107 @@
+.fc {
+  --fc-border-color: rgba(229, 231, 235, 0.5);
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: #e5e7eb;
+  --fc-button-text-color: #374151;
+  --fc-button-hover-bg-color: #f3f4f6;
+  --fc-button-hover-border-color: #d1d5db;
+  --fc-button-active-bg-color: #f9fafb;
+  --fc-today-bg-color: rgba(237, 233, 254, 0.3);
+  --fc-event-border-color: transparent;
+  height: calc(100vh - 8rem);
+}
+
+.fc .fc-toolbar {
+  padding: 1.5rem;
+  margin: 0 !important;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.25rem !important;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fc .fc-button {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.fc .fc-timegrid {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.fc .fc-timegrid-slot {
+  height: 3rem !important;
+}
+
+.fc .fc-timegrid-slot-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.fc .fc-col-header-cell {
+  padding: 1rem 0;
+  background-color: #f9fafb;
+}
+
+.fc .fc-col-header-cell-cushion {
+  font-weight: 600;
+  color: #374151;
+}
+
+.fc .fc-timegrid-event {
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  margin: 0 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.fc .fc-timegrid-event:hover {
+  transform: scale(1.02);
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-color: #ef4444;
+  border-width: 5px;
+}
+
+/* Pastel color palette for different subjects */
+.fc-event[style*="background-color: rgb(139, 92, 246)"] { /* Acute and Emergency */
+  background-color: #e9d5ff !important;
+  color: #6b21a8 !important;
+}
+
+.fc-event[style*="background-color: rgb(99, 102, 241)"] { /* Cancer */
+  background-color: #ddd6fe !important;
+  color: #5b21b6 !important;
+}
+
+.fc-event[style*="background-color: rgb(59, 130, 246)"] { /* Cardiovascular */
+  background-color: #bfdbfe !important;
+  color: #1e40af !important;
+}
+
+.fc-event[style*="background-color: rgb(6, 182, 212)"] { /* Child health */
+  background-color: #cffafe !important;
+  color: #155e75 !important;
+}
+
+.fc-event[style*="background-color: rgb(14, 165, 233)"] { /* Neuroscience */
+  background-color: #e0f2fe !important;
+  color: #075985 !important;
+}
+
+.fc-event[style*="background-color: rgb(102, 102, 102)"] { /* Default */
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+}
