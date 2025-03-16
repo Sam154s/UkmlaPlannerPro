@@ -48,20 +48,22 @@ export default function SubjectsRatings() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Accordion type="multiple" className="space-y-4">
         {masterSubjects.map((subject) => (
-          <Card key={subject.name} className="border-purple-100 hover:border-purple-200 transition-colors duration-200">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-lg">
-              <CardTitle className="text-primary">{subject.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <Accordion type="single" collapsible className="space-y-2">
+          <AccordionItem 
+            key={subject.name} 
+            value={subject.name}
+            className="border rounded-lg overflow-hidden bg-white"
+          >
+            <AccordionTrigger className="bg-gradient-to-r from-purple-50 to-blue-50 px-4 py-3 hover:no-underline hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100">
+              <h2 className="text-lg font-semibold text-primary">{subject.name}</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="p-4 space-y-6">
                 {subject.topics.map((topic) => (
-                  <AccordionItem key={topic.name} value={topic.name}>
-                    <AccordionTrigger className="text-sm font-medium text-primary hover:text-primary/80">
-                      {topic.name}
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-4">
+                  <div key={topic.name} className="space-y-4 border-b pb-4 last:border-0">
+                    <h3 className="font-medium text-primary">{topic.name}</h3>
+                    <div className="space-y-4">
                       {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
                         <div key={field} className="space-y-2">
                           <div className="flex justify-between items-center">
@@ -97,14 +99,14 @@ export default function SubjectsRatings() {
                           />
                         </div>
                       ))}
-                    </AccordionContent>
-                  </AccordionItem>
+                    </div>
+                  </div>
                 ))}
-              </Accordion>
-            </CardContent>
-          </Card>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </div>
   );
 }
