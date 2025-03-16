@@ -36,6 +36,7 @@
 
 .fc .fc-timegrid-slot {
   height: 3rem !important;
+  border-color: var(--fc-border-color) !important;
 }
 
 .fc .fc-timegrid-slot-label {
