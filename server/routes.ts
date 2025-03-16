@@ -21,13 +21,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: [
           {
             role: "system",
-            content: "You are a helpful AI assistant for UKMLA revision. Help users understand medical concepts and create study plans."
+            content: `You are a knowledgeable and friendly AI assistant for medical students studying for the UKMLA exam.
+Your role is to:
+- Help explain complex medical concepts in simple terms
+- Provide study tips and strategies
+- Answer questions about specific medical conditions
+- Offer encouragement and support
+- Keep responses concise but informative
+- Be conversational and engaging
+
+Always maintain a helpful and supportive tone. If you don't know something, be honest about it.`
           },
           {
             role: "user",
             content: message
           }
         ],
+        temperature: 0.7,
+        max_tokens: 500
       });
 
       res.json({ 
@@ -36,14 +47,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("OpenAI API error:", error);
 
-      // Check if it's a rate limit error
       if (error?.status === 429) {
         res.status(429).json({ 
-          message: "The AI service is currently at capacity. Please try again in a few minutes." 
+          message: "I'm currently handling too many requests. Please try again in a minute." 
         });
       } else {
         res.status(500).json({ 
-          message: "There was an issue connecting to the AI service. Please try again." 
+          message: "I encountered an issue processing your message. Please try again." 
         });
       }
     }

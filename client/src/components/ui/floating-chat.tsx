@@ -16,15 +16,20 @@ export function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([{
+    role: 'assistant',
+    content: "Hello! I'm your UKMLA study assistant. How can I help you today?"
+  }]);
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
   const handleSend = async () => {
@@ -49,7 +54,7 @@ export function FloatingChat() {
       }]);
     } catch (error: any) {
       toast({
-        title: "AI Assistant Error",
+        title: "Chat Error",
         description: error.message,
         variant: "destructive"
       });
@@ -77,9 +82,10 @@ export function FloatingChat() {
       transition-all duration-200 ease-in-out
       flex flex-col
       z-50
+      shadow-lg
     `}>
-      <CardHeader className="p-3 flex flex-row items-center space-x-2">
-        <CardTitle className="text-sm flex-1">AI Assistant</CardTitle>
+      <CardHeader className="p-3 flex flex-row items-center space-x-2 border-b">
+        <CardTitle className="text-sm flex-1">Study Assistant</CardTitle>
         <Button
           variant="ghost"
           size="icon"
@@ -121,11 +127,12 @@ export function FloatingChat() {
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-2 mr-4">
+                  <div className="bg-muted rounded-lg p-2 mr-4 animate-pulse">
                     Thinking...
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
 
@@ -140,7 +147,7 @@ export function FloatingChat() {
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask anything..."
+                placeholder="Ask anything about UKMLA..."
                 className="flex-1"
                 disabled={isLoading}
               />
