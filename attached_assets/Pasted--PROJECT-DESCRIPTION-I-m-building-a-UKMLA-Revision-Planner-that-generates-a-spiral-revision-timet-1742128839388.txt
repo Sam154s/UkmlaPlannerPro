@@ -1,0 +1,63 @@
+# PROJECT DESCRIPTION
+I’m building a “UKMLA Revision Planner” that generates a spiral revision timetable using a JSON dataset of subjects/topics. The app has:
+1. A Timetable page with a FullCalendar weekly view.
+2. A spiral algorithm in `/utils/spiralAlgorithm.ts`.
+3. A minimal “Subjects & Ratings” page (optional) for user-defined difficulties.
+4. Basic styling (akin to Apple/Quesmed) with luminous accents. 
+5. A dropdown for selecting up to 5 favourite subjects.
+
+# TECHNOLOGY
+- React/TypeScript
+- FullCalendar (timeGridPlugin)
+- A single JSON or TS file called `masterSubjects.ts` with preloaded subject/topic data
+- A “spiralAlgorithm.ts” that calculates each session’s hours based on ratings
+- A “Timetable.tsx” that shows the schedule in a weekly calendar
+
+# FOLDER STRUCTURE
+- src/
+  - data/
+    - masterSubjects.ts  (export default an object with subject arrays)
+  - utils/
+    - spiralAlgorithm.ts (export a generateSpiralTimetable function)
+  - pages/
+    - Timetable.tsx      (main scheduling UI with FullCalendar)
+    - SubjectsRatings.tsx (optional, if you have time, for user to adjust difficulties)
+
+# REQUIREMENTS
+
+1. **Spiral Algorithm** (`spiralAlgorithm.ts`)
+   - Input: { weeklyStudyHours, yearMultiplier, favouriteSubjects, subjectsData }
+   - Output: Array of blocks each with { subject, conditionName, hours, date, startTime, endTime }
+   - Weighted logic:
+     - baseScore = difficulty + clinicalImportance + examRelevance
+     - If the subject is in `favouriteSubjects`, add +2 or so
+     - Multiply by yearMultiplier
+     - Allocate hours proportionally
+     - Spread sessions over a Monday–Friday schedule, e.g. ~2 hours daily (just for basic date/time distribution)
+
+2. **Timetable Page** (`Timetable.tsx`)
+   - Imports `generateSpiralTimetable` from `spiralAlgorithm.ts`
+   - Has inputs for Weekly Study Hours, Year Multiplier, multi-select Favourite Subjects (max 5)
+   - Clicking “Generate” calls the function, gets an array with { subject, conditionName, hours, date, startTime, endTime }
+   - Converts each item into a FullCalendar event, e.g.:
+     - title: `${subject} (${hours} hrs)`
+     - start: `${date}T${startTime}`
+     - end: `${date}T${endTime}`
+   - Renders a weekly “timeGridWeek” with minimal styling
+
+3. **`masterSubjects.ts`** in `/data`
+   - Exports an object with keys = subject name, value = array of conditions. Each condition has { conditionName, difficulty, clinicalImportance, examRelevance }.
+
+4. **Styling & Layout**
+   - Minimal Apple-like design: white background, subtle grey sidebars
+   - Luminous accent colors for headings or progress bars
+   - A simple top-level container that splits into a sidebar (for user inputs) and main area (for FullCalendar)
+
+5. **Optional**: If possible, add a `SubjectsRatings.tsx` page that lists each subject + topic with a numeric rating input (1-10). The user can adjust them, storing them in local state or a simple Replit DB, then generating the timetable from those updated ratings.
+
+# OUTPUT FORMAT
+- Create or modify all relevant files to produce a fully working React + TS app in Replit
+- Make sure the code references the same folder paths as described
+- Provide me the final code for each file (spiralAlgorithm.ts, Timetable.tsx, masterSubjects.ts, etc.) plus any relevant styling if needed
+- If the prompt is too large, show me partial code in logical chunks but ensure overall continuity
+- End with instructions on how to run it (e.g., “npm install && npm run dev”)
