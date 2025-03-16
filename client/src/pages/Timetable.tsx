@@ -18,13 +18,15 @@ export default function Timetable() {
   const [yearGroup, setYearGroup] = useState(1);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [revisionCount, setRevisionCount] = useState(0);
 
   const handleGenerate = () => {
     const blocks = generateSpiralTimetable({
       weeklyStudyHours: weeklyHours,
       yearMultiplier: yearGroup,
       favouriteSubjects: selectedSubjects,
-      subjectsData: masterSubjects
+      subjectsData: masterSubjects,
+      revisionCount: revisionCount
     });
 
     const calendarEvents = blocks.map(block => ({
@@ -39,6 +41,8 @@ export default function Timetable() {
     }));
 
     setEvents(calendarEvents);
+    // Increment revision count after generating new timetable
+    setRevisionCount(prev => prev + 1);
   };
 
   const getSubjectColor = (subject: string) => {
@@ -95,6 +99,11 @@ export default function Timetable() {
           <p className="text-sm text-muted-foreground">
             Configure your study schedule
           </p>
+          {revisionCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Revision cycle: {revisionCount}
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">

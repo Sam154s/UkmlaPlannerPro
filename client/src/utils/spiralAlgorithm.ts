@@ -5,6 +5,7 @@ interface SpiralConfig {
   yearMultiplier: number;
   favouriteSubjects: string[];
   subjectsData: SubjectsData;
+  revisionCount?: number; // Track how many times we've revised each subject
 }
 
 interface StudyBlock {
@@ -21,14 +22,40 @@ interface StudyBlock {
 const HOURS_PER_SESSION = 2;
 const DAILY_START_TIME = "09:00";
 const CONNECTION_SESSION_RATIO = 0.2; // 20% of time for connection sessions
+const BASE_TIME_PER_TOPIC = 1; // Base hours per topic
+const TIME_REDUCTION_PER_REVISION = 0.2; // 20% reduction per complete revision
 
-// Helper function to calculate topic importance score
-function calculateTopicScore(topic: any, yearMultiplier: number, isFavorite: boolean): number {
-  const baseScore = topic.ratings.difficulty + 
-                   topic.ratings.clinicalImportance + 
-                   topic.ratings.examRelevance;
-  const favoriteBonus = isFavorite ? 2 : 0;
-  return (baseScore * yearMultiplier) + favoriteBonus;
+// Helper function to calculate topic base time
+function calculateTopicBaseTime(topic: any): number {
+  // Calculate base time needed based on difficulty and importance
+  const complexityScore = (
+    topic.ratings.difficulty +
+    topic.ratings.clinicalImportance +
+    topic.ratings.examRelevance
+  ) / 3; // Average of all ratings
+
+  // Scale the base time according to complexity (1-10 scale)
+  return BASE_TIME_PER_TOPIC * (complexityScore / 5);
+}
+
+// Helper function to calculate subject total time
+function calculateSubjectTime(
+  subject: any, 
+  yearGroup: number, 
+  revisionCount: number = 0
+): number {
+  // Calculate base time for all topics in the subject
+  let totalTime = subject.topics.reduce((acc: number, topic: any) => {
+    return acc + calculateTopicBaseTime(topic);
+  }, 0);
+
+  // Apply year group multiplier (higher years study faster)
+  const yearMultiplier = Math.max(0.4, 1 - ((yearGroup - 1) * 0.15));
+
+  // Apply revision count reduction
+  const revisionMultiplier = Math.max(0.3, 1 - (revisionCount * TIME_REDUCTION_PER_REVISION));
+
+  return totalTime * yearMultiplier * revisionMultiplier;
 }
 
 // Helper to find related topics based on difficulty and importance
@@ -62,24 +89,35 @@ function findRelatedTopics(
 }
 
 export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
-  const { weeklyStudyHours, yearMultiplier, favouriteSubjects, subjectsData } = config;
+  const { weeklyStudyHours, yearMultiplier, favouriteSubjects, subjectsData, revisionCount = 0 } = config;
   const blocks: StudyBlock[] = [];
 
-  // Calculate priority scores for each subject and topic
-  const subjectPriorities = subjectsData.map(subject => {
-    const isFavorite = favouriteSubjects.includes(subject.name);
-    const topicScores = subject.topics.map(topic => ({
-      name: topic.name,
-      score: calculateTopicScore(topic, yearMultiplier, isFavorite),
-      difficulty: topic.ratings.difficulty
-    }));
+  // Calculate required time for each subject
+  const subjectTimes = subjectsData.map(subject => ({
+    subject: subject.name,
+    totalTime: calculateSubjectTime(subject, yearMultiplier, revisionCount),
+    topics: subject.topics,
+    isFavorite: favouriteSubjects.includes(subject.name)
+  }));
 
-    return {
-      subject: subject.name,
-      topics: topicScores,
-      totalScore: topicScores.reduce((sum, topic) => sum + topic.score, 0)
-    };
-  }).sort((a, b) => b.totalScore - a.totalScore);
+  // Adjust times based on favorites
+  subjectTimes.forEach(subject => {
+    if (subject.isFavorite) {
+      subject.totalTime *= 1.2; // 20% more time for favorite subjects
+    }
+  });
+
+  // Calculate total time needed
+  const totalTimeNeeded = subjectTimes.reduce((acc, subject) => acc + subject.totalTime, 0);
+
+  // Scale times to fit within weekly hours
+  const timeScale = weeklyStudyHours / totalTimeNeeded;
+  subjectTimes.forEach(subject => {
+    subject.totalTime *= timeScale;
+  });
+
+  // Sort subjects by time needed (descending)
+  subjectTimes.sort((a, b) => b.totalTime - a.totalTime);
 
   // Calculate number of sessions needed
   const totalSessions = Math.floor(weeklyStudyHours / HOURS_PER_SESSION);
@@ -92,29 +130,26 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const monday = new Date(today.setDate(today.getDate() - today.getDay() + 1));
 
   // Distribute main study sessions
-  let currentSubjectIndex = 0;
   let currentDay = 0;
   let sessionsCreated = 0;
 
-  while (sessionsCreated < mainSessions && currentSubjectIndex < subjectPriorities.length) {
-    const currentSubject = subjectPriorities[currentSubjectIndex];
-    const sessionsForSubject = Math.max(
-      1,
-      Math.floor((currentSubject.totalScore / subjectPriorities[0].totalScore) * mainSessions)
-    );
+  // Allocate sessions to subjects based on their time requirements
+  subjectTimes.forEach(subject => {
+    const sessionsNeeded = Math.ceil(subject.totalTime / HOURS_PER_SESSION);
 
-    for (let i = 0; i < sessionsForSubject && sessionsCreated < mainSessions; i++) {
+    for (let i = 0; i < sessionsNeeded && sessionsCreated < mainSessions; i++) {
       const date = new Date(monday);
       date.setDate(date.getDate() + currentDay);
 
       const startTime = addHours(DAILY_START_TIME, (sessionsCreated % 3) * HOURS_PER_SESSION);
       const endTime = addHours(startTime, HOURS_PER_SESSION);
 
-      // Pick a topic from the current subject
-      const topic = currentSubject.topics[i % currentSubject.topics.length];
+      // Select topic based on position in revision cycle
+      const topicIndex = Math.floor((i / sessionsNeeded) * subject.topics.length);
+      const topic = subject.topics[topicIndex];
 
       blocks.push({
-        subject: currentSubject.subject,
+        subject: subject.subject,
         topic: topic.name,
         type: 'main',
         hours: HOURS_PER_SESSION,
@@ -126,9 +161,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       sessionsCreated++;
       currentDay = (currentDay + 1) % 5;
     }
-
-    currentSubjectIndex++;
-  }
+  });
 
   // Add connection sessions
   for (let i = 0; i < connectionSessions; i++) {
