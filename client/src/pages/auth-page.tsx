@@ -103,18 +103,18 @@ export default function AuthPage() {
                     control={loginForm.control}
                     name="rememberMe"
                     render={({ field }) => (
-                      <FormItem className="flex items-center space-x-2 cursor-pointer">
+                      <FormItem className="flex items-center gap-2">
                         <FormControl>
                           <Checkbox
                             id="remember-me"
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            className="mt-0"
+                            className="translate-y-[1px]"
                           />
                         </FormControl>
                         <label
                           htmlFor="remember-me"
-                          className="text-sm font-normal cursor-pointer select-none leading-none"
+                          className="text-sm cursor-pointer select-none"
                         >
                           Keep me logged in
                         </label>
