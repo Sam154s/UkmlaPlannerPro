@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
-import { Calendar, Sliders, LayoutDashboard } from "lucide-react";
+import { Calendar, Sliders, LayoutDashboard, Settings } from "lucide-react";
 
 interface MainNavProps {
   isCollapsed: boolean;
@@ -49,6 +49,19 @@ export function MainNav({ isCollapsed }: MainNavProps) {
         >
           <Sliders className="h-5 w-5" />
           {!isCollapsed && <span className="ml-2">Subjects & Ratings</span>}
+        </Button>
+      </Link>
+      <Link href="/settings">
+        <Button
+          variant={location === "/settings" ? "secondary" : "ghost"}
+          className={cn(
+            "w-full justify-start text-white hover:bg-white/20",
+            location === "/settings" && "bg-white/20 hover:bg-white/30",
+            isCollapsed && "justify-center px-2"
+          )}
+        >
+          <Settings className="h-5 w-5" />
+          {!isCollapsed && <span className="ml-2">Settings</span>}
         </Button>
       </Link>
     </nav>

@@ -9,6 +9,7 @@ import AuthPage from "@/pages/auth-page";
 import Timetable from "@/pages/Timetable";
 import SubjectsRatings from "@/pages/SubjectsRatings";
 import Dashboard from "@/pages/Dashboard";
+import Settings from "@/pages/Settings";
 import { SiteSidebar } from "@/components/ui/site-sidebar";
 import { FloatingChat } from "@/components/ui/floating-chat";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +27,7 @@ function Router() {
             <ProtectedRoute path="/" component={Dashboard} />
             <ProtectedRoute path="/timetable" component={Timetable} />
             <ProtectedRoute path="/subjects" component={SubjectsRatings} />
+            <ProtectedRoute path="/settings" component={Settings} />
             <Route component={NotFound} />
           </Switch>
         </main>
