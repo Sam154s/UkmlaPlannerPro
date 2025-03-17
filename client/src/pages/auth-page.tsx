@@ -109,12 +109,12 @@ export default function AuthPage() {
                             id="remember-me"
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            className="translate-y-[1px]"
+                            className="translate-y-[0px]"
                           />
                         </FormControl>
                         <label
                           htmlFor="remember-me"
-                          className="text-sm cursor-pointer select-none"
+                          className="text-sm cursor-pointer select-none flex items-center translate-y-[0px]"
                         >
                           Keep me logged in
                         </label>
