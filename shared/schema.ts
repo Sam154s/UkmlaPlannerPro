@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   timetableEvents: jsonb("timetable_events"),
 });
 
+// Schema for registering new users
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
@@ -21,5 +22,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
     .min(1, "Please confirm your password")
 });
 
+// Schema for logging in
+export const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type LoginData = z.infer<typeof loginSchema>;
 export type User = typeof users.$inferSelect;

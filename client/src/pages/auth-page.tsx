@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { InsertUser, insertUserSchema } from "@shared/schema";
+import { LoginData, loginSchema } from "@shared/schema"; //Import the new schema and type
 import {
   Form,
   FormControl,
@@ -29,8 +30,8 @@ export default function AuthPage() {
     }
   }, [user, setLocation]);
 
-  const loginForm = useForm<InsertUser & { rememberMe: boolean }>({
-    resolver: zodResolver(insertUserSchema),
+  const loginForm = useForm<LoginData>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       rememberMe: false
     }
