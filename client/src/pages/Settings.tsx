@@ -22,6 +22,7 @@ import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { colorSchemes, useTheme } from "@/hooks/use-theme";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -32,24 +33,10 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-type ColorScheme = {
-  name: string;
-  from: string;
-  via?: string;
-  to: string;
-};
-
-const colorSchemes: ColorScheme[] = [
-  { name: 'Purple (Default)', from: 'purple-600', via: 'blue-600', to: 'blue-500' },
-  { name: 'Red', from: 'red-600', via: 'rose-600', to: 'red-500' },
-  { name: 'Orange', from: 'orange-600', via: 'amber-600', to: 'yellow-500' },
-  { name: 'Green', from: 'emerald-600', via: 'green-600', to: 'teal-500' },
-  { name: 'Pink', from: 'pink-600', via: 'fuchsia-600', to: 'pink-500' },
-  { name: 'Monochrome', from: 'gray-700', via: 'gray-600', to: 'gray-500' },
-];
-
 export default function Settings() {
   const { toast } = useToast();
+  const { isDarkMode, toggleDarkMode, currentScheme, setColorScheme } = useTheme();
+
   const form = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
   });
@@ -140,13 +127,24 @@ export default function Settings() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="dark-mode">Dark Mode</Label>
-              <Switch id="dark-mode" />
+              <Switch 
+                id="dark-mode" 
+                checked={isDarkMode}
+                onCheckedChange={toggleDarkMode}
+              />
             </div>
           </div>
 
           <div className="space-y-4">
             <Label>Color Scheme</Label>
-            <RadioGroup defaultValue="default" className="grid grid-cols-2 gap-4">
+            <RadioGroup 
+              defaultValue={currentScheme.name.toLowerCase()}
+              onValueChange={(value) => {
+                const scheme = colorSchemes.find(s => s.name.toLowerCase() === value);
+                if (scheme) setColorScheme(scheme);
+              }}
+              className="grid grid-cols-2 gap-4"
+            >
               {colorSchemes.map((scheme) => (
                 <Label
                   key={scheme.name}
