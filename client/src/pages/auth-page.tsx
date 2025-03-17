@@ -175,37 +175,20 @@ export default function AuthPage() {
             viewBox="0 0 48 48"
             className="w-24 h-24"
           >
-            {/* Central vertical paths */}
-            <path
-              d="M24 4 L24 44"
-              stroke="currentColor"
-              strokeWidth="1"
-              fill="none"
-            />
-
-            {/* Upper symmetric branches */}
-            <path
-              d="M24 16 C24 16, 32 12, 40 16 M24 16 C24 16, 16 12, 8 16"
-              stroke="currentColor"
-              strokeWidth="1"
-              fill="none"
-            />
-
-            {/* Middle symmetric branches */}
-            <path
-              d="M24 24 C24 24, 32 28, 40 24 M24 24 C24 24, 16 28, 8 24"
-              stroke="currentColor"
-              strokeWidth="1"
-              fill="none"
-            />
-
-            {/* Lower symmetric branches */}
-            <path
-              d="M24 32 C24 32, 32 36, 40 32 M24 32 C24 32, 16 36, 8 32"
-              stroke="currentColor"
-              strokeWidth="1"
-              fill="none"
-            />
+            <g stroke="currentColor" strokeWidth="1" fill="none">
+              <line x1="24" y1="24" x2="8" y2="14" />
+              <line x1="24" y1="24" x2="40" y2="14" />
+              <line x1="24" y1="24" x2="8" y2="34" />
+              <line x1="24" y1="24" x2="40" y2="34" />
+              <line x1="8" y1="14" x2="4" y2="8" />
+              <line x1="8" y1="14" x2="12" y2="8" />
+              <line x1="40" y1="14" x2="36" y2="8" />
+              <line x1="40" y1="14" x2="44" y2="8" />
+              <line x1="8" y1="34" x2="4" y2="40" />
+              <line x1="8" y1="34" x2="12" y2="40" />
+              <line x1="40" y1="34" x2="36" y2="40" />
+              <line x1="40" y1="34" x2="44" y2="40" />
+            </g>
           </svg>
           <div className="space-y-4 text-center max-w-md">
             <h2 className="text-2xl font-bold">Neural Learning Enhancement</h2>
