@@ -24,6 +24,21 @@ export function Logo({ className }: { className?: string }) {
           <line x1="8" y1="34" x2="12" y2="40" />
           <line x1="40" y1="34" x2="36" y2="40" />
           <line x1="40" y1="34" x2="44" y2="40" />
+
+          {/* Connection dots */}
+          <circle cx="24" cy="24" r="1.5" fill="currentColor" />
+          <circle cx="8" cy="14" r="1" fill="currentColor" />
+          <circle cx="40" cy="14" r="1" fill="currentColor" />
+          <circle cx="8" cy="34" r="1" fill="currentColor" />
+          <circle cx="40" cy="34" r="1" fill="currentColor" />
+          <circle cx="4" cy="8" r="0.8" fill="currentColor" />
+          <circle cx="12" cy="8" r="0.8" fill="currentColor" />
+          <circle cx="36" cy="8" r="0.8" fill="currentColor" />
+          <circle cx="44" cy="8" r="0.8" fill="currentColor" />
+          <circle cx="4" cy="40" r="0.8" fill="currentColor" />
+          <circle cx="12" cy="40" r="0.8" fill="currentColor" />
+          <circle cx="36" cy="40" r="0.8" fill="currentColor" />
+          <circle cx="44" cy="40" r="0.8" fill="currentColor" />
         </g>
       </svg>
       <div className="absolute -inset-1 blur-sm bg-white/30 rounded-full animate-pulse" />
