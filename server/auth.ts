@@ -31,31 +31,37 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
 
-  const sessionSettings: session.SessionOptions = {
+  const getSessionSettings = (rememberMe: boolean): session.SessionOptions => ({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      maxAge: rememberMe ? 1000 * 60 * 60 * 24 * 7 : undefined, // 1 week if remember me is checked
     }
-  };
+  });
 
   app.set("trust proxy", 1);
-  app.use(session(sessionSettings));
+  app.use(session(getSessionSettings(false)));
   app.use(passport.initialize());
   app.use(passport.session());
 
   passport.use(
     new LocalStrategy(
-      { usernameField: 'email' },
-      async (email, password, done) => {
+      { usernameField: 'email', passReqToCallback: true },
+      async (req, email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email);
           if (!user || !(await comparePasswords(password, user.password))) {
             return done(null, false, { message: "Invalid email or password" });
           }
+
+          // Update session if remember me is checked
+          if (req.body.rememberMe) {
+            req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 7; // 1 week
+          }
+
           return done(null, user);
         } catch (error) {
           return done(error);
@@ -120,7 +126,6 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
-  // Add endpoint to update user preferences
   app.patch("/api/user", (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 

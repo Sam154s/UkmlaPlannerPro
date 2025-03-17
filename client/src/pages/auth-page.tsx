@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/ui/logo";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
@@ -28,8 +29,11 @@ export default function AuthPage() {
     }
   }, [user, setLocation]);
 
-  const loginForm = useForm<InsertUser>({
+  const loginForm = useForm<InsertUser & { rememberMe: boolean }>({
     resolver: zodResolver(insertUserSchema),
+    defaultValues: {
+      rememberMe: false
+    }
   });
 
   const registerForm = useForm<InsertUser>({
@@ -90,6 +94,22 @@ export default function AuthPage() {
                           <Input type="password" {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={loginForm.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">Keep me logged in for a week</FormLabel>
                       </FormItem>
                     )}
                   />
