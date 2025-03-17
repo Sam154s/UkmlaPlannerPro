@@ -45,10 +45,10 @@ export default function AuthPage() {
               <Logo className="w-12 h-12 text-purple-600" />
             </div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
-              Welcome to Helix
+              Welcome to Spiral
             </h1>
             <p className="text-sm text-muted-foreground">
-              Your intelligent medical learning companion
+              Spiral learning like your medical school never did
             </p>
           </div>
 
@@ -249,10 +249,9 @@ export default function AuthPage() {
             </g>
           </svg>
           <div className="space-y-4 text-center max-w-md">
-            <h2 className="text-2xl font-bold">Neural Learning Enhancement</h2>
+            <h2 className="text-2xl font-bold">Revolutionary Medical Learning</h2>
             <p>
-              Experience Helix's advanced spiral revision algorithm that mimics neural pathways,
-              helping you build stronger connections and retain medical knowledge more effectively.
+              Welcome to Spiral, the world's first evidence-based AI working companion tool to help you smash medical school.
             </p>
           </div>
         </div>

@@ -48,7 +48,7 @@ export function SiteSidebar() {
             !shouldExpand && "opacity-0"
           )}>
             <Logo />
-            <h1 className="text-xl font-bold text-white">Helix</h1>
+            <h1 className="text-xl font-bold text-white">Spiral</h1>
           </div>
 
           <div className="mt-5 flex-grow flex flex-col px-3">
@@ -83,7 +83,7 @@ export function SiteSidebar() {
           <SheetHeader>
             <SheetTitle className="text-left text-white flex items-center gap-3">
               <Logo />
-              Helix
+              Spiral
             </SheetTitle>
           </SheetHeader>
           <div className="mt-5 flex-grow flex flex-col">
