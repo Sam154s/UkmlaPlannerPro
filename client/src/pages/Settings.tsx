@@ -156,9 +156,9 @@ export default function Settings() {
                     <div
                       className="h-4 w-full rounded-full mt-1.5"
                       style={{
-                        background: `linear-gradient(to right, var(--${scheme.from}), ${
-                          scheme.via ? `var(--${scheme.via}),` : ''
-                        } var(--${scheme.to}))`,
+                        background: `linear-gradient(to right, rgb(var(--${scheme.from})), ${
+                          scheme.via ? `rgb(var(--${scheme.via})),` : ''
+                        } rgb(var(--${scheme.to})))`,
                       }}
                     />
                   </div>
