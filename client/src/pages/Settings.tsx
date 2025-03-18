@@ -143,11 +143,6 @@ export default function Settings() {
                 const scheme = colorSchemes.find(s => s.name === value);
                 if (scheme) {
                   setColorScheme(scheme);
-                  // Add feedback toast
-                  toast({
-                    title: "Theme Updated",
-                    description: `Theme changed to ${scheme.name}`,
-                  });
                 }
               }}
               className="grid grid-cols-2 gap-4"
