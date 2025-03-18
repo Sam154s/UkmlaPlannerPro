@@ -128,32 +128,22 @@
 
   /* Sidebar specific styles */
   .sidebar {
-    @apply h-full;
+    @apply h-screen fixed left-0;
     position: relative;
-    margin-left: -1.5rem;  /* Pull sidebar beyond the container padding */
-    padding-left: 1.5rem;  /* Compensate for negative margin */
+    width: var(--sidebar-width, 5rem);
     border-top-right-radius: 1rem;
     border-bottom-right-radius: 1rem;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
+    background-image: linear-gradient(
+      to bottom right,
+      rgb(var(--gradient-from)),
+      rgb(var(--gradient-via)),
+      rgb(var(--gradient-to))
+    );
+  }
 
-    &::before {
-      content: '';
-      position: absolute;
-      left: -100%;  /* Extend far beyond the left edge */
-      right: 0;
-      top: -100%;   /* Extend beyond top */
-      bottom: -100%; /* Extend beyond bottom */
-      z-index: -1;
-      background-image: linear-gradient(
-        to bottom right,
-        rgb(var(--gradient-from)),
-        rgb(var(--gradient-via)),
-        rgb(var(--gradient-to))
-      );
-      border-top-right-radius: 1rem;
-      border-bottom-right-radius: 1rem;
-    }
+  /* Ensure main content is properly offset */
+  .main-content {
+    @apply ml-[5rem];
   }
 }
 
