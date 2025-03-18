@@ -128,13 +128,29 @@
 
   /* Sidebar specific styles */
   .sidebar {
-    @apply h-full bg-gradient-theme;
+    @apply h-full;
+    position: relative;
+    margin-left: -1.5rem;  /* Pull sidebar beyond the container padding */
+    padding-left: 1.5rem;  /* Compensate for negative margin */
     border-top-right-radius: 1rem;
     border-bottom-right-radius: 1rem;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    margin-left: -1rem;  /* Extend background to cover left edge */
-    padding-left: 1rem;  /* Compensate for negative margin */
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-image: linear-gradient(
+        to bottom right,
+        rgb(var(--gradient-from)),
+        rgb(var(--gradient-via)),
+        rgb(var(--gradient-to))
+      );
+      border-top-right-radius: 1rem;
+      border-bottom-right-radius: 1rem;
+    }
   }
 }
 
