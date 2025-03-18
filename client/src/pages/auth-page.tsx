@@ -197,7 +197,7 @@ export default function AuthPage() {
         </div>
       </div>
 
-      <div className="hidden md:block bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500 p-8">
+      <div className="hidden md:block bg-gradient-theme p-8">
         <div className="h-full flex flex-col items-center justify-center text-white space-y-8">
           <svg
             viewBox="0 0 48 48"

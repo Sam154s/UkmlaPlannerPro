@@ -39,6 +39,11 @@
   --gradient-to: var(--blue-500);
 }
 
+/* Gradient backgrounds */
+.bg-gradient-theme {
+  background-image: linear-gradient(to bottom right, var(--gradient-from), var(--gradient-via), var(--gradient-to));
+}
+
 /* Dark mode overrides */
 .dark {
   --background: 20 14.3% 4.1%;

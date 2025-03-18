@@ -29,7 +29,7 @@ export function SiteSidebar() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex flex-col flex-grow pt-5 overflow-y-auto relative bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500">
+        <div className="flex flex-col flex-grow pt-5 overflow-y-auto relative bg-gradient-theme">
           <Button
             variant="ghost"
             size="icon"
@@ -79,7 +79,7 @@ export function SiteSidebar() {
             <Menu className="h-6 w-6" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500">
+        <SheetContent side="left" className="w-64 bg-gradient-theme">
           <SheetHeader>
             <SheetTitle className="text-left text-white flex items-center gap-3">
               <Logo />
