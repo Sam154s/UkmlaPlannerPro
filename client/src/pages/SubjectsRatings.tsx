@@ -56,7 +56,10 @@ export default function SubjectsRatings() {
             className="border rounded-lg overflow-hidden bg-white"
           >
             <AccordionTrigger 
-              className="bg-gradient-to-r from-theme/5 to-theme/10 px-4 py-3 hover:no-underline hover:bg-gradient-to-r hover:from-theme/10 hover:to-theme/20"
+              className="px-4 py-3 hover:no-underline"
+              style={{
+                background: `linear-gradient(to right, rgb(var(--gradient-from) / 0.05), rgb(var(--gradient-from) / 0.1))`,
+              }}
             >
               <h2 className="text-lg font-semibold text-theme">{subject.name}</h2>
             </AccordionTrigger>
@@ -87,7 +90,6 @@ export default function SubjectsRatings() {
                             />
                           </div>
                           <Slider
-                            className="[&_[role=slider]]:bg-theme"
                             min={1}
                             max={10}
                             step={1}
@@ -98,6 +100,7 @@ export default function SubjectsRatings() {
                             onValueChange={([value]) =>
                               handleRatingChange(subject.name, topic.name, field as keyof Topic['ratings'], value)
                             }
+                            className="[&_[role=slider]]:bg-theme"
                           />
                         </div>
                       ))}
