@@ -53,10 +53,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem('colorScheme', JSON.stringify(currentScheme));
+
     // Update CSS variables for the gradient
     document.documentElement.style.setProperty('--gradient-from', `var(--${currentScheme.from})`);
-    document.documentElement.style.setProperty('--gradient-via', currentScheme.via ? `var(--${currentScheme.via})` : '');
+    if (currentScheme.via) {
+      document.documentElement.style.setProperty('--gradient-via', `var(--${currentScheme.via})`);
+    } else {
+      document.documentElement.style.removeProperty('--gradient-via');
+    }
     document.documentElement.style.setProperty('--gradient-to', `var(--${currentScheme.to})`);
+
+    // Also update the primary color for buttons and other UI elements
+    document.documentElement.style.setProperty(
+      '--primary',
+      `var(--${currentScheme.from})`
+    );
   }, [currentScheme]);
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);

@@ -47,9 +47,9 @@ export default function AuthPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-2 text-center">
             <div className="flex justify-center mb-4">
-              <Logo className="w-12 h-12 text-purple-600" />
+              <Logo className="w-12 h-12 text-gradient-theme" />
             </div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+            <h1 className="text-3xl font-bold text-gradient-theme">
               Welcome to Spiral
             </h1>
             <p className="text-sm text-muted-foreground">

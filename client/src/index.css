@@ -54,6 +54,37 @@
   );
 }
 
+/* Gradient text */
+.text-gradient-theme {
+  background-image: linear-gradient(
+    to right,
+    var(--gradient-from),
+    var(--gradient-to)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradient border */
+.border-gradient-theme {
+  border-image: linear-gradient(
+    to right,
+    var(--gradient-from),
+    var(--gradient-to)
+  ) 1;
+}
+
+/* Interactive elements */
+.hover\:bg-gradient-theme:hover {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--gradient-from),
+    var(--gradient-via),
+    var(--gradient-to)
+  );
+}
+
 /* Dark mode overrides */
 .dark {
   --background: 20 14.3% 4.1%;
