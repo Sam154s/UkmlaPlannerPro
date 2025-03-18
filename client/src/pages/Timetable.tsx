@@ -114,7 +114,7 @@ export default function Timetable() {
           Configure your study schedule
         </p>
         {revisionCount > 0 && (
-          <p className="text-sm text-theme">
+          <p className="text-sm">
             Revision cycle: {revisionCount}
           </p>
         )}
@@ -137,7 +137,7 @@ export default function Timetable() {
             onChange={setSelectedSubjects}
           />
 
-          <Button 
+          <Button
             className="w-full button-theme"
             onClick={handleGenerate}
             disabled={weeklyHours <= 0}
@@ -201,18 +201,18 @@ function renderEventContent(eventInfo: any) {
         {topics.length > 0 && (
           <TooltipContent className="w-64 bg-white/95 backdrop-blur-sm border shadow-lg">
             <div className="space-y-2">
-              <p className="font-semibold text-sm text-theme">Topics:</p>
+              <p className="font-semibold text-sm">Topics:</p>
               <ul className="space-y-2">
                 {topics.map((topic: any, index: number) => (
                   <li key={index} className="text-sm">
                     {topic.type === 'main' ? (
-                      <span className="text-theme">{topic.name}</span>
+                      <span>{topic.name}</span>
                     ) : (
                       <div className="mt-1 pl-4 border-l-2 border-theme/20">
-                        <p className="font-medium text-xs text-theme">Connections:</p>
+                        <p className="font-medium text-xs">Connections:</p>
                         <ul className="list-disc list-inside">
                           {topic.connectionTopics?.map((relatedTopic: string, idx: number) => (
-                            <li key={idx} className="text-xs text-theme">{relatedTopic}</li>
+                            <li key={idx} className="text-xs">{relatedTopic}</li>
                           ))}
                         </ul>
                       </div>

@@ -55,7 +55,9 @@ export default function SubjectsRatings() {
             value={subject.name}
             className="border rounded-lg overflow-hidden bg-white"
           >
-            <AccordionTrigger className="bg-gradient-to-r from-purple-50 to-blue-50 px-4 py-3 hover:no-underline hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100">
+            <AccordionTrigger 
+              className="bg-gradient-to-r from-theme/5 to-theme/10 px-4 py-3 hover:no-underline hover:bg-gradient-to-r hover:from-theme/10 hover:to-theme/20"
+            >
               <h2 className="text-lg font-semibold text-theme">{subject.name}</h2>
             </AccordionTrigger>
             <AccordionContent>
@@ -67,7 +69,7 @@ export default function SubjectsRatings() {
                       {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
                         <div key={field} className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label className="capitalize text-sm text-theme">
+                            <Label className="capitalize text-sm">
                               {field.replace(/([A-Z])/g, ' $1').trim()}
                             </Label>
                             <Input
