@@ -138,9 +138,9 @@ export default function Settings() {
           <div className="space-y-4">
             <Label>Color Scheme</Label>
             <RadioGroup
-              defaultValue={currentScheme.name.toLowerCase()}
+              defaultValue={currentScheme.name}
               onValueChange={(value) => {
-                const scheme = colorSchemes.find(s => s.name.toLowerCase() === value);
+                const scheme = colorSchemes.find(s => s.name === value);
                 if (scheme) setColorScheme(scheme);
               }}
               className="grid grid-cols-2 gap-4"
@@ -150,7 +150,7 @@ export default function Settings() {
                   key={scheme.name}
                   className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer [&:has(:checked)]:border-theme"
                 >
-                  <RadioGroupItem value={scheme.name.toLowerCase()} className="sr-only" />
+                  <RadioGroupItem value={scheme.name} className="sr-only" />
                   <div className="flex-1">
                     <div className="font-medium">{scheme.name}</div>
                     <div
