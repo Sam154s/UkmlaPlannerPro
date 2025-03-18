@@ -41,7 +41,7 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+        <h1 className="text-3xl font-bold text-gradient-theme">
           Dashboard
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -54,10 +54,10 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Study Progress</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-theme">
               {studyProgress.hoursStudied} / {studyProgress.weeklyGoal} hours
             </div>
             <Progress
@@ -71,7 +71,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Next Sessions</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[120px]">
@@ -81,7 +81,7 @@ export default function Dashboard() {
                     key={i}
                     className="flex items-center justify-between text-sm"
                   >
-                    <div className="font-medium">{session.subject}</div>
+                    <div className="font-medium text-theme">{session.subject}</div>
                     <div className="text-muted-foreground">{session.time}</div>
                   </div>
                 ))}
@@ -94,7 +94,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">This Week's Focus</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[120px]">
@@ -104,7 +104,7 @@ export default function Dashboard() {
                     key={i}
                     className="flex items-center justify-between text-sm"
                   >
-                    <div className="font-medium">{focus.subject}</div>
+                    <div className="font-medium text-theme">{focus.subject}</div>
                     <div className="text-muted-foreground">{focus.hours} hours</div>
                   </div>
                 ))}
@@ -117,10 +117,10 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
+            <Star className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7 days</div>
+            <div className="text-2xl font-bold text-theme">7 days</div>
             <p className="text-xs text-muted-foreground mt-1">
               Keep up the great work!
             </p>
@@ -131,10 +131,10 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Exam Countdown</CardTitle>
-            <Clock4 className="h-4 w-4 text-muted-foreground" />
+            <Clock4 className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">14 days</div>
+            <div className="text-2xl font-bold text-theme">14 days</div>
             <p className="text-xs text-muted-foreground mt-1">
               Until UKMLA exam
             </p>
@@ -145,10 +145,10 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Tip</CardTitle>
-            <Brain className="h-4 w-4 text-muted-foreground" />
+            <Brain className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm">
+            <p className="text-sm text-theme">
               Focus on high-yield topics first. Consider reviewing Cardiovascular
               system today based on your progress.
             </p>
@@ -159,7 +159,7 @@ export default function Dashboard() {
         <Card className="md:col-span-2 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Favorite Subjects</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
+            <Star className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -168,8 +168,8 @@ export default function Dashboard() {
                   key={i}
                   className="text-sm font-medium flex items-center space-x-2"
                 >
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
-                  <span>{subject}</span>
+                  <div className="w-2 h-2 rounded-full bg-theme" />
+                  <span className="text-theme">{subject}</span>
                 </div>
               ))}
             </div>
@@ -180,14 +180,14 @@ export default function Dashboard() {
         <Card className="md:col-span-2 lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Time Breakdown</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {weeklyFocus.map((focus, i) => (
                 <div key={i} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <div className="font-medium">{focus.subject}</div>
+                    <div className="font-medium text-theme">{focus.subject}</div>
                     <div className="text-muted-foreground">{focus.hours} hours</div>
                   </div>
                   <Progress

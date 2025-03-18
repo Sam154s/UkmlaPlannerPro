@@ -19,10 +19,13 @@ function Router() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background dark:bg-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-foreground relative">
       {user && <SiteSidebar />}
-      <div className={user ? "md:pl-16 relative z-0" : ""}>
-        <main className="p-4">
+      <div 
+        className={user ? "md:pl-16 relative" : ""}
+        style={{ zIndex: 0, position: 'relative' }}
+      >
+        <main className="p-4 relative" style={{ zIndex: 1 }}>
           <Switch>
             <Route path="/auth">
               {user ? <Redirect to="/" /> : <AuthPage />}

@@ -46,6 +46,7 @@
 
 /* Gradient backgrounds */
 .bg-gradient-theme {
+  background-color: var(--gradient-from); /* Fallback */
   background-image: linear-gradient(
     to bottom right,
     var(--gradient-from),
@@ -72,9 +73,19 @@
   color: var(--gradient-from);
 }
 
-/* Border color */
+/* Theme hover text color */
+.hover\:text-theme:hover {
+  color: var(--gradient-from);
+}
+
+/* Theme border color */
 .border-theme {
   border-color: var(--gradient-from);
+}
+
+/* Theme background color */
+.bg-theme {
+  background-color: var(--gradient-from);
 }
 
 /* Interactive elements */
@@ -85,6 +96,18 @@
     var(--gradient-via),
     var(--gradient-to)
   );
+}
+
+/* Ensure gradients work in all contexts */
+html, body, #root {
+  background-color: var(--background);
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Fix iframe display */
+iframe {
+  background-color: transparent !important;
 }
 
 /* Dark mode overrides */
