@@ -126,9 +126,9 @@ export default function Settings() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="dark-mode" className="text-theme">Dark Mode</Label>
-              <Switch 
-                id="dark-mode" 
+              <Label htmlFor="dark-mode">Dark Mode</Label>
+              <Switch
+                id="dark-mode"
                 checked={isDarkMode}
                 onCheckedChange={toggleDarkMode}
               />
@@ -136,8 +136,8 @@ export default function Settings() {
           </div>
 
           <div className="space-y-4">
-            <Label className="text-theme">Color Scheme</Label>
-            <RadioGroup 
+            <Label>Color Scheme</Label>
+            <RadioGroup
               defaultValue={currentScheme.name.toLowerCase()}
               onValueChange={(value) => {
                 const scheme = colorSchemes.find(s => s.name.toLowerCase() === value);
@@ -152,7 +152,7 @@ export default function Settings() {
                 >
                   <RadioGroupItem value={scheme.name.toLowerCase()} className="sr-only" />
                   <div className="flex-1">
-                    <div className="font-medium text-theme">{scheme.name}</div>
+                    <div className="font-medium">{scheme.name}</div>
                     <div
                       className="h-4 w-full rounded-full mt-1.5"
                       style={{
