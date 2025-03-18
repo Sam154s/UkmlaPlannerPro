@@ -56,9 +56,12 @@ export default function SubjectsRatings() {
             className="border rounded-lg overflow-hidden bg-white"
           >
             <AccordionTrigger 
-              className="px-4 py-3 hover:no-underline"
+              className="px-4 py-3 hover:no-underline transition-colors duration-200"
               style={{
-                background: `linear-gradient(to right, rgb(var(--gradient-from) / 0.05), rgb(var(--gradient-from) / 0.1))`,
+                background: 'linear-gradient(to right, rgba(var(--gradient-from), 0.08), rgba(var(--gradient-from), 0.12))',
+                '&:hover': {
+                  background: 'linear-gradient(to right, rgba(var(--gradient-from), 0.12), rgba(var(--gradient-from), 0.16))'
+                }
               }}
             >
               <h2 className="text-lg font-semibold">{subject.name}</h2>
