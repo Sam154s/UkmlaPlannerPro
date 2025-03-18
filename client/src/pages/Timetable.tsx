@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
@@ -104,6 +105,19 @@ export default function Timetable() {
     return colors[subject as keyof typeof colors] || '#666';
   };
 
+  const getAvailableViews = () => {
+    if (windowWidth < 640) {
+      return {
+        timeGridDay: { buttonText: 'Day' }
+      };
+    }
+    return {
+      timeGridDay: { buttonText: 'Day' },
+      timeGridWeek: { buttonText: 'Week' },
+      dayGridMonth: { buttonText: 'Month' }
+    };
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="space-y-2">
@@ -150,14 +164,14 @@ export default function Timetable() {
       <div className="bg-white rounded-xl shadow-lg border border-theme/10">
         <FullCalendar
           ref={setCalendarRef}
-          plugins={[timeGridPlugin, interactionPlugin]}
+          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView={windowWidth < 640 ? "timeGridDay" : "timeGridWeek"}
-          initialDate={new Date()}
           headerToolbar={{
-            left: 'prev,next',
+            left: 'prev,next today',
             center: 'title',
-            right: windowWidth < 640 ? 'timeGridDay' : 'timeGridWeek'
+            right: windowWidth < 640 ? 'timeGridDay' : 'timeGridDay,timeGridWeek,dayGridMonth'
           }}
+          views={getAvailableViews()}
           events={events}
           eventContent={renderEventContent}
           editable={true}
