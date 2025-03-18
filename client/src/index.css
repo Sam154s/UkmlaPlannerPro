@@ -23,11 +23,59 @@
   --gray-700: 55 65 81;
   --gray-600: 75 85 99;
   --gray-500: 107 114 128;
+
+  /* Base theme variables */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: var(--gradient-from);
+
+  /* Modern UI enhancements */
+  --shadow-color: 0 0% 0%;
+  --shadow-strength: 1%;
+}
+
+/* Dark mode overrides */
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --shadow-color: 240 10% 3.9%;
+  --shadow-strength: 5%;
 }
 
 /* Application-wide theme styles */
 @layer components {
   .bg-gradient-theme {
+    @apply rounded-xl shadow-lg;
     background-image: linear-gradient(
       to bottom right,
       rgb(var(--gradient-from)),
@@ -63,13 +111,29 @@
   .bg-theme {
     background-color: rgb(var(--gradient-from));
   }
+
+  /* Modern UI enhancements */
+  .card {
+    @apply rounded-xl border shadow-sm transition-shadow hover:shadow-md;
+    background-color: hsl(var(--card));
+  }
+
+  .button {
+    @apply rounded-lg shadow-sm transition-all hover:shadow active:scale-[0.98];
+  }
+
+  .input {
+    @apply rounded-lg border shadow-sm focus:ring-2 focus:ring-offset-0;
+  }
 }
 
-/* Fix rendering in all contexts */
+/* Base styles */
 html, body, #root {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Force proper rendering in iframes */

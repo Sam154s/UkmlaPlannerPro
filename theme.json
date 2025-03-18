@@ -1,7 +1,7 @@
 {
   "variant": "professional",
   "primary": "",
-  "appearance": "light",
-  "radius": 0.5,
+  "appearance": "system",
+  "radius": 1.0,
   "defaultScheme": "Purple (Default)"
 }

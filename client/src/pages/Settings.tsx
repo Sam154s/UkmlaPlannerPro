@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { colorSchemes, useTheme } from "@/hooks/use-theme";
+import { Moon, Sun } from "lucide-react";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -63,7 +64,7 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-theme">Change Password</CardTitle>
+          <CardTitle>Change Password</CardTitle>
           <CardDescription>
             Update your password to keep your account secure
           </CardDescription>
@@ -76,7 +77,7 @@ export default function Settings() {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-theme">Current Password</FormLabel>
+                    <FormLabel>Current Password</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -89,7 +90,7 @@ export default function Settings() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-theme">New Password</FormLabel>
+                    <FormLabel>New Password</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -102,7 +103,7 @@ export default function Settings() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-theme">Confirm New Password</FormLabel>
+                    <FormLabel>Confirm New Password</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -110,7 +111,9 @@ export default function Settings() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="bg-gradient-theme text-white hover:opacity-90">Update Password</Button>
+              <Button type="submit" className="bg-gradient-theme text-white hover:opacity-90">
+                Update Password
+              </Button>
             </form>
           </Form>
         </CardContent>
@@ -118,7 +121,7 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-theme">Appearance</CardTitle>
+          <CardTitle>Appearance</CardTitle>
           <CardDescription>
             Customize the look and feel of the application
           </CardDescription>
@@ -126,7 +129,14 @@ export default function Settings() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="dark-mode">Dark Mode</Label>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="dark-mode">Dark Mode</Label>
+                {isDarkMode ? (
+                  <Moon className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Sun className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
               <Switch
                 id="dark-mode"
                 checked={isDarkMode}
@@ -150,7 +160,7 @@ export default function Settings() {
               {colorSchemes.map((scheme) => (
                 <Label
                   key={scheme.name}
-                  className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-all ${
+                  className={`flex items-center space-x-3 border rounded-xl p-4 cursor-pointer transition-all hover:shadow-md ${
                     currentScheme.name === scheme.name ? 'border-theme ring-2 ring-theme/20' : ''
                   }`}
                 >
