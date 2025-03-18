@@ -31,43 +31,37 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
 
-  const getSessionSettings = (rememberMe: boolean): session.SessionOptions => ({
+  const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: rememberMe ? 1000 * 60 * 60 * 24 * 7 : undefined, // 1 week if remember me is checked
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-  });
+  };
 
   app.set("trust proxy", 1);
-  app.use(session(getSessionSettings(false)));
+  app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
   passport.use(
     new LocalStrategy(
-      { usernameField: 'email', passReqToCallback: true },
-      async (req, email, password, done) => {
+      { usernameField: 'email' },
+      async (email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email);
           if (!user || !(await comparePasswords(password, user.password))) {
             return done(null, false, { message: "Invalid email or password" });
           }
-
-          // Update session if remember me is checked
-          if (req.body.rememberMe) {
-            req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 7; // 1 week
-          }
-
           return done(null, user);
         } catch (error) {
           return done(error);
         }
       }
-    ),
+    )
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
@@ -124,18 +118,5 @@ export function setupAuth(app: Express) {
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
-  });
-
-  app.patch("/api/user", (req, res, next) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    const allowedFields = ['weeklyHours', 'yearGroup', 'daysPerWeek', 'selectedSubjects', 'timetableEvents'];
-    const updateData = Object.fromEntries(
-      Object.entries(req.body).filter(([key]) => allowedFields.includes(key))
-    );
-
-    storage.updateUser(req.user.id, updateData)
-      .then(user => res.json(user))
-      .catch(next);
   });
 }
