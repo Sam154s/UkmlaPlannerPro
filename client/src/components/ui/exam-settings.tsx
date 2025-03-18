@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ExamDate } from '@/data/masterSubjects';
 import { addDays, format, isAfter, isBefore, subWeeks } from 'date-fns';
+import { AlertCircle } from 'lucide-react';
 
 interface ExamSettingsProps {
   examDates: ExamDate[];
@@ -32,6 +33,12 @@ export function ExamSettings({
     return isAfter(new Date(), examPeriodStart) && isBefore(new Date(), addDays(examDate, 1));
   });
 
+  // Find the next upcoming exam
+  const nextExam = examDates
+    .map(exam => ({ ...exam, date: new Date(exam.date) }))
+    .filter(exam => isAfter(exam.date, new Date()))
+    .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
+
   const handleAddExam = () => {
     if (!newExamDate || !examName) return;
 
@@ -50,22 +57,40 @@ export function ExamSettings({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Exam Mode Settings</CardTitle>
+        <CardTitle className="flex justify-between items-center">
+          <span>Exam Mode Settings</span>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="exam-mode"
+              checked={isExamMode}
+              onCheckedChange={onExamModeToggle}
+              className="data-[state=checked]:bg-red-500"
+            />
+            <Label htmlFor="exam-mode" className="font-normal text-base">
+              Exam Mode
+            </Label>
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <Label htmlFor="exam-mode">Exam Mode</Label>
-          <Switch
-            id="exam-mode"
-            checked={isExamMode}
-            onCheckedChange={onExamModeToggle}
-          />
-          {isInExamPeriod && !isExamMode && (
-            <span className="text-sm text-orange-500">
+        {isInExamPeriod && !isExamMode && (
+          <div className="flex items-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg">
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm">
               You're in an exam period! Consider enabling exam mode.
             </span>
-          )}
-        </div>
+          </div>
+        )}
+
+        {nextExam && (
+          <div className="text-center p-4 bg-slate-50 rounded-lg">
+            <p className="text-sm text-muted-foreground">Time until next exam</p>
+            <p className="text-2xl font-semibold mt-1">
+              {format(nextExam.date, 'PPP')}
+            </p>
+            <p className="text-sm mt-1">{nextExam.name}</p>
+          </div>
+        )}
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Add New Exam</h3>
@@ -86,6 +111,7 @@ export function ExamSettings({
                 selected={newExamDate}
                 onSelect={setNewExamDate}
                 className="rounded-md border"
+                disabled={(date) => date < new Date()}
               />
             </div>
             <Button

@@ -94,7 +94,7 @@ export default function SubjectsRatings() {
                       <h3 className="font-medium">{topic.name}</h3>
                       <div className="flex items-center space-x-2">
                         <Label htmlFor={`exam-mode-${subject.name}-${topic.name}`} className="text-sm">
-                          High Yield
+                          Exam Mode
                         </Label>
                         <Switch
                           id={`exam-mode-${subject.name}-${topic.name}`}
