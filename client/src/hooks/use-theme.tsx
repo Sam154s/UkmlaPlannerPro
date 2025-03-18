@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [currentScheme, setCurrentScheme] = useState<ColorScheme>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('colorScheme');
-      const userScheme = user?.colorScheme as ColorScheme | undefined;
+      const userScheme = user?.colorScheme ? JSON.parse(user.colorScheme as string) : undefined;
       return userScheme || (saved ? JSON.parse(saved) : defaultScheme);
     }
     return defaultScheme;
@@ -53,10 +53,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const saveThemePreference = async (scheme: ColorScheme) => {
     if (user) {
       try {
-        const updatedUser = await apiRequest("PATCH", "/api/user", {
-          colorScheme: scheme
+        await apiRequest("PATCH", "/api/user", {
+          colorScheme: JSON.stringify(scheme)
         });
-        queryClient.setQueryData(["/api/user"], updatedUser);
+        queryClient.setQueryData(["/api/user"], {
+          ...user,
+          colorScheme: JSON.stringify(scheme)
+        });
       } catch (error) {
         console.error("Failed to save theme preference:", error);
       }
@@ -78,6 +81,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Ensure default scheme is applied immediately
     if (!currentScheme) {
       setCurrentScheme(defaultScheme);
+      return;
     }
 
     // Update CSS custom properties
