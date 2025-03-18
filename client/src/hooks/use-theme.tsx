@@ -27,6 +27,9 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
+// Default purple scheme
+const defaultScheme = colorSchemes[0];
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -39,13 +42,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [currentScheme, setCurrentScheme] = useState<ColorScheme>(() => {
     if (typeof window !== 'undefined') {
-      // Try to get from localStorage first as a fallback
       const saved = localStorage.getItem('colorScheme');
-      // If user has a saved preference in their profile, use that
       const userScheme = user?.colorScheme as ColorScheme | undefined;
-      return userScheme || (saved ? JSON.parse(saved) : colorSchemes[0]);
+      return userScheme || (saved ? JSON.parse(saved) : defaultScheme);
     }
-    return colorSchemes[0]; // Default to Purple scheme
+    return defaultScheme;
   });
 
   // Save theme preference to user profile when logged in
@@ -74,6 +75,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [isDarkMode]);
 
   useEffect(() => {
+    // Ensure default scheme is applied immediately
+    if (!currentScheme) {
+      setCurrentScheme(defaultScheme);
+    }
+
     // Update CSS custom properties
     document.documentElement.style.setProperty('--gradient-from', `var(--${currentScheme.from})`);
     if (currentScheme.via) {

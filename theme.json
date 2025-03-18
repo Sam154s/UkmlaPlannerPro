@@ -2,5 +2,6 @@
   "variant": "professional",
   "primary": "rgb(147, 51, 234)",
   "appearance": "light",
-  "radius": 0.5
+  "radius": 0.5,
+  "defaultScheme": "Purple (Default)"
 }
