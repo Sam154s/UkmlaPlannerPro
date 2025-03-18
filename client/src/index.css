@@ -2,35 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
-}
-
-/* Theme color variables */
+/* Theme color variables - MUST be defined before any other styles */
 :root {
-  /* Default theme colors */
+  /* Set initial theme colors with direct RGB values */
+  --gradient-from: 147 51 234 !important; /* Purple-600 */
+  --gradient-via: 37 99 235 !important;   /* Blue-600 */
+  --gradient-to: 59 130 246 !important;   /* Blue-500 */
+  --primary: 147 51 234 !important;       /* Purple-600 */
+
+  /* Other color variables */
   --purple-600: 147 51 234;
   --blue-600: 37 99 235;
   --blue-500: 59 130 246;
-
-  /* Initialize with Purple theme by default */
-  --gradient-from: var(--purple-600);
-  --gradient-via: var(--blue-600);
-  --gradient-to: var(--blue-500);
-  --primary: var(--purple-600);
-
-  /* Force immediate application of default theme */
-  color-scheme: light;
-  background-color: rgb(255 255 255);
-  color: rgb(0 0 0);
-
-  /* Other color variables remain unchanged */
   --rose-500: 244 63 94;
   --red-400: 248 113 113;
   --pink-400: 244 114 182;
@@ -46,18 +29,33 @@
   --gray-700: 55 65 81;
   --gray-600: 75 85 99;
   --gray-500: 107 114 128;
+
+  /* Force immediate application of theme */
+  color-scheme: light !important;
+  background-color: rgb(255 255 255) !important;
+  color: rgb(0 0 0) !important;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
 }
 
 /* Application-wide theme styles */
 @layer components {
   .bg-gradient-theme {
-    background-color: rgb(var(--gradient-from));
+    background-color: rgb(var(--gradient-from)) !important;
     background-image: linear-gradient(
       to bottom right,
       rgb(var(--gradient-from)),
       rgb(var(--gradient-via)),
       rgb(var(--gradient-to))
-    );
+    ) !important;
   }
 
   .text-gradient-theme {
@@ -65,27 +63,27 @@
       to right,
       rgb(var(--gradient-from)),
       rgb(var(--gradient-to))
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    ) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
     display: inline-block;
   }
 
   .text-theme {
-    color: rgb(var(--gradient-from));
+    color: rgb(var(--gradient-from)) !important;
   }
 
   .hover\:text-theme:hover {
-    color: rgb(var(--gradient-from));
+    color: rgb(var(--gradient-from)) !important;
   }
 
   .border-theme {
-    border-color: rgb(var(--gradient-from));
+    border-color: rgb(var(--gradient-from)) !important;
   }
 
   .bg-theme {
-    background-color: rgb(var(--gradient-from));
+    background-color: rgb(var(--gradient-from)) !important;
   }
 
   /* Theme-specific components */
@@ -112,7 +110,7 @@
 
 /* Fix rendering in all contexts */
 html, body, #root {
-  background-color: var(--background);
+  background-color: var(--background) !important;
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
