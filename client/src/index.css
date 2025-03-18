@@ -17,12 +17,17 @@
   --purple-600: rgb(147, 51, 234);
   --blue-600: rgb(37, 99, 235);
   --blue-500: rgb(59, 130, 246);
-  --red-600: rgb(220, 38, 38);
-  --rose-600: rgb(225, 29, 72);
-  --red-500: rgb(239, 68, 68);
-  --orange-600: rgb(234, 88, 12);
-  --amber-600: rgb(217, 119, 6);
-  --yellow-500: rgb(234, 179, 8);
+
+  /* Refined red colors */
+  --rose-500: rgb(244, 63, 94);
+  --red-400: rgb(248, 113, 113);
+  --pink-400: rgb(244, 114, 182);
+
+  /* Refined orange colors */
+  --amber-500: rgb(245, 158, 11);
+  --orange-400: rgb(251, 146, 60);
+  --yellow-400: rgb(250, 204, 21);
+
   --emerald-600: rgb(5, 150, 105);
   --green-600: rgb(22, 163, 74);
   --teal-500: rgb(20, 184, 166);

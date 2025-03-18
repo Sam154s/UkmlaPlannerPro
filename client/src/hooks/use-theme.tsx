@@ -9,8 +9,8 @@ type ColorScheme = {
 
 export const colorSchemes: ColorScheme[] = [
   { name: 'Purple (Default)', from: 'purple-600', via: 'blue-600', to: 'blue-500' },
-  { name: 'Red', from: 'red-600', via: 'rose-600', to: 'red-500' },
-  { name: 'Orange', from: 'orange-600', via: 'amber-600', to: 'yellow-500' },
+  { name: 'Red', from: 'rose-500', via: 'red-400', to: 'pink-400' },
+  { name: 'Orange', from: 'amber-500', via: 'orange-400', to: 'yellow-400' },
   { name: 'Green', from: 'emerald-600', via: 'green-600', to: 'teal-500' },
   { name: 'Pink', from: 'pink-600', via: 'fuchsia-600', to: 'pink-500' },
   { name: 'Monochrome', from: 'gray-700', via: 'gray-600', to: 'gray-500' },
