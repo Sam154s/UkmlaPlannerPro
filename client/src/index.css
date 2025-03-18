@@ -19,16 +19,24 @@
   --blue-600: 37 99 235;
   --blue-500: 59 130 246;
 
-  /* Refined red colors */
+  /* Initialize with Purple theme by default */
+  --gradient-from: var(--purple-600);
+  --gradient-via: var(--blue-600);
+  --gradient-to: var(--blue-500);
+  --primary: var(--purple-600);
+
+  /* Force immediate application of default theme */
+  color-scheme: light;
+  background-color: rgb(255 255 255);
+  color: rgb(0 0 0);
+
+  /* Other color variables remain unchanged */
   --rose-500: 244 63 94;
   --red-400: 248 113 113;
   --pink-400: 244 114 182;
-
-  /* Refined orange colors */
   --amber-500: 245 158 11;
   --orange-400: 251 146 60;
   --yellow-400: 250 204 21;
-
   --emerald-600: 5 150 105;
   --green-600: 22 163 74;
   --teal-500: 20 184 166;
@@ -38,17 +46,12 @@
   --gray-700: 55 65 81;
   --gray-600: 75 85 99;
   --gray-500: 107 114 128;
-
-  /* Default theme gradient - setting initial values */
-  --gradient-from: var(--purple-600);
-  --gradient-via: var(--blue-600);
-  --gradient-to: var(--blue-500);
 }
 
 /* Application-wide theme styles */
 @layer components {
   .bg-gradient-theme {
-    background-color: rgb(var(--gradient-from)); /* Fallback */
+    background-color: rgb(var(--gradient-from));
     background-image: linear-gradient(
       to bottom right,
       rgb(var(--gradient-from)),
@@ -122,6 +125,7 @@ iframe {
 
 /* Dark mode overrides */
 .dark {
+  color-scheme: dark;
   --background: 20 14.3% 4.1%;
   --foreground: 60 9.1% 97.8%;
   --card: 20 14.3% 4.1%;
