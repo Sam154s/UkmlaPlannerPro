@@ -40,7 +40,7 @@ export default function SubjectsRatings() {
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+        <h1 className="text-3xl font-bold text-gradient-theme">
           Subjects & Ratings
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -56,18 +56,18 @@ export default function SubjectsRatings() {
             className="border rounded-lg overflow-hidden bg-white"
           >
             <AccordionTrigger className="bg-gradient-to-r from-purple-50 to-blue-50 px-4 py-3 hover:no-underline hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100">
-              <h2 className="text-lg font-semibold text-primary">{subject.name}</h2>
+              <h2 className="text-lg font-semibold text-theme">{subject.name}</h2>
             </AccordionTrigger>
             <AccordionContent>
               <div className="p-4 space-y-6">
                 {subject.topics.map((topic) => (
                   <div key={topic.name} className="space-y-4 border-b pb-4 last:border-0">
-                    <h3 className="font-medium text-primary">{topic.name}</h3>
+                    <h3 className="font-medium text-theme">{topic.name}</h3>
                     <div className="space-y-4">
                       {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
                         <div key={field} className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label className="capitalize text-sm text-muted-foreground">
+                            <Label className="capitalize text-sm text-theme">
                               {field.replace(/([A-Z])/g, ' $1').trim()}
                             </Label>
                             <Input
@@ -85,7 +85,7 @@ export default function SubjectsRatings() {
                             />
                           </div>
                           <Slider
-                            className="[&_[role=slider]]:bg-gradient-to-r [&_[role=slider]]:from-purple-600 [&_[role=slider]]:to-blue-500"
+                            className="[&_[role=slider]]:bg-theme"
                             min={1}
                             max={10}
                             step={1}

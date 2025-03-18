@@ -104,63 +104,17 @@ export default function Timetable() {
     return colors[subject as keyof typeof colors] || '#666';
   };
 
-  const renderEventContent = (eventInfo: any) => {
-    const topics = eventInfo.event.extendedProps.topics;
-
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="w-full h-full p-1">
-              <div className="text-sm font-semibold">{eventInfo.event.title}</div>
-              {topics.length > 0 && (
-                <div className="text-xs mt-1 opacity-90">
-                  {topics[0].name}...
-                </div>
-              )}
-            </div>
-          </TooltipTrigger>
-          {topics.length > 0 && (
-            <TooltipContent className="w-64 bg-white/95 backdrop-blur-sm border shadow-lg">
-              <div className="space-y-2">
-                <p className="font-semibold text-sm">Topics:</p>
-                <ul className="space-y-2">
-                  {topics.map((topic: any, index: number) => (
-                    <li key={index} className="text-sm">
-                      {topic.type === 'main' ? (
-                        <span>{topic.name}</span>
-                      ) : (
-                        <div className="mt-1 pl-4 border-l-2 border-purple-200">
-                          <p className="font-medium text-xs text-purple-600">Connections:</p>
-                          <ul className="list-disc list-inside">
-                            {topic.connectionTopics?.map((relatedTopic: string, idx: number) => (
-                              <li key={idx} className="text-xs">{relatedTopic}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
-
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+        <h1 className="text-3xl font-bold text-gradient-theme">
           Study Planner
         </h1>
         <p className="text-sm text-muted-foreground">
           Configure your study schedule
         </p>
         {revisionCount > 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-theme">
             Revision cycle: {revisionCount}
           </p>
         )}
@@ -184,7 +138,7 @@ export default function Timetable() {
           />
 
           <Button 
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 transition-all duration-200"
+            className="w-full button-theme"
             onClick={handleGenerate}
             disabled={weeklyHours <= 0}
           >
@@ -193,7 +147,7 @@ export default function Timetable() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg border border-purple-100/50">
+      <div className="bg-white rounded-xl shadow-lg border border-theme/10">
         <FullCalendar
           ref={setCalendarRef}
           plugins={[timeGridPlugin, interactionPlugin]}
@@ -225,5 +179,51 @@ export default function Timetable() {
         />
       </div>
     </div>
+  );
+}
+
+function renderEventContent(eventInfo: any) {
+  const topics = eventInfo.event.extendedProps.topics;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="w-full h-full p-1">
+            <div className="text-sm font-semibold">{eventInfo.event.title}</div>
+            {topics.length > 0 && (
+              <div className="text-xs mt-1 opacity-90">
+                {topics[0].name}...
+              </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        {topics.length > 0 && (
+          <TooltipContent className="w-64 bg-white/95 backdrop-blur-sm border shadow-lg">
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-theme">Topics:</p>
+              <ul className="space-y-2">
+                {topics.map((topic: any, index: number) => (
+                  <li key={index} className="text-sm">
+                    {topic.type === 'main' ? (
+                      <span className="text-theme">{topic.name}</span>
+                    ) : (
+                      <div className="mt-1 pl-4 border-l-2 border-theme/20">
+                        <p className="font-medium text-xs text-theme">Connections:</p>
+                        <ul className="list-disc list-inside">
+                          {topic.connectionTopics?.map((relatedTopic: string, idx: number) => (
+                            <li key={idx} className="text-xs text-theme">{relatedTopic}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
   );
 }
