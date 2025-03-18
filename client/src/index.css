@@ -4,12 +4,6 @@
 
 /* Theme color variables - MUST be defined before any other styles */
 :root {
-  /* Set initial theme colors with direct RGB values */
-  --gradient-from: 147 51 234 !important; /* Purple-600 */
-  --gradient-via: 37 99 235 !important;   /* Blue-600 */
-  --gradient-to: 59 130 246 !important;   /* Blue-500 */
-  --primary: 147 51 234 !important;       /* Purple-600 */
-
   /* Color definitions for theme options */
   --purple-600: 147 51 234;
   --blue-600: 37 99 235;
@@ -34,13 +28,12 @@
 /* Application-wide theme styles */
 @layer components {
   .bg-gradient-theme {
-    background-color: rgb(var(--gradient-from)) !important;
     background-image: linear-gradient(
       to bottom right,
       rgb(var(--gradient-from)),
       rgb(var(--gradient-via)),
       rgb(var(--gradient-to))
-    ) !important;
+    );
   }
 
   .text-gradient-theme {
@@ -48,33 +41,32 @@
       to right,
       rgb(var(--gradient-from)),
       rgb(var(--gradient-to))
-    ) !important;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    color: transparent !important;
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     display: inline-block;
   }
 
   .text-theme {
-    color: rgb(var(--gradient-from)) !important;
+    color: rgb(var(--gradient-from));
   }
 
   .hover\:text-theme:hover {
-    color: rgb(var(--gradient-from)) !important;
+    color: rgb(var(--gradient-from));
   }
 
   .border-theme {
-    border-color: rgb(var(--gradient-from)) !important;
+    border-color: rgb(var(--gradient-from));
   }
 
   .bg-theme {
-    background-color: rgb(var(--gradient-from)) !important;
+    background-color: rgb(var(--gradient-from));
   }
 }
 
 /* Fix rendering in all contexts */
 html, body, #root {
-  background-color: var(--background) !important;
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
@@ -82,5 +74,5 @@ html, body, #root {
 
 /* Force proper rendering in iframes */
 iframe {
-  background-color: transparent !important;
+  background-color: transparent;
 }

@@ -75,7 +75,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const applyThemeColors = (scheme: ColorScheme) => {
     const root = document.documentElement;
     root.style.setProperty('--gradient-from', colorValues[scheme.from]);
-    root.style.setProperty('--gradient-via', scheme.via ? colorValues[scheme.via] : '');
+    root.style.setProperty('--gradient-via', colorValues[scheme.via || '']);
     root.style.setProperty('--gradient-to', colorValues[scheme.to]);
     root.style.setProperty('--primary', colorValues[scheme.from]);
   };
