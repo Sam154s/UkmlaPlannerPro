@@ -59,11 +59,11 @@ export default function Settings() {
 
   return (
     <div className="container max-w-4xl py-6 space-y-6">
-      <h1 className="text-3xl font-bold">Settings</h1>
+      <h1 className="text-3xl font-bold text-gradient-theme">Settings</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Change Password</CardTitle>
+          <CardTitle className="text-theme">Change Password</CardTitle>
           <CardDescription>
             Update your password to keep your account secure
           </CardDescription>
@@ -76,7 +76,7 @@ export default function Settings() {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Password</FormLabel>
+                    <FormLabel className="text-theme">Current Password</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -89,7 +89,7 @@ export default function Settings() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New Password</FormLabel>
+                    <FormLabel className="text-theme">New Password</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -102,7 +102,7 @@ export default function Settings() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormLabel className="text-theme">Confirm New Password</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -110,7 +110,7 @@ export default function Settings() {
                   </FormItem>
                 )}
               />
-              <Button type="submit">Update Password</Button>
+              <Button type="submit" className="button-theme">Update Password</Button>
             </form>
           </Form>
         </CardContent>
@@ -118,7 +118,7 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle className="text-theme">Appearance</CardTitle>
           <CardDescription>
             Customize the look and feel of the application
           </CardDescription>
@@ -126,7 +126,7 @@ export default function Settings() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="dark-mode">Dark Mode</Label>
+              <Label htmlFor="dark-mode" className="text-theme">Dark Mode</Label>
               <Switch 
                 id="dark-mode" 
                 checked={isDarkMode}
@@ -136,7 +136,7 @@ export default function Settings() {
           </div>
 
           <div className="space-y-4">
-            <Label>Color Scheme</Label>
+            <Label className="text-theme">Color Scheme</Label>
             <RadioGroup 
               defaultValue={currentScheme.name.toLowerCase()}
               onValueChange={(value) => {
@@ -148,11 +148,11 @@ export default function Settings() {
               {colorSchemes.map((scheme) => (
                 <Label
                   key={scheme.name}
-                  className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer [&:has(:checked)]:border-primary"
+                  className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer [&:has(:checked)]:border-theme"
                 >
                   <RadioGroupItem value={scheme.name.toLowerCase()} className="sr-only" />
                   <div className="flex-1">
-                    <div className="font-medium">{scheme.name}</div>
+                    <div className="font-medium text-theme">{scheme.name}</div>
                     <div
                       className="h-4 w-full rounded-full mt-1.5"
                       style={{

@@ -44,68 +44,77 @@
   --gradient-to: var(--blue-500);
 }
 
-/* Gradient backgrounds */
-.bg-gradient-theme {
-  background-color: var(--gradient-from); /* Fallback */
-  background-image: linear-gradient(
-    to bottom right,
-    var(--gradient-from),
-    var(--gradient-via),
-    var(--gradient-to)
-  );
+/* Application-wide theme styles */
+@layer components {
+  .bg-gradient-theme {
+    background-color: var(--gradient-from); /* Fallback */
+    background-image: linear-gradient(
+      to bottom right,
+      var(--gradient-from),
+      var(--gradient-via),
+      var(--gradient-to)
+    );
+  }
+
+  .text-gradient-theme {
+    background-image: linear-gradient(
+      to right,
+      var(--gradient-from),
+      var(--gradient-to)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+  }
+
+  .text-theme {
+    color: var(--gradient-from);
+  }
+
+  .hover\:text-theme:hover {
+    color: var(--gradient-from);
+  }
+
+  .border-theme {
+    border-color: var(--gradient-from);
+  }
+
+  .bg-theme {
+    background-color: var(--gradient-from);
+  }
+
+  /* Theme-specific components */
+  .heading-gradient {
+    @apply text-3xl font-bold text-gradient-theme;
+  }
+
+  .subheading-theme {
+    @apply text-lg font-semibold text-theme;
+  }
+
+  .icon-theme {
+    @apply h-5 w-5 text-theme;
+  }
+
+  .card-title-theme {
+    @apply text-lg font-semibold text-theme;
+  }
+
+  .button-theme {
+    @apply bg-gradient-theme text-white hover:opacity-90;
+  }
 }
 
-/* Gradient text */
-.text-gradient-theme {
-  background-image: linear-gradient(
-    to right,
-    var(--gradient-from),
-    var(--gradient-to)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  display: inline-block;
-}
-
-/* Theme text color */
-.text-theme {
-  color: var(--gradient-from);
-}
-
-/* Theme hover text color */
-.hover\:text-theme:hover {
-  color: var(--gradient-from);
-}
-
-/* Theme border color */
-.border-theme {
-  border-color: var(--gradient-from);
-}
-
-/* Theme background color */
-.bg-theme {
-  background-color: var(--gradient-from);
-}
-
-/* Interactive elements */
-.hover\:bg-gradient-theme:hover {
-  background-image: linear-gradient(
-    to bottom right,
-    var(--gradient-from),
-    var(--gradient-via),
-    var(--gradient-to)
-  );
-}
-
-/* Ensure gradients work in all contexts */
+/* Fix rendering in all contexts */
 html, body, #root {
   background-color: var(--background);
   min-height: 100vh;
   width: 100%;
+  overflow-x: hidden;
 }
 
-/* Fix iframe display */
+/* Force proper rendering in iframes */
 iframe {
   background-color: transparent !important;
 }
