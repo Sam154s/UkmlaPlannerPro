@@ -110,7 +110,7 @@ export default function Settings() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="button-theme">Update Password</Button>
+              <Button type="submit" className="bg-gradient-theme text-white hover:opacity-90">Update Password</Button>
             </form>
           </Form>
         </CardContent>
@@ -140,9 +140,9 @@ export default function Settings() {
             <RadioGroup
               value={currentScheme.name}
               onValueChange={(value) => {
-                const scheme = colorSchemes.find(s => s.name === value);
-                if (scheme) {
-                  setColorScheme(scheme);
+                const selectedScheme = colorSchemes.find(s => s.name === value);
+                if (selectedScheme) {
+                  setColorScheme(selectedScheme);
                 }
               }}
               className="grid grid-cols-2 gap-4"
@@ -150,7 +150,9 @@ export default function Settings() {
               {colorSchemes.map((scheme) => (
                 <Label
                   key={scheme.name}
-                  className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer [&:has(:checked)]:border-theme"
+                  className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-all ${
+                    currentScheme.name === scheme.name ? 'border-theme ring-2 ring-theme/20' : ''
+                  }`}
                 >
                   <RadioGroupItem value={scheme.name} className="sr-only" />
                   <div className="flex-1">

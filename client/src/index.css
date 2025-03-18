@@ -29,11 +29,6 @@
   --gray-700: 55 65 81;
   --gray-600: 75 85 99;
   --gray-500: 107 114 128;
-
-  /* Force immediate application of theme */
-  color-scheme: light !important;
-  background-color: rgb(255 255 255) !important;
-  color: rgb(0 0 0) !important;
 }
 
 /* Application-wide theme styles */
