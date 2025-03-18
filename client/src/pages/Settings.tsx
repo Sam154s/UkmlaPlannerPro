@@ -138,10 +138,17 @@ export default function Settings() {
           <div className="space-y-4">
             <Label>Color Scheme</Label>
             <RadioGroup
-              defaultValue={currentScheme.name}
+              value={currentScheme.name}
               onValueChange={(value) => {
                 const scheme = colorSchemes.find(s => s.name === value);
-                if (scheme) setColorScheme(scheme);
+                if (scheme) {
+                  setColorScheme(scheme);
+                  // Add feedback toast
+                  toast({
+                    title: "Theme Updated",
+                    description: `Theme changed to ${scheme.name}`,
+                  });
+                }
               }}
               className="grid grid-cols-2 gap-4"
             >
