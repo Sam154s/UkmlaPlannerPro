@@ -140,7 +140,10 @@
     &::before {
       content: '';
       position: absolute;
-      inset: 0;
+      left: -100vw; /* Extend background fully to the left */
+      right: 0;
+      top: 0;
+      bottom: 0;
       z-index: -1;
       background-image: linear-gradient(
         to bottom right,
