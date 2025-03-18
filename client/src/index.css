@@ -140,7 +140,7 @@
     &::before {
       content: '';
       position: absolute;
-      left: -100vw; /* Extend background fully to the left */
+      left: 0; /* Extend background fully to the left */
       right: 0;
       top: 0;
       bottom: 0;
