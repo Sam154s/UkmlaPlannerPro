@@ -22,11 +22,19 @@
   color: #111827;
 }
 
+/* Make view toggle buttons smaller */
 .fc .fc-button {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.5rem;
   transition: all 0.2s;
+}
+
+/* Style Today button specifically */
+.fc .fc-today-button {
+  text-transform: capitalize;
+  font-weight: 600;
 }
 
 .fc .fc-timegrid {
