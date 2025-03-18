@@ -43,14 +43,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [currentScheme, setCurrentScheme] = useState<ColorScheme>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('colorScheme');
-      const userScheme = user?.colorScheme ? JSON.parse(user.colorScheme as string) : undefined;
+      const userScheme = user?.colorScheme ? JSON.parse(user.colorScheme as string) : null;
       return userScheme || (saved ? JSON.parse(saved) : defaultScheme);
     }
     return defaultScheme;
   });
 
+  // Apply theme colors to CSS variables
+  const applyThemeColors = (scheme: ColorScheme) => {
+    const root = document.documentElement;
+    root.style.setProperty('--gradient-from', `${scheme.from}`);
+    root.style.setProperty('--gradient-via', scheme.via ? `${scheme.via}` : '');
+    root.style.setProperty('--gradient-to', `${scheme.to}`);
+    root.style.setProperty('--primary', `${scheme.from}`);
+  };
+
   // Save theme preference to user profile when logged in
   const saveThemePreference = async (scheme: ColorScheme) => {
+    // Always save to localStorage first
+    localStorage.setItem('colorScheme', JSON.stringify(scheme));
+
+    // If user is logged in, save to their profile
     if (user) {
       try {
         await apiRequest("PATCH", "/api/user", {
@@ -64,8 +77,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         console.error("Failed to save theme preference:", error);
       }
     }
-    // Always save to localStorage as fallback
-    localStorage.setItem('colorScheme', JSON.stringify(scheme));
   };
 
   useEffect(() => {
@@ -78,23 +89,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [isDarkMode]);
 
   useEffect(() => {
-    // Ensure default scheme is applied immediately
     if (!currentScheme) {
       setCurrentScheme(defaultScheme);
       return;
     }
 
-    // Update CSS custom properties
-    document.documentElement.style.setProperty('--gradient-from', `var(--${currentScheme.from})`);
-    if (currentScheme.via) {
-      document.documentElement.style.setProperty('--gradient-via', `var(--${currentScheme.via})`);
-    } else {
-      document.documentElement.style.removeProperty('--gradient-via');
-    }
-    document.documentElement.style.setProperty('--gradient-to', `var(--${currentScheme.to})`);
-
-    // Update primary color
-    document.documentElement.style.setProperty('--primary', `var(--${currentScheme.from})`);
+    // Apply the theme colors immediately
+    applyThemeColors(currentScheme);
 
     // Save the preference
     saveThemePreference(currentScheme);
