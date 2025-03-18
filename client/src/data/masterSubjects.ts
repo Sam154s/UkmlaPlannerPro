@@ -8,11 +8,22 @@ export interface TopicRating {
 export interface Topic {
   name: string;
   ratings: TopicRating;
+  examMode?: {
+    isHighYield: boolean;
+    includeInExamRevision: boolean;
+  };
 }
 
 export interface Subject {
   name: string;
   topics: Topic[];
+}
+
+export interface ExamDate {
+  id: string;
+  date: string;
+  name: string;
+  subjects: string[];
 }
 
 export type SubjectsData = Subject[];

@@ -1,7 +1,12 @@
 {
   "variant": "professional",
-  "primary": "",
+  "primary": "#f43f5e",
   "appearance": "system",
   "radius": 1.0,
-  "defaultScheme": "Purple (Default)"
+  "defaultScheme": "Purple (Default)",
+  "examMode": {
+    "primary": "#ef4444",
+    "accent": "#f97316",
+    "warning": "#eab308"
+  }
 }

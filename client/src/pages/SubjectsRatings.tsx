@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Accordion,
   AccordionContent,
@@ -14,6 +15,11 @@ import masterSubjects, { Topic } from '@/data/masterSubjects';
 export default function SubjectsRatings() {
   const [ratings, setRatings] = useState(() => {
     const stored = localStorage.getItem('subjectRatings');
+    return stored ? JSON.parse(stored) : {};
+  });
+
+  const [examModeSettings, setExamModeSettings] = useState(() => {
+    const stored = localStorage.getItem('examModeSettings');
     return stored ? JSON.parse(stored) : {};
   });
 
@@ -37,6 +43,26 @@ export default function SubjectsRatings() {
     localStorage.setItem('subjectRatings', JSON.stringify(newRatings));
   };
 
+  const handleExamModeToggle = (
+    subject: string,
+    topicName: string,
+    isHighYield: boolean
+  ) => {
+    const newSettings = {
+      ...examModeSettings,
+      [subject]: {
+        ...examModeSettings[subject],
+        [topicName]: {
+          ...examModeSettings[subject]?.[topicName],
+          isHighYield,
+          includeInExamRevision: isHighYield
+        }
+      }
+    };
+    setExamModeSettings(newSettings);
+    localStorage.setItem('examModeSettings', JSON.stringify(newSettings));
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="space-y-2">
@@ -44,7 +70,7 @@ export default function SubjectsRatings() {
           Subjects & Ratings
         </h1>
         <p className="text-sm text-muted-foreground">
-          Adjust difficulty ratings for your subjects
+          Adjust difficulty ratings and exam mode settings for your subjects
         </p>
       </div>
 
@@ -64,7 +90,19 @@ export default function SubjectsRatings() {
               <div className="p-4 space-y-6">
                 {subject.topics.map((topic) => (
                   <div key={topic.name} className="space-y-4 border-b pb-4 last:border-0">
-                    <h3 className="font-medium">{topic.name}</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium">{topic.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <Label htmlFor={`exam-mode-${subject.name}-${topic.name}`} className="text-sm">
+                          High Yield
+                        </Label>
+                        <Switch
+                          id={`exam-mode-${subject.name}-${topic.name}`}
+                          checked={examModeSettings[subject.name]?.[topic.name]?.isHighYield ?? false}
+                          onCheckedChange={(checked) => handleExamModeToggle(subject.name, topic.name, checked)}
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-4">
                       {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
                         <div key={field} className="space-y-2">
