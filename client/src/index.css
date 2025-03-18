@@ -46,7 +46,12 @@
 
 /* Gradient backgrounds */
 .bg-gradient-theme {
-  background-image: linear-gradient(to bottom right, var(--gradient-from), var(--gradient-via), var(--gradient-to));
+  background-image: linear-gradient(
+    to bottom right,
+    var(--gradient-from),
+    var(--gradient-via),
+    var(--gradient-to)
+  );
 }
 
 /* Dark mode overrides */
