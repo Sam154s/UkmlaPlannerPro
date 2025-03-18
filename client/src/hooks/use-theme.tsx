@@ -18,6 +18,28 @@ export const colorSchemes: ColorScheme[] = [
   { name: 'Monochrome', from: 'gray-700', via: 'gray-600', to: 'gray-500' },
 ];
 
+// RGB value mappings
+const colorValues: Record<string, string> = {
+  'purple-600': '147 51 234',
+  'blue-600': '37 99 235',
+  'blue-500': '59 130 246',
+  'rose-500': '244 63 94',
+  'red-400': '248 113 113',
+  'pink-400': '244 114 182',
+  'amber-500': '245 158 11',
+  'orange-400': '251 146 60',
+  'yellow-400': '250 204 21',
+  'emerald-600': '5 150 105',
+  'green-600': '22 163 74',
+  'teal-500': '20 184 166',
+  'pink-600': '219 39 119',
+  'fuchsia-600': '192 38 211',
+  'pink-500': '236 72 153',
+  'gray-700': '55 65 81',
+  'gray-600': '75 85 99',
+  'gray-500': '107 114 128',
+};
+
 type ThemeContextType = {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
@@ -49,13 +71,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return defaultScheme;
   });
 
-  // Apply theme colors to CSS variables
+  // Apply theme colors to CSS variables using direct RGB values
   const applyThemeColors = (scheme: ColorScheme) => {
     const root = document.documentElement;
-    root.style.setProperty('--gradient-from', `${scheme.from}`);
-    root.style.setProperty('--gradient-via', scheme.via ? `${scheme.via}` : '');
-    root.style.setProperty('--gradient-to', `${scheme.to}`);
-    root.style.setProperty('--primary', `${scheme.from}`);
+    root.style.setProperty('--gradient-from', colorValues[scheme.from]);
+    if (scheme.via) {
+      root.style.setProperty('--gradient-via', colorValues[scheme.via]);
+    } else {
+      root.style.removeProperty('--gradient-via');
+    }
+    root.style.setProperty('--gradient-to', colorValues[scheme.to]);
+    root.style.setProperty('--primary', colorValues[scheme.from]);
   };
 
   // Save theme preference to user profile when logged in
