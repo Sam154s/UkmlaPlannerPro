@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type ColorScheme = {
   name: string;
@@ -26,6 +28,7 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('darkMode');
@@ -36,11 +39,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [currentScheme, setCurrentScheme] = useState<ColorScheme>(() => {
     if (typeof window !== 'undefined') {
+      // Try to get from localStorage first as a fallback
       const saved = localStorage.getItem('colorScheme');
-      return saved ? JSON.parse(saved) : colorSchemes[0];
+      // If user has a saved preference in their profile, use that
+      const userScheme = user?.colorScheme as ColorScheme | undefined;
+      return userScheme || (saved ? JSON.parse(saved) : colorSchemes[0]);
     }
     return colorSchemes[0];
   });
+
+  // Save theme preference to user profile when logged in
+  const saveThemePreference = async (scheme: ColorScheme) => {
+    if (user) {
+      try {
+        const updatedUser = await apiRequest("PATCH", "/api/user", {
+          colorScheme: scheme
+        });
+        queryClient.setQueryData(["/api/user"], updatedUser);
+      } catch (error) {
+        console.error("Failed to save theme preference:", error);
+      }
+    }
+    // Always save to localStorage as fallback
+    localStorage.setItem('colorScheme', JSON.stringify(scheme));
+  };
 
   useEffect(() => {
     if (isDarkMode) {
@@ -52,9 +74,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [isDarkMode]);
 
   useEffect(() => {
-    localStorage.setItem('colorScheme', JSON.stringify(currentScheme));
-
-    // Update CSS variables for the gradient
+    // Update CSS custom properties
     document.documentElement.style.setProperty('--gradient-from', `var(--${currentScheme.from})`);
     if (currentScheme.via) {
       document.documentElement.style.setProperty('--gradient-via', `var(--${currentScheme.via})`);
@@ -63,19 +83,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     document.documentElement.style.setProperty('--gradient-to', `var(--${currentScheme.to})`);
 
-    // Also update the primary color for buttons and other UI elements
-    document.documentElement.style.setProperty(
-      '--primary',
-      `var(--${currentScheme.from})`
-    );
-  }, [currentScheme]);
+    // Update primary color
+    document.documentElement.style.setProperty('--primary', `var(--${currentScheme.from})`);
 
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+    // Save the preference
+    saveThemePreference(currentScheme);
+  }, [currentScheme, user]);
 
   return (
     <ThemeContext.Provider value={{
       isDarkMode,
-      toggleDarkMode,
+      toggleDarkMode: () => setIsDarkMode(!isDarkMode),
       currentScheme,
       setColorScheme: setCurrentScheme,
     }}>

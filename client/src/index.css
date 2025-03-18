@@ -64,15 +64,17 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  display: inline-block;
 }
 
-/* Gradient border */
-.border-gradient-theme {
-  border-image: linear-gradient(
-    to right,
-    var(--gradient-from),
-    var(--gradient-to)
-  ) 1;
+/* Theme text color */
+.text-theme {
+  color: var(--gradient-from);
+}
+
+/* Border color */
+.border-theme {
+  border-color: var(--gradient-from);
 }
 
 /* Interactive elements */

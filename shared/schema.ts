@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   daysPerWeek: integer("days_per_week"),
   selectedSubjects: text("selected_subjects").array(),
   timetableEvents: jsonb("timetable_events"),
+  colorScheme: jsonb("color_scheme"), // Add color scheme preferences
 });
 
 // Schema for registering new users
