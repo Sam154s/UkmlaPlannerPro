@@ -160,7 +160,7 @@ export default function Settings() {
                       style={{
                         background: `linear-gradient(to right, rgb(var(--${scheme.from})), ${
                           scheme.via ? `rgb(var(--${scheme.via})),` : ''
-                        } rgb(var(--${scheme.to})))`,
+                        } rgb(var(--${scheme.to})))`
                       }}
                     />
                   </div>
