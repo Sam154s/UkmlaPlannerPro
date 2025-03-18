@@ -45,7 +45,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const userScheme = user?.colorScheme as ColorScheme | undefined;
       return userScheme || (saved ? JSON.parse(saved) : colorSchemes[0]);
     }
-    return colorSchemes[0];
+    return colorSchemes[0]; // Default to Purple scheme
   });
 
   // Save theme preference to user profile when logged in
