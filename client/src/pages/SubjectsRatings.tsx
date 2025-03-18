@@ -61,13 +61,13 @@ export default function SubjectsRatings() {
                 background: `linear-gradient(to right, rgb(var(--gradient-from) / 0.05), rgb(var(--gradient-from) / 0.1))`,
               }}
             >
-              <h2 className="text-lg font-semibold text-theme">{subject.name}</h2>
+              <h2 className="text-lg font-semibold">{subject.name}</h2>
             </AccordionTrigger>
             <AccordionContent>
               <div className="p-4 space-y-6">
                 {subject.topics.map((topic) => (
                   <div key={topic.name} className="space-y-4 border-b pb-4 last:border-0">
-                    <h3 className="font-medium text-theme">{topic.name}</h3>
+                    <h3 className="font-medium">{topic.name}</h3>
                     <div className="space-y-4">
                       {['difficulty', 'clinicalImportance', 'examRelevance'].map((field) => (
                         <div key={field} className="space-y-2">
