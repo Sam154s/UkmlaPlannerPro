@@ -1,0 +1,32 @@
+Please open or modify the "spiralAlgorithm" page. Here is the current code (from our last iteration):
+
+[PASTE YOUR CURRENT SPIRALALGORITHM CODE HERE]
+
+---
+
+I want you to enhance this code with the following updates:
+
+1. **More Complex Calendar Integration**  
+   - Introduce a structure or array for user events (e.g., classes, personal appointments). These events occupy certain dates and times in a week.  
+   - Ensure that study blocks do not overlap user events. If there’s no space left in a given day due to events, push the study blocks to the next available time slot or day.
+
+2. **Subject Coverage with Occasional Overlaps**  
+   - Keep the general flow of covering each subject in a “block” (i.e., do all conditions in one subject before moving on). However, we also want to occasionally interject a short block for underperforming conditions from other subjects, to reinforce spaced repetition.  
+   - The logic might look like this:
+     - While covering “Cardiology,” at certain intervals (e.g., after every 4 blocks in a single subject), pull in 1 block of underperforming conditions from another subject. Then resume the main subject.  
+     - This ensures we remain methodical but also re-visit tough material from other areas.
+
+3. **Underperforming Conditions Frequency**  
+   - If a subject or set of conditions has a low user performance score, schedule them more frequently during these interjections.  
+   - Continue to boost them until the user’s feedback rating improves.
+
+4. **Topic Count Edge Case**  
+   - If `TOPICS_PER_SESSION` is larger than the total number of conditions in the subject (or subject block), do **not** wrap around. Instead, only schedule the available conditions.  
+   - In other words, if a subject has 2 total conditions, but `TOPICS_PER_SESSION = 3`, just schedule those 2 conditions. Don’t cycle back to the first condition in the same block.
+
+5. **Other Key Points**  
+   - Preserve the pass-based approach (`passCoverage`).  
+   - Retain the existing code’s logic for favorite subjects, spaced repetition passes, sorting the final schedule by date/time, etc.  
+   - Please output the **final updated code** and then provide a **concise summary** of what you changed at the end.
+
+When finished, return only the updated code and a brief explanation, without extra text.

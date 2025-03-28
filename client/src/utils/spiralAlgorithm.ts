@@ -9,6 +9,7 @@ interface SpiralConfig {
   subjectsData: SubjectsData;
   userPerformance?: UserPerformance;
   passCoverage?: number; // Number of times each subject should be covered
+  userEvents?: UserEvent[]; // User events that should not be overlapped
   revisionCount?: number;
 }
 
@@ -16,6 +17,15 @@ interface SpiralConfig {
 export interface UserPerformance {
   subjects?: { [subjectName: string]: number }; // 0-1 value where 0 is struggling, 1 is mastery
   topics?: { [subjectAndTopic: string]: number }; // Format: "SubjectName: TopicName" => 0-1 score
+}
+
+// Represents a user-defined event that blocks a time slot
+export interface UserEvent {
+  name: string;
+  date: string; // ISO date string
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  recurringWeekly?: boolean; // Whether this event recurs weekly
 }
 
 interface StudyBlock {
@@ -30,6 +40,7 @@ interface StudyBlock {
   startTime: string;
   endTime: string;
   passNumber?: number; // Tracking which pass this block belongs to
+  isInterjection?: boolean; // Flag for blocks interjected from other subjects
 }
 
 interface SubjectWithPriority {
@@ -40,11 +51,21 @@ interface SubjectWithPriority {
   performanceMultiplier: number;
 }
 
+interface TimeSlot {
+  date: string;
+  startTime: string;
+  endTime: string;
+  hours: number;
+}
+
 const DAILY_START_TIME = "07:00";
+const DAILY_END_TIME = "22:00"; // End time for studying
 const TOPICS_PER_SESSION = 3;
 const FAVORITE_SUBJECT_PRIORITY_BOOST = 1.5;
 const LOW_PERFORMANCE_BOOST = 1.3; // Boost for subjects/topics user is struggling with
 const DEFAULT_PASS_COVERAGE = 3; // Default number of passes through all subjects
+const INTERJECTION_INTERVAL = 4; // Interject after every X blocks
+const POOR_PERFORMANCE_THRESHOLD = 0.4; // Threshold below which to consider poor performance
 
 // Helper function to calculate topic importance score
 function calculateTopicImportance(topic: any): number {
@@ -127,6 +148,171 @@ function getTopicsByPerformance(
   return topics;
 }
 
+// Get underperforming subject and its topics
+function getUnderperformingSubject(
+  subjectPriorities: SubjectWithPriority[],
+  currentSubjectName: string,
+  userPerformance?: UserPerformance
+): SubjectWithPriority | null {
+  // Filter out the current subject
+  const otherSubjects = subjectPriorities.filter(s => s.subject !== currentSubjectName);
+  if (otherSubjects.length === 0) return null;
+  
+  // Look for subjects with low performance scores
+  const poorPerformers = otherSubjects.filter(s => {
+    if (!userPerformance?.subjects) return false;
+    const performance = userPerformance.subjects[s.subject] ?? 0.5;
+    return performance < POOR_PERFORMANCE_THRESHOLD;
+  });
+  
+  // If there are poor performers, return the worst one
+  if (poorPerformers.length > 0) {
+    return poorPerformers.sort((a, b) => {
+      const perfA = userPerformance?.subjects?.[a.subject] ?? 0.5;
+      const perfB = userPerformance?.subjects?.[b.subject] ?? 0.5;
+      return perfA - perfB;
+    })[0];
+  }
+  
+  // Otherwise, return a random subject that isn't the current one
+  return otherSubjects[Math.floor(Math.random() * otherSubjects.length)];
+}
+
+// Check if a time slot overlaps with any user event
+function overlapsWithUserEvent(
+  slot: TimeSlot,
+  userEvents?: UserEvent[]
+): boolean {
+  if (!userEvents || userEvents.length === 0) return false;
+  
+  return userEvents.some(event => {
+    // For recurring events, check if the day of the week matches
+    if (event.recurringWeekly) {
+      const slotDate = new Date(slot.date);
+      const eventDate = new Date(event.date);
+      if (slotDate.getDay() !== eventDate.getDay()) return false;
+    } else {
+      // For non-recurring events, dates must match exactly
+      if (event.date !== slot.date) return false;
+    }
+    
+    // Check time overlap
+    const eventStart = timeToMinutes(event.startTime);
+    const eventEnd = timeToMinutes(event.endTime);
+    const slotStart = timeToMinutes(slot.startTime);
+    const slotEnd = timeToMinutes(slot.endTime);
+    
+    return (slotStart < eventEnd && slotEnd > eventStart);
+  });
+}
+
+// Convert time string (HH:MM) to minutes for comparison
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Find the next available time slot that doesn't overlap with user events
+function findNextAvailableSlot(
+  date: Date,
+  startTime: string,
+  hours: number,
+  hoursPerDay: number,
+  dailyHoursUsed: number,
+  availableDays: number[],
+  userEvents?: UserEvent[]
+): { slot: TimeSlot, newDate: Date, newDailyHoursUsed: number } {
+  let currentDate = new Date(date);
+  let currDailyHoursUsed = dailyHoursUsed;
+  
+  // Try to find a slot today
+  if (currDailyHoursUsed < hoursPerDay) {
+    const potentialSlot: TimeSlot = {
+      date: currentDate.toISOString().split('T')[0],
+      startTime: addHours(startTime, currDailyHoursUsed),
+      endTime: addHours(startTime, currDailyHoursUsed + hours),
+      hours
+    };
+    
+    if (!overlapsWithUserEvent(potentialSlot, userEvents)) {
+      return {
+        slot: potentialSlot,
+        newDate: currentDate,
+        newDailyHoursUsed: currDailyHoursUsed + hours
+      };
+    }
+    
+    // If slot overlaps, try to find another slot later today
+    const startTimeMinutes = timeToMinutes(potentialSlot.startTime);
+    const endTimeMinutes = timeToMinutes(DAILY_END_TIME);
+    let nextStartMinutes = startTimeMinutes;
+    
+    while (nextStartMinutes + hours * 60 <= endTimeMinutes) {
+      // Try 30-minute increments
+      nextStartMinutes += 30;
+      
+      const nextStartTime = minutesToTime(nextStartMinutes);
+      const nextEndTime = addHours(nextStartTime, hours);
+      
+      const nextSlot: TimeSlot = {
+        date: currentDate.toISOString().split('T')[0],
+        startTime: nextStartTime,
+        endTime: nextEndTime,
+        hours
+      };
+      
+      if (!overlapsWithUserEvent(nextSlot, userEvents)) {
+        // Calculate new daily hours used based on the end time
+        const newHoursUsed = (timeToMinutes(nextEndTime) - timeToMinutes(startTime)) / 60;
+        return {
+          slot: nextSlot,
+          newDate: currentDate,
+          newDailyHoursUsed: newHoursUsed > hoursPerDay ? hoursPerDay : newHoursUsed
+        };
+      }
+    }
+  }
+  
+  // If we couldn't find a slot today, try the next day
+  do {
+    currentDate.setDate(currentDate.getDate() + 1);
+  } while (!availableDays.includes(currentDate.getDay() || 7));
+  
+  // Start fresh in the morning
+  const nextDaySlot: TimeSlot = {
+    date: currentDate.toISOString().split('T')[0],
+    startTime: DAILY_START_TIME,
+    endTime: addHours(DAILY_START_TIME, hours),
+    hours
+  };
+  
+  // If this slot overlaps with events, recursively find the next one
+  if (overlapsWithUserEvent(nextDaySlot, userEvents)) {
+    return findNextAvailableSlot(
+      currentDate,
+      DAILY_START_TIME,
+      hours,
+      hoursPerDay,
+      0,
+      availableDays,
+      userEvents
+    );
+  }
+  
+  return {
+    slot: nextDaySlot,
+    newDate: currentDate,
+    newDailyHoursUsed: hours
+  };
+}
+
+// Convert minutes back to time string (HH:MM)
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
 // Main function to generate spiral timetable
 export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const { 
@@ -136,6 +322,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     favouriteSubjects, 
     subjectsData,
     userPerformance,
+    userEvents,
     passCoverage = DEFAULT_PASS_COVERAGE,
     revisionCount = 0 
   } = config;
@@ -188,85 +375,153 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       const blocksForThisPass = Math.ceil(subjectData.totalBlocks / passCoverage);
       let remainingBlocks = blocksForThisPass;
       let dailyHoursUsed = 0;
-      let currentDayIndex = 0;
+      let blockCount = 0; // Count blocks for interjection timing
       
       // Sort topics by performance for this subject - struggling topics first
       const sortedTopics = getTopicsByPerformance(subjectData, userPerformance);
 
       // Process blocks for this subject in this pass
       while (remainingBlocks > 0) {
-        // Check if we need to move to the next available day
-        if (dailyHoursUsed >= hoursPerDay || currentDayIndex >= daysPerWeek) {
-          currentDate.setDate(currentDate.getDate() + 1);
-          dailyHoursUsed = 0;
-          currentDayIndex = (currentDayIndex + 1) % daysPerWeek;
-          continue;
+        // Interject underperforming subject periodically
+        if (blockCount > 0 && blockCount % INTERJECTION_INTERVAL === 0) {
+          const underperformingSubject = getUnderperformingSubject(
+            subjectPriorities, 
+            subjectData.subject,
+            userPerformance
+          );
+          
+          if (underperformingSubject) {
+            const underperformingTopics = getTopicsByPerformance(underperformingSubject, userPerformance);
+            
+            // Find next available time slot
+            const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
+              currentDate,
+              DAILY_START_TIME,
+              1, // Just 1 hour for interjection
+              hoursPerDay,
+              dailyHoursUsed,
+              availableDays,
+              userEvents
+            );
+            
+            currentDate = newDate;
+            dailyHoursUsed = newDailyHoursUsed;
+            
+            // Create topics list for interjection - limited to available topics
+            const sessionTopics = [];
+            const availableTopicCount = Math.min(TOPICS_PER_SESSION, underperformingTopics.length);
+            
+            for (let i = 0; i < availableTopicCount; i++) {
+              sessionTopics.push({
+                name: underperformingTopics[i].name,
+                type: 'main' as const
+              });
+            }
+            
+            // Add connection topics if we have any main topics
+            if (sessionTopics.length > 0) {
+              const mainTopic = underperformingTopics[0];
+              const excludeTopics = sessionTopics.map(t => `${underperformingSubject.subject}: ${t.name}`);
+              const connections = findRelatedTopics(
+                underperformingSubject.subject,
+                mainTopic.name,
+                subjectsData,
+                excludeTopics
+              );
+              
+              sessionTopics.push({
+                name: mainTopic.name,
+                type: 'connection' as const,
+                connectionTopics: connections
+              });
+              
+              // Add the interjection block
+              blocks.push({
+                subject: underperformingSubject.subject,
+                topics: sessionTopics,
+                hours: 1,
+                date: slot.date,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                passNumber: pass,
+                isInterjection: true
+              });
+            }
+          }
         }
-
-        // Skip days not in availableDays
-        while (!availableDays.includes(currentDate.getDay() || 7)) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // Calculate remaining hours for the day
-        const remainingHoursToday = hoursPerDay - dailyHoursUsed;
-
-        // Determine block duration (prefer 2 hours, but allow 1 hour if needed)
-        const blockHours = Math.min(
-          remainingHoursToday >= 2 ? 2 : 1,
-          remainingBlocks * HOURS_PER_BLOCK
+        
+        // Find next available time slot for the main subject
+        const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
+          currentDate,
+          DAILY_START_TIME,
+          2, // Prefer 2 hours for main blocks
+          hoursPerDay,
+          dailyHoursUsed,
+          availableDays,
+          userEvents
         );
-
+        
+        currentDate = newDate;
+        dailyHoursUsed = newDailyHoursUsed;
+        
         // Calculate topics for this block based on the progress through this pass
         const passProgress = (blocksForThisPass - remainingBlocks) / blocksForThisPass;
         const topicStartIndex = Math.floor(passProgress * sortedTopics.length);
         const sessionTopics = [];
-
-        // Add main topics
-        for (let i = 0; i < TOPICS_PER_SESSION; i++) {
-          const topicIndex = (topicStartIndex + i) % sortedTopics.length;
+        
+        // Add main topics - limited to the number of available topics
+        const availableTopicCount = Math.min(TOPICS_PER_SESSION, sortedTopics.length);
+        
+        for (let i = 0; i < availableTopicCount; i++) {
+          // Don't wrap around if we don't have enough topics
+          const topicIndex = topicStartIndex + i;
+          if (topicIndex >= sortedTopics.length) break;
+          
           const topic = sortedTopics[topicIndex];
           sessionTopics.push({
             name: topic.name,
             type: 'main' as const
           });
         }
-
-        // Add connection topics
-        const mainTopic = sortedTopics[topicStartIndex];
-        const excludeTopics = sessionTopics.map(t => `${subjectData.subject}: ${t.name}`);
-        const connections = findRelatedTopics(
-          subjectData.subject,
-          mainTopic.name,
-          subjectsData,
-          excludeTopics
-        );
-
-        sessionTopics.push({
-          name: mainTopic.name,
-          type: 'connection' as const,
-          connectionTopics: connections
-        });
-
-        // Add block to schedule
+        
+        // Add connection topics if we have any main topics
+        if (sessionTopics.length > 0) {
+          const mainTopic = sortedTopics[topicStartIndex < sortedTopics.length ? topicStartIndex : 0];
+          const excludeTopics = sessionTopics.map(t => `${subjectData.subject}: ${t.name}`);
+          const connections = findRelatedTopics(
+            subjectData.subject,
+            mainTopic.name,
+            subjectsData,
+            excludeTopics
+          );
+          
+          sessionTopics.push({
+            name: mainTopic.name,
+            type: 'connection' as const,
+            connectionTopics: connections
+          });
+        }
+        
+        // Add the main block to schedule
         blocks.push({
           subject: subjectData.subject,
           topics: sessionTopics,
-          hours: blockHours,
-          date: currentDate.toISOString().split('T')[0],
-          startTime: addHours(DAILY_START_TIME, dailyHoursUsed),
-          endTime: addHours(DAILY_START_TIME, dailyHoursUsed + blockHours),
+          hours: slot.hours,
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
           passNumber: pass
         });
-
+        
         remainingBlocks--;
-        dailyHoursUsed += blockHours;
+        blockCount++;
       }
     }
-
+    
     // Add a brief break between passes if we're not on the last pass
     if (pass < passCoverage) {
       currentDate.setDate(currentDate.getDate() + 1);
+      dailyHoursUsed = 0;
     }
   }
 
