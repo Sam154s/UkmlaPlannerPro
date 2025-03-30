@@ -224,6 +224,7 @@ function findNextAvailableSlot(
 ): { slot: TimeSlot, newDate: Date, newDailyHoursUsed: number } {
   let currentDate = new Date(date);
   let currDailyHoursUsed = dailyHoursUsed;
+  let requestedHours = hours; // Store the originally requested hours
   
   // Try to find a slot today
   if (currDailyHoursUsed < hoursPerDay) {
@@ -247,9 +248,10 @@ function findNextAvailableSlot(
     const endTimeMinutes = timeToMinutes(DAILY_END_TIME);
     let nextStartMinutes = startTimeMinutes;
     
+    // Try 1-minute increments for more precise scheduling
     while (nextStartMinutes + hours * 60 <= endTimeMinutes) {
-      // Try 30-minute increments
-      nextStartMinutes += 30;
+      // Try 1-minute increments
+      nextStartMinutes += 1;
       
       const nextStartTime = minutesToTime(nextStartMinutes);
       const nextEndTime = addHours(nextStartTime, hours);
@@ -271,6 +273,20 @@ function findNextAvailableSlot(
         };
       }
     }
+    
+    // If we couldn't find a slot with the requested hours, 
+    // and this is a main block (2 hours), try with 1 hour instead
+    if (hours === 2) {
+      return findNextAvailableSlot(
+        currentDate,
+        startTime,
+        1, // Fallback to 1 hour
+        hoursPerDay,
+        dailyHoursUsed,
+        availableDays,
+        userEvents
+      );
+    }
   }
   
   // If we couldn't find a slot today, try the next day
@@ -278,12 +294,12 @@ function findNextAvailableSlot(
     currentDate.setDate(currentDate.getDate() + 1);
   } while (!availableDays.includes(currentDate.getDay() || 7));
   
-  // Start fresh in the morning
+  // Start fresh in the morning with the originally requested hours
   const nextDaySlot: TimeSlot = {
     date: currentDate.toISOString().split('T')[0],
     startTime: DAILY_START_TIME,
-    endTime: addHours(DAILY_START_TIME, hours),
-    hours
+    endTime: addHours(DAILY_START_TIME, requestedHours),
+    hours: requestedHours
   };
   
   // If this slot overlaps with events, recursively find the next one
@@ -291,7 +307,7 @@ function findNextAvailableSlot(
     return findNextAvailableSlot(
       currentDate,
       DAILY_START_TIME,
-      hours,
+      requestedHours,
       hoursPerDay,
       0,
       availableDays,
@@ -302,7 +318,7 @@ function findNextAvailableSlot(
   return {
     slot: nextDaySlot,
     newDate: currentDate,
-    newDailyHoursUsed: hours
+    newDailyHoursUsed: requestedHours
   };
 }
 
