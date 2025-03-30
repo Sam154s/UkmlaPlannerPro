@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import timelinePlugin from '@fullcalendar/timeline';
 import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
@@ -12,26 +13,194 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { RefreshCw, Calendar as CalendarIcon, PlusCircle, Sparkles } from "lucide-react";
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
+import { UserEvent, UserPerformance } from '@/utils/spiralAlgorithm';
+import { cn } from '@/lib/utils';
 import '../styles/calendar.css';
 
+// Types
+interface UserPreferences {
+  weeklyHours: number;
+  yearGroup: number;
+  daysPerWeek: number;
+  selectedSubjects: string[];
+}
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  allDay?: boolean;
+  classNames?: string[];
+  extendedProps?: {
+    topics?: any[];
+    isHoliday?: boolean;
+  };
+}
+
+const DEFAULT_PREFERENCES: UserPreferences = {
+  weeklyHours: 10,
+  yearGroup: 1,
+  daysPerWeek: 5,
+  selectedSubjects: [],
+};
+
+const STORAGE_KEYS = {
+  PREFERENCES: 'study-preferences',
+  HOLIDAYS: 'holiday-events',
+  USER_EVENTS: 'user-events',
+  USER_PERFORMANCE: 'user-performance',
+};
+
+// Generate a random ID for events
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
 export default function Timetable() {
-  const [weeklyHours, setWeeklyHours] = useState(10);
-  const [yearGroup, setYearGroup] = useState(1);
-  const [daysPerWeek, setDaysPerWeek] = useState(5);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
+  // State for user preferences
+  const [weeklyHours, setWeeklyHours] = useState(DEFAULT_PREFERENCES.weeklyHours);
+  const [yearGroup, setYearGroup] = useState(DEFAULT_PREFERENCES.yearGroup);
+  const [daysPerWeek, setDaysPerWeek] = useState(DEFAULT_PREFERENCES.daysPerWeek);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(DEFAULT_PREFERENCES.selectedSubjects);
+  
+  // State for events and calendar
+  const [studyEvents, setStudyEvents] = useState<CalendarEvent[]>([]);
+  const [holidayEvents, setHolidayEvents] = useState<CalendarEvent[]>([]);
+  const [userEvents, setUserEvents] = useState<UserEvent[]>([]);
   const [revisionCount, setRevisionCount] = useState(0);
   const [calendarRef, setCalendarRef] = useState<any>(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  // State for holidays
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [newHolidayStartDate, setNewHolidayStartDate] = useState<Date | undefined>(undefined);
+  const [newHolidayEndDate, setNewHolidayEndDate] = useState<Date | undefined>(undefined);
+  
+  // State for user performance (placeholder for AI-related features)
+  const [userPerformance, setUserPerformance] = useState<UserPerformance>({
+    subjects: {},
+    topics: {},
+  });
+
+  // Loaded flag to prevent multiple loads
+  const preferencesLoaded = useRef(false);
+
+  // Handle window resize for responsive design
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Load saved preferences on first mount
+  useEffect(() => {
+    if (preferencesLoaded.current) return;
+    
+    // Load user preferences
+    const savedPreferences = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+    if (savedPreferences) {
+      try {
+        const parsedPreferences = JSON.parse(savedPreferences) as UserPreferences;
+        setWeeklyHours(parsedPreferences.weeklyHours);
+        setYearGroup(parsedPreferences.yearGroup);
+        setDaysPerWeek(parsedPreferences.daysPerWeek);
+        setSelectedSubjects(parsedPreferences.selectedSubjects);
+      } catch (error) {
+        console.error('Failed to parse saved preferences', error);
+      }
+    }
+
+    // Load saved holidays
+    const savedHolidays = localStorage.getItem(STORAGE_KEYS.HOLIDAYS);
+    if (savedHolidays) {
+      try {
+        setHolidayEvents(JSON.parse(savedHolidays));
+      } catch (error) {
+        console.error('Failed to parse saved holidays', error);
+      }
+    }
+
+    // Load user events
+    const savedUserEvents = localStorage.getItem(STORAGE_KEYS.USER_EVENTS);
+    if (savedUserEvents) {
+      try {
+        setUserEvents(JSON.parse(savedUserEvents));
+      } catch (error) {
+        console.error('Failed to parse saved user events', error);
+      }
+    }
+
+    // Load user performance data
+    const savedPerformance = localStorage.getItem(STORAGE_KEYS.USER_PERFORMANCE);
+    if (savedPerformance) {
+      try {
+        setUserPerformance(JSON.parse(savedPerformance));
+      } catch (error) {
+        console.error('Failed to parse saved performance data', error);
+      }
+    }
+
+    preferencesLoaded.current = true;
+
+    // Generate timetable with saved preferences if subjects are selected
+    setTimeout(() => {
+      if (selectedSubjects.length > 0) {
+        handleGenerate();
+      }
+    }, 500);
+  }, []);
+
+  // Save preferences whenever they change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+
+    const preferencesToSave: UserPreferences = {
+      weeklyHours,
+      yearGroup,
+      daysPerWeek,
+      selectedSubjects,
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferencesToSave));
+  }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects]);
+
+  // Save holidays when they change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+    localStorage.setItem(STORAGE_KEYS.HOLIDAYS, JSON.stringify(holidayEvents));
+  }, [holidayEvents]);
+
+  // Save user events when they change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+    localStorage.setItem(STORAGE_KEYS.USER_EVENTS, JSON.stringify(userEvents));
+  }, [userEvents]);
+  
+  // Calendar midnight refresh
   useEffect(() => {
     if (!calendarRef) return;
 
@@ -51,27 +220,35 @@ export default function Timetable() {
     return () => clearInterval(interval);
   }, [calendarRef]);
 
+  // Generate timetable based on current settings
   const handleGenerate = () => {
+    // Create blocks with the spiral algorithm
     const blocks = generateSpiralTimetable({
       weeklyStudyHours: weeklyHours,
       yearGroup,
       daysPerWeek,
       favouriteSubjects: selectedSubjects,
       subjectsData: masterSubjects,
+      userEvents, // Pass user events to avoid scheduling conflicts
+      userPerformance, // Pass performance data for adaptive scheduling
       revisionCount: revisionCount
     });
 
+    // Convert blocks to calendar events
     const calendarEvents = blocks.map(block => ({
+      id: generateId(),
       title: block.subject,
       start: `${block.date}T${block.startTime}`,
       end: `${block.date}T${block.endTime}`,
       backgroundColor: getSubjectColor(block.subject),
+      borderColor: block.isInterjection ? '#ffffff' : getSubjectColor(block.subject),
+      classNames: block.isInterjection ? ['interjection-event'] : undefined,
       extendedProps: {
         topics: block.topics
       }
     }));
 
-    setEvents(calendarEvents);
+    setStudyEvents(calendarEvents);
     setRevisionCount(prev => prev + 1);
 
     if (calendarRef) {
@@ -80,106 +257,369 @@ export default function Timetable() {
     }
   };
 
+  // Handle event drag and drop
   const handleEventDrop = (eventDropInfo: any) => {
     const { event } = eventDropInfo;
-    setEvents(prev => prev.map((ev: any) => {
-      if (ev.start === event.oldStart && ev.end === event.oldEnd) {
-        return {
-          ...ev,
-          start: event.start,
-          end: event.end
-        };
-      }
-      return ev;
-    }));
+    
+    if (event.extendedProps.isHoliday) {
+      // Handle holiday event drop
+      setHolidayEvents(prev => prev.map(ev => {
+        if (ev.id === event.id) {
+          return {
+            ...ev,
+            start: event.start.toISOString(),
+            end: event.end ? event.end.toISOString() : event.start.toISOString(),
+          };
+        }
+        return ev;
+      }));
+    } else {
+      // Handle study event drop
+      setStudyEvents(prev => prev.map(ev => {
+        if (ev.id === event.id) {
+          return {
+            ...ev,
+            start: event.start.toISOString(),
+            end: event.end ? event.end.toISOString() : event.start.toISOString(),
+          };
+        }
+        return ev;
+      }));
+    }
   };
 
+  // Add a new holiday
+  const handleAddHoliday = () => {
+    if (!newHolidayName || !newHolidayStartDate) return;
+    
+    const endDate = newHolidayEndDate || newHolidayStartDate;
+    
+    // Create array of dates between start and end
+    const dates: Date[] = [];
+    const currentDate = new Date(newHolidayStartDate);
+    const lastDate = new Date(endDate);
+    
+    while (currentDate <= lastDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Create a holiday event for each day
+    const newHolidays = dates.map(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      return {
+        id: generateId(),
+        title: newHolidayName,
+        start: `${dateStr}T00:00:00`,
+        end: `${dateStr}T23:59:59`,
+        allDay: true,
+        backgroundColor: '#f43f5e',
+        borderColor: '#e11d48',
+        textColor: '#ffffff',
+        extendedProps: {
+          isHoliday: true
+        }
+      };
+    });
+    
+    setHolidayEvents(prev => [...prev, ...newHolidays]);
+    
+    // Convert to UserEvent format to block scheduling
+    const newUserEvents: UserEvent[] = dates.map(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      return {
+        name: newHolidayName,
+        date: dateStr,
+        startTime: '00:00',
+        endTime: '23:59',
+        recurringWeekly: false
+      };
+    });
+    
+    setUserEvents(prev => [...prev, ...newUserEvents]);
+    
+    // Reset form
+    setNewHolidayName('');
+    setNewHolidayStartDate(undefined);
+    setNewHolidayEndDate(undefined);
+  };
+  
+  // Run AI reflow (placeholder function for future implementation)
+  const handleAiReflow = () => {
+    // This would integrate with OpenAI or other AI service
+    // For now, just re-run the generation algorithm
+    handleGenerate();
+  };
+
+  // Get color for a subject
   const getSubjectColor = (subject: string) => {
     const colors = {
       "Acute and emergency": '#8b5cf6',
       "Cancer": '#6366f1',
       "Cardiovascular": '#3b82f6',
       "Child health": '#06b6d4',
-      "Neuroscience": '#0ea5e9'
+      "Neuroscience": '#0ea5e9',
+      "Dermatology": '#14b8a6',
+      "Endocrinology": '#10b981',
+      "Gastroenterology": '#22c55e',
+      "General surgery": '#84cc16',
+      "Genito-urinary": '#eab308',
+      "Gynaecology": '#f59e0b',
+      "Haematology": '#f97316',
+      "Immunology": '#ef4444',
+      "Infectious diseases": '#f43f5e',
+      "Mental health": '#ec4899',
+      "Obstetrics": '#d946ef',
+      "Ophthalmology": '#a855f7',
+      "Otolaryngology": '#8b5cf6',
+      "Palliative care": '#a78bfa',
+      "Pharmacology": '#c084fc',
+      "Plastic surgery": '#e879f9',
+      "Rehabilitation": '#f472b6',
+      "Renal": '#fb7185',
+      "Respiratory": '#fda4af',
+      "Rheumatology": '#fecdd3',
     };
     return colors[subject as keyof typeof colors] || '#666';
   };
 
+  // Get calendar views based on screen size - now returns a properly typed object
   const getAvailableViews = () => {
-    if (windowWidth < 640) {
-      return {
-        timeGridDay: { buttonText: 'Day' }
-      };
-    }
-    return {
-      timeGridDay: { buttonText: 'Day' },
-      timeGridWeek: { buttonText: 'Week' },
-      dayGridMonth: { buttonText: 'Month' }
-    };
+    const views: Record<string, any> = windowWidth < 640 
+      ? { timeGridDay: { buttonText: 'Day' } }
+      : {
+          timeGridDay: { buttonText: 'Day' },
+          timeGridWeek: { buttonText: 'Week' },
+          dayGridMonth: { buttonText: 'Month' },
+          timelineWeek: { buttonText: 'Timeline' }
+        };
+    
+    return views;
   };
 
+  // Combine study events and holidays for the calendar
+  const allEvents = [...studyEvents, ...holidayEvents];
+
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-gradient-theme">
-          Study Planner
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Configure your study schedule
-        </p>
-        {revisionCount > 0 && (
-          <p className="text-sm">
-            Revision cycle: {revisionCount}
-          </p>
-        )}
-      </div>
+    <div className="container mx-auto p-4 space-y-4 max-w-full h-[calc(100vh-80px)] flex flex-col">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gradient-theme">
+            Study Planner
+          </h1>
+          {revisionCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Revision cycle: {revisionCount}
+            </p>
+          )}
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {/* Holiday Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex gap-2 items-center">
+                <CalendarIcon className="h-4 w-4" />
+                <span>Add Holiday</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Holiday Period</DialogTitle>
+                <DialogDescription>
+                  Block out dates for holidays. No study sessions will be scheduled during these times.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">Name</Label>
+                  <Input 
+                    id="name" 
+                    value={newHolidayName}
+                    onChange={e => setNewHolidayName(e.target.value)}
+                    className="col-span-3" 
+                    placeholder="e.g., Summer Break" 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">Start Date</Label>
+                  <div className="col-span-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !newHolidayStartDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newHolidayStartDate ? (
+                            newHolidayStartDate.toLocaleDateString()
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newHolidayStartDate}
+                          onSelect={setNewHolidayStartDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">End Date</Label>
+                  <div className="col-span-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !newHolidayEndDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newHolidayEndDate ? (
+                            newHolidayEndDate.toLocaleDateString()
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newHolidayEndDate}
+                          onSelect={setNewHolidayEndDate}
+                          initialFocus
+                          disabled={(date) => 
+                            newHolidayStartDate ? date < newHolidayStartDate : false
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button onClick={handleAddHoliday} disabled={!newHolidayName || !newHolidayStartDate}>
+                    Add Holiday
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Settings Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">Settings</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[725px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Study Settings</DialogTitle>
+                <DialogDescription>
+                  Configure your study preferences and subject selections.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                <StudyConfig
+                  weeklyHours={weeklyHours}
+                  yearGroup={yearGroup}
+                  daysPerWeek={daysPerWeek}
+                  onWeeklyHoursChange={setWeeklyHours}
+                  onYearGroupChange={setYearGroup}
+                  onDaysPerWeekChange={setDaysPerWeek}
+                />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StudyConfig
-          weeklyHours={weeklyHours}
-          yearGroup={yearGroup}
-          daysPerWeek={daysPerWeek}
-          onWeeklyHoursChange={setWeeklyHours}
-          onYearGroupChange={setYearGroup}
-          onDaysPerWeekChange={setDaysPerWeek}
-        />
-
-        <div className="space-y-4">
-          <SelectSubjects
-            subjects={masterSubjects.map(subject => subject.name)}
-            selectedSubjects={selectedSubjects}
-            onChange={setSelectedSubjects}
-          />
-
-          <Button
-            className="w-full button-theme"
+                <div className="space-y-4">
+                  <SelectSubjects
+                    subjects={masterSubjects.map(subject => subject.name)}
+                    selectedSubjects={selectedSubjects}
+                    onChange={setSelectedSubjects}
+                  />
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button 
+                    onClick={handleGenerate} 
+                    disabled={weeklyHours <= 0 || selectedSubjects.length === 0}
+                    className="button-theme"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Generate Timetable
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Quick Generate Button */}
+          <Button 
+            className="button-theme"
             onClick={handleGenerate}
-            disabled={weeklyHours <= 0}
+            disabled={weeklyHours <= 0 || selectedSubjects.length === 0}
           >
-            Generate Timetable
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Generate
+          </Button>
+          
+          {/* AI Reflow Button */}
+          <Button 
+            variant="outline"
+            className="border-theme/30 hover:bg-theme/5 text-theme"
+            onClick={handleAiReflow}
+            disabled={studyEvents.length === 0}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Reflow with AI
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg border border-theme/10">
+      {/* Full-Page Calendar */}
+      <div className="flex-1 min-h-0 bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden">
         <FullCalendar
           ref={setCalendarRef}
-          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, timelinePlugin]}
           initialView={windowWidth < 640 ? "timeGridDay" : "timeGridWeek"}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
-            right: windowWidth < 640 ? 'timeGridDay' : 'timeGridDay,timeGridWeek,dayGridMonth'
+            right: windowWidth < 640 
+              ? 'timeGridDay' 
+              : 'timeGridDay,timeGridWeek,dayGridMonth,timelineWeek'
           }}
-          views={getAvailableViews()}
-          events={events}
+          // Apply views with as any to avoid type issues with the views prop
+          views={getAvailableViews() as any}
+          events={allEvents}
           eventContent={renderEventContent}
           editable={true}
           eventDrop={handleEventDrop}
-          allDaySlot={false}
-          slotMinTime="07:00:00"
+          allDaySlot={true}
+          slotMinTime="06:00:00"
           slotMaxTime="23:00:00"
-          height="auto"
+          height="100%"
           expandRows={true}
           stickyHeaderDates={true}
           weekends={true}
@@ -190,6 +630,13 @@ export default function Timetable() {
             minute: '2-digit',
             hour12: true
           }}
+          viewClassNames="modern-fullcalendar-view"
+          slotLaneClassNames="modern-fullcalendar-lane"
+          eventClassNames="modern-fullcalendar-event"
+          dayHeaderClassNames="modern-fullcalendar-header"
+          buttonText={{
+            today: 'T' // Capital T for today button
+          }}
         />
       </div>
     </div>
@@ -197,22 +644,32 @@ export default function Timetable() {
 }
 
 function renderEventContent(eventInfo: any) {
-  const topics = eventInfo.event.extendedProps.topics;
+  const event = eventInfo.event;
+  const topics = event.extendedProps?.topics;
+  const isHoliday = event.extendedProps?.isHoliday;
+  
+  if (isHoliday) {
+    return (
+      <div className="w-full h-full p-1 flex items-center justify-center text-white">
+        <div className="text-sm font-semibold">{event.title}</div>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="w-full h-full p-1">
-            <div className="text-sm font-semibold">{eventInfo.event.title}</div>
-            {topics.length > 0 && (
+            <div className="text-sm font-semibold">{event.title}</div>
+            {topics && topics.length > 0 && (
               <div className="text-xs mt-1 opacity-90">
                 {topics[0].name}...
               </div>
             )}
           </div>
         </TooltipTrigger>
-        {topics.length > 0 && (
+        {topics && topics.length > 0 && (
           <TooltipContent className="w-64 bg-white/95 backdrop-blur-sm border shadow-lg">
             <div className="space-y-2">
               <p className="font-semibold text-sm">Topics:</p>

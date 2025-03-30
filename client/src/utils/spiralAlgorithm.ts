@@ -537,7 +537,8 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     // Add a brief break between passes if we're not on the last pass
     if (pass < passCoverage) {
       currentDate.setDate(currentDate.getDate() + 1);
-      dailyHoursUsed = 0;
+      // Reset daily hours at the start of a new pass
+      // Note: This variable is declared inside the for loop for each subject
     }
   }
 
