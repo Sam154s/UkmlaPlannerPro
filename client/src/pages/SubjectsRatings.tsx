@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -22,6 +22,40 @@ export default function SubjectsRatings() {
     const stored = localStorage.getItem('examModeSettings');
     return stored ? JSON.parse(stored) : {};
   });
+  
+  // Load data from backend on component mount
+  useEffect(() => {
+    const loadBackendData = async () => {
+      try {
+        const apiModule = await import('../lib/api');
+        const { api } = apiModule;
+        
+        // Load subject ratings
+        api.subjects.get()
+          .then(data => {
+            if (data?.ratings) {
+              setRatings(data.ratings);
+              localStorage.setItem('subjectRatings', JSON.stringify(data.ratings));
+            }
+          })
+          .catch(err => console.error('Error loading subject ratings:', err));
+        
+        // Load exam mode settings
+        api.exams.get()
+          .then(data => {
+            if (data?.examModeSettings) {
+              setExamModeSettings(data.examModeSettings);
+              localStorage.setItem('examModeSettings', JSON.stringify(data.examModeSettings));
+            }
+          })
+          .catch(err => console.error('Error loading exam settings:', err));
+      } catch (error) {
+        console.error('Error importing API module:', error);
+      }
+    };
+    
+    loadBackendData();
+  }, []);
 
   const handleRatingChange = (
     subject: string,
@@ -41,6 +75,16 @@ export default function SubjectsRatings() {
     };
     setRatings(newRatings);
     localStorage.setItem('subjectRatings', JSON.stringify(newRatings));
+    
+    // Save to backend API
+    try {
+      import('../lib/api').then(({ api }) => {
+        api.subjects.save({ ratings: newRatings })
+          .catch(err => console.error('Error saving subject ratings to API:', err));
+      });
+    } catch (error) {
+      console.error('Error importing API module:', error);
+    }
   };
 
   const handleExamModeToggle = (
@@ -61,6 +105,16 @@ export default function SubjectsRatings() {
     };
     setExamModeSettings(newSettings);
     localStorage.setItem('examModeSettings', JSON.stringify(newSettings));
+    
+    // Save to backend API
+    try {
+      import('../lib/api').then(({ api }) => {
+        api.exams.save({ examModeSettings: newSettings })
+          .catch(err => console.error('Error saving exam mode settings to API:', err));
+      });
+    } catch (error) {
+      console.error('Error importing API module:', error);
+    }
   };
 
   return (

@@ -30,6 +30,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
 
+  // Timetable data endpoints
+  app.get("/api/timetable", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      const timetableData = await storage.getTimetableData(userId);
+      res.json(timetableData || {});
+    } catch (error) {
+      console.error("Error fetching timetable data:", error);
+      res.status(500).json({ message: "Failed to fetch timetable data" });
+    }
+  });
+  
+  app.post("/api/timetable", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      await storage.saveTimetableData(userId, req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving timetable data:", error);
+      res.status(500).json({ message: "Failed to save timetable data" });
+    }
+  });
+  
+  // Subject ratings endpoints
+  app.get("/api/subjects/ratings", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      const subjectRatings = await storage.getSubjectRatings(userId);
+      res.json(subjectRatings || {});
+    } catch (error) {
+      console.error("Error fetching subject ratings:", error);
+      res.status(500).json({ message: "Failed to fetch subject ratings" });
+    }
+  });
+  
+  app.post("/api/subjects/ratings", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      await storage.saveSubjectRatings(userId, req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving subject ratings:", error);
+      res.status(500).json({ message: "Failed to save subject ratings" });
+    }
+  });
+  
+  // Exam settings endpoints
+  app.get("/api/exams", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      const examSettings = await storage.getExamSettings(userId);
+      res.json(examSettings || {});
+    } catch (error) {
+      console.error("Error fetching exam settings:", error);
+      res.status(500).json({ message: "Failed to fetch exam settings" });
+    }
+  });
+  
+  app.post("/api/exams", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      await storage.saveExamSettings(userId, req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving exam settings:", error);
+      res.status(500).json({ message: "Failed to save exam settings" });
+    }
+  });
+  
+  // User performance data endpoints
+  app.get("/api/performance", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      const performanceData = await storage.getPerformanceData(userId);
+      res.json(performanceData || {});
+    } catch (error) {
+      console.error("Error fetching performance data:", error);
+      res.status(500).json({ message: "Failed to fetch performance data" });
+    }
+  });
+  
+  app.post("/api/performance", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      await storage.savePerformanceData(userId, req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving performance data:", error);
+      res.status(500).json({ message: "Failed to save performance data" });
+    }
+  });
+
   app.post("/api/chat", async (req, res) => {
     try {
       const { message } = req.body;

@@ -120,6 +120,7 @@ export default function Timetable() {
   useEffect(() => {
     if (preferencesLoaded.current) return;
     
+    // First load from localStorage for offline functionality
     // Load user preferences
     const savedPreferences = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
     if (savedPreferences) {
@@ -164,6 +165,54 @@ export default function Timetable() {
       }
     }
 
+    // Then try to load from backend API
+    const loadBackendData = async () => {
+      try {
+        const apiModule = await import('../lib/api');
+        const { api } = apiModule;
+        
+        // Load timetable data
+        api.timetable.get()
+          .then(data => {
+            if (data) {
+              // Update preferences if available
+              if (data.preferences) {
+                setWeeklyHours(data.preferences.weeklyHours);
+                setYearGroup(data.preferences.yearGroup);
+                setDaysPerWeek(data.preferences.daysPerWeek);
+                setSelectedSubjects(data.preferences.selectedSubjects);
+                localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(data.preferences));
+              }
+              
+              // Update study events if available
+              if (data.studyEvents && data.studyEvents.length > 0) {
+                setStudyEvents(data.studyEvents);
+              }
+              
+              // Update holiday events if available
+              if (data.holidayEvents && data.holidayEvents.length > 0) {
+                setHolidayEvents(data.holidayEvents);
+                localStorage.setItem(STORAGE_KEYS.HOLIDAYS, JSON.stringify(data.holidayEvents));
+              }
+            }
+          })
+          .catch(err => console.error('Error loading timetable data:', err));
+        
+        // Load user performance data
+        api.performance.get()
+          .then(data => {
+            if (data) {
+              setUserPerformance(data);
+              localStorage.setItem(STORAGE_KEYS.USER_PERFORMANCE, JSON.stringify(data));
+            }
+          })
+          .catch(err => console.error('Error loading user performance data:', err));
+      } catch (error) {
+        console.error('Error importing API module:', error);
+      }
+    };
+    
+    loadBackendData();
     preferencesLoaded.current = true;
 
     // Generate timetable with saved preferences if subjects are selected
@@ -185,8 +234,22 @@ export default function Timetable() {
       selectedSubjects,
     };
 
+    // Save to localStorage for offline functionality
     localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferencesToSave));
-  }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects]);
+    
+    // Optional: Save to backend API
+    try {
+      import('../lib/api').then(({ api }) => {
+        api.timetable.save({ 
+          preferences: preferencesToSave,
+          studyEvents,
+          holidayEvents 
+        }).catch(err => console.error('Error saving timetable to API:', err));
+      });
+    } catch (error) {
+      console.error('Error importing API module:', error);
+    }
+  }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects, studyEvents, holidayEvents]);
 
   // Save holidays when they change
   useEffect(() => {
