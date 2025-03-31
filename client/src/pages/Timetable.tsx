@@ -64,9 +64,9 @@ interface CalendarEvent {
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
-  weeklyHours: 10,
-  yearGroup: 1,
-  daysPerWeek: 5,
+  weeklyHours: 0,
+  yearGroup: 0,
+  daysPerWeek: 0,
   selectedSubjects: [],
 };
 
