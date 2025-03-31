@@ -1610,7 +1610,7 @@ const masterSubjects: SubjectsData = [
     ]
   },
   {
-    "name": "Neuroscience",
+    "name": "Neurosciences",
     "topics": [
       {
         "name": "Acoustic neuroma",
@@ -2547,7 +2547,7 @@ const masterSubjects: SubjectsData = [
     ]
   },
   {
-    "name": "MSK",
+    "name": "Musculoskeletal",
     "topics": [
       {
         "name": "Ankylosing spondylitis",
@@ -3330,7 +3330,7 @@ const masterSubjects: SubjectsData = [
     ]
   },
   {
-    "name": "GI",
+    "name": "Gastroenterology",
     "topics": [
       {
         "name": "Acute cholangitis",
@@ -3756,7 +3756,7 @@ const masterSubjects: SubjectsData = [
     ]
   },
   {
-    "name": "GP",
+    "name": "General Practice",
     "topics": [
       {
         "name": "Acne vulgaris",
@@ -4465,7 +4465,7 @@ const masterSubjects: SubjectsData = [
     ]
   },
   {
-    "name": "Obs/Gyn",
+    "name": "Obstetrics and gynaecology",
     "topics": [
       {
         "name": "Anaemia",
@@ -5551,7 +5551,7 @@ const masterSubjects: SubjectsData = [
     ]
   },
   {
-    "name": "Periop and anaesthetics",
+    "name": "Perioperative and anaesthetics",
     "topics": [
       {
         "name": "Acute kidney injury",

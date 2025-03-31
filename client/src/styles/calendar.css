@@ -211,8 +211,8 @@
   margin: 0.25rem 0;
 }
 
-/* Pastel color palette for different subjects */
-.fc-event[style*="background-color: rgb(139, 92, 246)"] { /* Acute and Emergency */
+/* Pastel color palette for official UKMLA content map headings */
+.fc-event[style*="background-color: rgb(139, 92, 246)"] { /* Acute and emergency */
   background-color: rgba(139, 92, 246, 0.15) !important;
   border-left: 4px solid #8b5cf6 !important; 
   color: #6b21a8 !important;
@@ -236,50 +236,128 @@
   color: #155e75 !important;
 }
 
-.fc-event[style*="background-color: rgb(14, 165, 233)"] { /* Neuroscience */
-  background-color: rgba(14, 165, 233, 0.15) !important;
-  border-left: 4px solid #0ea5e9 !important;
-  color: #075985 !important;
+.fc-event[style*="background-color: rgb(249, 115, 22)"] { /* Clinical haematology */
+  background-color: rgba(249, 115, 22, 0.15) !important;
+  border-left: 4px solid #f97316 !important;
+  color: #9a3412 !important;
 }
 
-/* Additional subject colors */
+.fc-event[style*="background-color: rgb(217, 70, 239)"] { /* Clinical imaging */
+  background-color: rgba(217, 70, 239, 0.15) !important;
+  border-left: 4px solid #d946ef !important;
+  color: #86198f !important;
+}
+
 .fc-event[style*="background-color: rgb(20, 184, 166)"] { /* Dermatology */
   background-color: rgba(20, 184, 166, 0.15) !important;
   border-left: 4px solid #14b8a6 !important;
   color: #115e59 !important;
 }
 
-.fc-event[style*="background-color: rgb(16, 185, 129)"] { /* Endocrinology */
+.fc-event[style*="background-color: rgb(139, 92, 246)"] { /* Ear, nose and throat */
+  background-color: rgba(139, 92, 246, 0.15) !important;
+  border-left: 4px solid #8b5cf6 !important;
+  color: #6b21a8 !important;
+}
+
+.fc-event[style*="background-color: rgb(16, 185, 129)"] { /* Endocrine and metabolic */
   background-color: rgba(16, 185, 129, 0.15) !important;
   border-left: 4px solid #10b981 !important;
   color: #065f46 !important;
 }
 
-.fc-event[style*="background-color: rgb(34, 197, 94)"] { /* Gastroenterology */
+.fc-event[style*="background-color: rgb(34, 197, 94)"] { /* Gastrointestinal */
   background-color: rgba(34, 197, 94, 0.15) !important;
   border-left: 4px solid #22c55e !important;
   color: #16a34a !important;
 }
 
-.fc-event[style*="background-color: rgb(132, 204, 22)"] { /* General surgery */
+.fc-event[style*="background-color: rgb(132, 204, 22)"] { /* General practice */
   background-color: rgba(132, 204, 22, 0.15) !important;
   border-left: 4px solid #84cc16 !important;
   color: #4d7c0f !important;
 }
 
-.fc-event[style*="background-color: rgb(234, 179, 8)"] { /* Genito-urinary */
+.fc-event[style*="background-color: rgb(244, 63, 94)"] { /* Infection */
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  border-left: 4px solid #f43f5e !important;
+  color: #9f1239 !important;
+}
+
+.fc-event[style*="background-color: rgb(167, 139, 250)"] { /* Medicine of older adult */
+  background-color: rgba(167, 139, 250, 0.15) !important;
+  border-left: 4px solid #a78bfa !important;
+  color: #6d28d9 !important;
+}
+
+.fc-event[style*="background-color: rgb(236, 72, 153)"] { /* Mental health */
+  background-color: rgba(236, 72, 153, 0.15) !important;
+  border-left: 4px solid #ec4899 !important;
+  color: #be185d !important;
+}
+
+.fc-event[style*="background-color: rgb(234, 179, 8)"] { /* Musculoskeletal */
   background-color: rgba(234, 179, 8, 0.15) !important;
   border-left: 4px solid #eab308 !important;
   color: #a16207 !important;
 }
 
-.fc-event[style*="background-color: rgb(245, 158, 11)"] { /* Gynaecology */
+.fc-event[style*="background-color: rgb(14, 165, 233)"] { /* Neurosciences */
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  border-left: 4px solid #0ea5e9 !important;
+  color: #075985 !important;
+}
+
+.fc-event[style*="background-color: rgb(245, 158, 11)"] { /* Obstetrics and gynaecology */
   background-color: rgba(245, 158, 11, 0.15) !important;
   border-left: 4px solid #f59e0b !important;
   color: #b45309 !important;
 }
 
-.fc-event[style*="background-color: rgb(102, 102, 102)"] { /* Default */
+.fc-event[style*="background-color: rgb(168, 85, 247)"] { /* Ophthalmology */
+  background-color: rgba(168, 85, 247, 0.15) !important;
+  border-left: 4px solid #a855f7 !important;
+  color: #7e22ce !important;
+}
+
+.fc-event[style*="background-color: rgb(192, 132, 252)"] { /* Palliative and end of life care */
+  background-color: rgba(192, 132, 252, 0.15) !important;
+  border-left: 4px solid #c084fc !important;
+  color: #7e22ce !important;
+}
+
+.fc-event[style*="background-color: rgb(232, 121, 249)"] { /* Perioperative medicine and anaesthesia */
+  background-color: rgba(232, 121, 249, 0.15) !important;
+  border-left: 4px solid #e879f9 !important;
+  color: #a21caf !important;
+}
+
+.fc-event[style*="background-color: rgb(251, 113, 133)"] { /* Renal and urology */
+  background-color: rgba(251, 113, 133, 0.15) !important;
+  border-left: 4px solid #fb7185 !important;
+  color: #be123c !important;
+}
+
+.fc-event[style*="background-color: rgb(253, 164, 175)"] { /* Respiratory */
+  background-color: rgba(253, 164, 175, 0.15) !important;
+  border-left: 4px solid #fda4af !important;
+  color: #e11d48 !important;
+}
+
+.fc-event[style*="background-color: rgb(244, 114, 182)"] { /* Sexual health */
+  background-color: rgba(244, 114, 182, 0.15) !important;
+  border-left: 4px solid #f472b6 !important;
+  color: #be185d !important;
+}
+
+.fc-event[style*="background-color: rgb(100, 116, 139)"] { /* Surgery */
+  background-color: rgba(100, 116, 139, 0.15) !important;
+  border-left: 4px solid #64748b !important;
+  color: #334155 !important;
+}
+
+/* Default for any unmatched subjects */
+.fc-event[style*="background-color: rgb(102, 102, 102)"] {
   background-color: rgba(100, 116, 139, 0.15) !important;
   border-left: 4px solid #64748b !important;
   color: #334155 !important;

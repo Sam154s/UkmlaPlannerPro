@@ -351,34 +351,33 @@ export default function Timetable() {
     handleGenerate();
   };
 
-  // Get color for a subject
+  // Get color for a subject (using official UKMLA content map headings)
   const getSubjectColor = (subject: string) => {
     const colors = {
       "Acute and emergency": '#8b5cf6',
       "Cancer": '#6366f1',
       "Cardiovascular": '#3b82f6',
       "Child health": '#06b6d4',
-      "Neuroscience": '#0ea5e9',
+      "Clinical haematology": '#f97316',
+      "Clinical imaging": '#d946ef',
       "Dermatology": '#14b8a6',
-      "Endocrinology": '#10b981',
-      "Gastroenterology": '#22c55e',
-      "General surgery": '#84cc16',
-      "Genito-urinary": '#eab308',
-      "Gynaecology": '#f59e0b',
-      "Haematology": '#f97316',
-      "Immunology": '#ef4444',
-      "Infectious diseases": '#f43f5e',
+      "Ear, nose and throat": '#8b5cf6',
+      "Endocrine and metabolic": '#10b981',
+      "Gastrointestinal": '#22c55e',
+      "General practice": '#84cc16',
+      "Infection": '#f43f5e',
+      "Medicine of older adult": '#a78bfa',
       "Mental health": '#ec4899',
-      "Obstetrics": '#d946ef',
+      "Musculoskeletal": '#eab308',
+      "Neurosciences": '#0ea5e9',
+      "Obstetrics and gynaecology": '#f59e0b',
       "Ophthalmology": '#a855f7',
-      "Otolaryngology": '#8b5cf6',
-      "Palliative care": '#a78bfa',
-      "Pharmacology": '#c084fc',
-      "Plastic surgery": '#e879f9',
-      "Rehabilitation": '#f472b6',
-      "Renal": '#fb7185',
+      "Palliative and end of life care": '#c084fc',
+      "Perioperative medicine and anaesthesia": '#e879f9',
+      "Renal and urology": '#fb7185',
       "Respiratory": '#fda4af',
-      "Rheumatology": '#fecdd3',
+      "Sexual health": '#f472b6',
+      "Surgery": '#64748b',
     };
     return colors[subject as keyof typeof colors] || '#666';
   };
