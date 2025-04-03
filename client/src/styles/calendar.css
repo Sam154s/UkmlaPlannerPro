@@ -162,16 +162,28 @@
   transition: all 0.15s ease;
   border-width: 0 !important;
   overflow: hidden;
-  width: 90% !important; /* Fixed width to ensure vertical stacking */
-  left: 5% !important; /* Center in column */
-  right: auto !important; /* Reset any right positioning */
+  /* Removed fixed width to allow proper proportional heights */
+}
+
+/* Fix for event positioning and proportional heights */
+.fc .fc-timegrid-event {
+  /* These properties ensure events don't overlap horizontally */
+  width: 90% !important;
+  left: 5% !important;
+  right: auto !important;
+  /* The height is managed by FullCalendar based on start/end times */
 }
 
 /* Ensure events are properly positioned vertically based on their time */
 .fc-timegrid-col-events {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   height: 100%;
+}
+
+/* Fix for event container to ensure proper stacking */
+.fc-timegrid-event-harness {
+  position: absolute !important;
+  /* The top and height are set by FullCalendar based on event time */
 }
 
 .fc .fc-timegrid-event:hover,

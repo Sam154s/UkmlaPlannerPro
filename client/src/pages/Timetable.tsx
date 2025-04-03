@@ -1040,17 +1040,24 @@ function renderEventContent(eventInfo: any) {
           </div>
         </TooltipTrigger>
         {topics && topics.length > 0 && (
-          <TooltipContent className="w-64 bg-white/95 backdrop-blur-sm border shadow-lg">
+          <TooltipContent className="w-80 max-h-80 overflow-auto bg-white/95 backdrop-blur-sm border shadow-lg">
             <div className="space-y-2">
-              <p className="font-semibold text-sm">Session Overview:</p>
-              <ul className="space-y-2">
-                {topics.filter((t: any) => t.type === 'main').map((topic: any, index: number) => (
-                  <li key={index} className="text-sm">
-                    {topic.name}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs italic">Click for full session details</p>
+              <p className="font-semibold text-sm">{event.title} - Session Contents:</p>
+              <div className="max-h-60 overflow-y-auto pr-2">
+                <ul className="space-y-1">
+                  {topics.map((topic: any, index: number) => (
+                    <li key={index} className="text-sm flex items-center gap-1">
+                      {topic.type === 'main' ? (
+                        <span className="inline-block w-2 h-2 bg-theme rounded-full mr-1"></span>
+                      ) : (
+                        <span className="inline-block w-2 h-2 border border-theme rounded-full mr-1"></span>
+                      )}
+                      {topic.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="text-xs italic pt-2 border-t">Click for detailed session structure</p>
             </div>
           </TooltipContent>
         )}
