@@ -1,6 +1,7 @@
 // API service for connecting to the backend
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+// Use the current host for API requests - works with both local and deployed environments
+const API_BASE = '';
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
