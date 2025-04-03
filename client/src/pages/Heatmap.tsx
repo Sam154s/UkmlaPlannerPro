@@ -154,6 +154,37 @@ export default function Heatmap() {
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   };
   
+  // Get condition color based only on times revised (using the theme accent color)
+  const getConditionRevisionColor = (times: number): string => {
+    if (times === 0) {
+      return 'rgba(229, 231, 235, 0.8)'; // Light gray for no data
+    }
+    
+    // Get the theme accent color
+    const getThemeColor = () => {
+      // Extract theme color from CSS variables (default to a blue if not found)
+      const root = document.documentElement;
+      const fromVar = getComputedStyle(root).getPropertyValue('--gradient-from').trim();
+      
+      if (fromVar) {
+        const rgb = fromVar.split(' ');
+        if (rgb.length === 3) {
+          return { r: parseInt(rgb[0]), g: parseInt(rgb[1]), b: parseInt(rgb[2]) };
+        }
+      }
+      
+      // Fallback to a default blue
+      return { r: 37, g: 99, b: 235 };
+    };
+    
+    const themeColor = getThemeColor();
+    
+    // Alpha: More opaque for higher times revised
+    const alpha = Math.min(1, 0.2 + (times / maxTimesRevised) * 0.8);
+    
+    return `rgba(${themeColor.r}, ${themeColor.g}, ${themeColor.b}, ${alpha})`;
+  };
+  
   // Sort subjects for display
   const getSortedSubjects = (): Subject[] => {
     if (sortBy === 'subject') {
@@ -291,9 +322,12 @@ export default function Heatmap() {
                   <h3 className="font-semibold mb-1 text-sm line-clamp-2 h-10">
                     {subject.name}
                   </h3>
-                  <div className="text-xs">
-                    <div>Avg. Times: {avgRevisions.toFixed(1)}</div>
-                    <div>Avg. Rating: {avgRating.toFixed(1)}</div>
+                  {/* Visual indicator of revision frequency */}
+                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-theme rounded-full"
+                      style={{ width: `${Math.min(100, avgRevisions * 20)}%` }}
+                    ></div>
                   </div>
                 </div>
               );
@@ -316,25 +350,18 @@ export default function Heatmap() {
                 onClick={() => toggleSubjectExpansion(subject.name)}
               >
                 <h3 className="font-semibold">{subject.name}</h3>
-                <div className="flex items-center gap-4">
-                  <div className="text-sm">
-                    <span>Avg Revisions: {getSubjectAverageRevisions(subject).toFixed(1)}</span>
-                    <span className="mx-2">•</span>
-                    <span>Avg Confidence: {getSubjectAverageRating(subject).toFixed(1)}/10</span>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <svg 
-                      width="15" 
-                      height="15" 
-                      viewBox="0 0 15 15" 
-                      fill="none" 
-                      xmlns="http://www.w3.org/2000/svg"
-                      className={`transform transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-                    >
-                      <path d="M3.13523 6.15803C3.3241 5.95657 3.64052 5.94637 3.84197 6.13523L7.5 9.56464L11.158 6.13523C11.3595 5.94637 11.6759 5.95657 11.8648 6.15803C12.0536 6.35949 12.0434 6.67591 11.842 6.86477L7.84197 10.6148C7.64964 10.7951 7.35036 10.7951 7.15803 10.6148L3.15803 6.86477C2.95657 6.67591 2.94637 6.35949 3.13523 6.15803Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                    </svg>
-                  </Button>
-                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <svg 
+                    width="15" 
+                    height="15" 
+                    viewBox="0 0 15 15" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`transform transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                  >
+                    <path d="M3.13523 6.15803C3.3241 5.95657 3.64052 5.94637 3.84197 6.13523L7.5 9.56464L11.158 6.13523C11.3595 5.94637 11.6759 5.95657 11.8648 6.15803C12.0536 6.35949 12.0434 6.67591 11.842 6.86477L7.84197 10.6148C7.64964 10.7951 7.35036 10.7951 7.15803 10.6148L3.15803 6.86477C2.95657 6.67591 2.94637 6.35949 3.13523 6.15803Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                  </svg>
+                </Button>
               </div>
               
               {isExpanded && (
@@ -359,10 +386,8 @@ export default function Heatmap() {
                               rating: 0 
                             };
                             
-                            const cellColor = getHeatmapColor(
-                              performance.timesRevised,
-                              performance.rating
-                            );
+                            // Use theme-based color for cells that focuses only on revision count
+                            const cellColor = getConditionRevisionColor(performance.timesRevised);
                             
                             return (
                               <tr 
@@ -427,27 +452,27 @@ export default function Heatmap() {
       </div>
       
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-        <h3 className="font-semibold mb-2">Color Scale Legend</h3>
-        <div className="flex items-center gap-6">
+        <h3 className="font-semibold mb-2">Revision Intensity Legend</h3>
+        <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: 'hsl(0, 80%, 60%)' }}></div>
-            <span className="text-sm">Low Confidence</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: 'hsl(60, 80%, 60%)' }}></div>
-            <span className="text-sm">Medium Confidence</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: 'hsl(120, 80%, 60%)' }}></div>
-            <span className="text-sm">High Confidence</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: 'rgba(229, 231, 235, 0.8)' }}></div>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(0) }}></div>
             <span className="text-sm">Not Studied</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(1) }}></div>
+            <span className="text-sm">Studied Once</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(3) }}></div>
+            <span className="text-sm">Studied 3 Times</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(5) }}></div>
+            <span className="text-sm">Studied 5+ Times</span>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Color intensity increases with more revisions. Hover over cells for detailed information.
+          Color intensity increases with more revisions. Colors match your selected theme. Hover over cells for detailed information.
         </p>
       </div>
     </div>
