@@ -4,6 +4,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timelinePlugin from '@fullcalendar/timeline';
+import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
@@ -701,9 +702,137 @@ export default function Timetable() {
           }}
         />
       </div>
+      
+      {/* Session Detail Dialog */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <button id="session-detail-dialog-trigger" className="hidden">Open</button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[550px]">
+          <div id="session-detail-content">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold" id="session-detail-title">
+                <span className="text-gradient-theme">Study Session</span>
+              </DialogTitle>
+              <DialogDescription>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span id="session-detail-date"></span>
+                  <span id="session-detail-time"></span>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="mt-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Main Topics</h3>
+                <ul className="space-y-2 list-disc list-inside" id="session-detail-topics">
+                  {/* Topics will be populated from data attributes */}
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Connections</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground" id="session-detail-connections">
+                  {/* Connections will be populated from data attributes */}
+                </ul>
+              </div>
+            </div>
+            
+            <DialogFooter className="mt-6">
+              <Button variant="secondary" className="w-full">
+                Mark as Completed
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+// JavaScript to populate the session detail dialog from data attributes
+// This runs when the dialog is opened
+const populateSessionDetails = () => {
+  if (typeof document === 'undefined') return;
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const detailsElement = document.getElementById('session-detail-content');
+    const dialogTrigger = document.getElementById('session-detail-dialog-trigger');
+    
+    if (!detailsElement || !dialogTrigger) return;
+    
+    dialogTrigger.addEventListener('click', () => {
+      // Get data from attributes
+      const title = detailsElement.getAttribute('data-event-title') || 'Study Session';
+      const topicsJson = detailsElement.getAttribute('data-event-topics') || '[]';
+      const startTime = detailsElement.getAttribute('data-event-start') || '';
+      const endTime = detailsElement.getAttribute('data-event-end') || '';
+      
+      try {
+        // Parse topics
+        const topics = JSON.parse(topicsJson);
+        
+        // Set title
+        const titleElement = document.getElementById('session-detail-title');
+        if (titleElement) {
+          titleElement.textContent = title;
+        }
+        
+        // Format and set date/time
+        if (startTime && endTime) {
+          const start = parseISO(startTime);
+          const end = parseISO(endTime);
+          
+          const dateElement = document.getElementById('session-detail-date');
+          const timeElement = document.getElementById('session-detail-time');
+          
+          if (dateElement) {
+            dateElement.textContent = format(start, 'MMMM d, yyyy');
+          }
+          
+          if (timeElement) {
+            timeElement.textContent = `${format(start, 'h:mm a')} - ${format(end, 'h:mm a')}`;
+          }
+        }
+        
+        // Populate topics
+        const topicsElement = document.getElementById('session-detail-topics');
+        const connectionsElement = document.getElementById('session-detail-connections');
+        
+        if (topicsElement && connectionsElement) {
+          // Clear previous content
+          topicsElement.innerHTML = '';
+          connectionsElement.innerHTML = '';
+          
+          // Add main topics
+          const mainTopics = topics.filter((t: any) => t.type === 'main');
+          mainTopics.forEach((topic: any) => {
+            const li = document.createElement('li');
+            li.textContent = topic.name;
+            topicsElement.appendChild(li);
+          });
+          
+          // Add connection topics
+          const connectionTopics = topics.filter((t: any) => t.type === 'connection');
+          connectionTopics.forEach((topic: any) => {
+            if (topic.connectionTopics && topic.connectionTopics.length > 0) {
+              topic.connectionTopics.forEach((connection: string) => {
+                const li = document.createElement('li');
+                li.textContent = connection;
+                connectionsElement.appendChild(li);
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error populating session details:', error);
+      }
+    });
+  });
+};
+
+// Run the function
+populateSessionDetails();
 
 function renderEventContent(eventInfo: any) {
   const event = eventInfo.event;
@@ -718,41 +847,48 @@ function renderEventContent(eventInfo: any) {
     );
   }
 
+  // Handle click to show detailed session view
+  const handleSessionClick = () => {
+    // We'll use Radix UI Dialog for a better UX
+    const dialogElement = document.getElementById('session-detail-dialog-trigger');
+    if (dialogElement) {
+      (dialogElement as HTMLButtonElement).click();
+      
+      // Store the selected event info in the data attributes
+      const detailsElement = document.getElementById('session-detail-content');
+      if (detailsElement) {
+        detailsElement.setAttribute('data-event-title', event.title);
+        detailsElement.setAttribute('data-event-topics', JSON.stringify(topics || []));
+        detailsElement.setAttribute('data-event-start', event.start?.toISOString() || '');
+        detailsElement.setAttribute('data-event-end', event.end?.toISOString() || '');
+      }
+    }
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="w-full h-full p-1">
+          <div 
+            className="w-full h-full p-1 cursor-pointer transition-opacity hover:opacity-90" 
+            onClick={handleSessionClick}
+          >
             <div className="text-sm font-semibold">{event.title}</div>
-            {topics && topics.length > 0 && (
-              <div className="text-xs mt-1 opacity-90">
-                {topics[0].name}...
-              </div>
-            )}
+            {/* Only show the subject title, not the topics */}
           </div>
         </TooltipTrigger>
         {topics && topics.length > 0 && (
           <TooltipContent className="w-64 bg-white/95 backdrop-blur-sm border shadow-lg">
             <div className="space-y-2">
-              <p className="font-semibold text-sm">Topics:</p>
+              <p className="font-semibold text-sm">Session Overview:</p>
               <ul className="space-y-2">
-                {topics.map((topic: any, index: number) => (
+                {topics.filter((t: any) => t.type === 'main').map((topic: any, index: number) => (
                   <li key={index} className="text-sm">
-                    {topic.type === 'main' ? (
-                      <span>{topic.name}</span>
-                    ) : (
-                      <div className="mt-1 pl-4 border-l-2 border-theme/20">
-                        <p className="font-medium text-xs">Connections:</p>
-                        <ul className="list-disc list-inside">
-                          {topic.connectionTopics?.map((relatedTopic: string, idx: number) => (
-                            <li key={idx} className="text-xs">{relatedTopic}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {topic.name}
                   </li>
                 ))}
               </ul>
+              <p className="text-xs italic">Click for full session details</p>
             </div>
           </TooltipContent>
         )}

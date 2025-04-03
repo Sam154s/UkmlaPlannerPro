@@ -58,7 +58,7 @@ interface TimeSlot {
   hours: number;
 }
 
-const DAILY_START_TIME = "07:00";
+const DAILY_START_TIME = "17:00"; // Default start time for revision sessions (5pm)
 const DAILY_END_TIME = "22:00"; // End time for studying
 const TOPICS_PER_SESSION = 3;
 const FAVORITE_SUBJECT_PRIORITY_BOOST = 1.5;
@@ -480,9 +480,43 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     return b.totalBlocks - a.totalBlocks;
   });
 
+  // Get all subjects for processing
+  let subjectsToProcess = [...subjectPriorities];
+  
+  // For first revision cycle (cycle 1), go through subjects linearly
+  if (revisionCount === 0) {
+    // Move favorite subjects to equal positions throughout the list
+    if (favouriteSubjects.length > 0) {
+      const favoriteSubjects = subjectsToProcess.filter(s => s.isFavorite);
+      const nonFavoriteSubjects = subjectsToProcess.filter(s => !s.isFavorite);
+      subjectsToProcess = [];
+      
+      // Calculate spacing for favorite subjects
+      const spacing = Math.max(1, Math.floor(nonFavoriteSubjects.length / (favoriteSubjects.length + 1)));
+      
+      // Interleave favorite subjects with equal spacing
+      let favoriteIndex = 0;
+      for (let i = 0; i < nonFavoriteSubjects.length; i++) {
+        subjectsToProcess.push(nonFavoriteSubjects[i]);
+        
+        // Insert a favorite subject at regular intervals
+        if (favoriteIndex < favoriteSubjects.length && (i + 1) % spacing === 0) {
+          subjectsToProcess.push(favoriteSubjects[favoriteIndex]);
+          favoriteIndex++;
+        }
+      }
+      
+      // Add any remaining favorite subjects
+      while (favoriteIndex < favoriteSubjects.length) {
+        subjectsToProcess.push(favoriteSubjects[favoriteIndex]);
+        favoriteIndex++;
+      }
+    }
+  }
+  
   // Multiple passes through all subjects
   for (let pass = 1; pass <= passCoverage; pass++) {
-    for (const subjectData of subjectPriorities) {
+    for (const subjectData of subjectsToProcess) {
       // For each pass, allocate a percentage of the total blocks
       const blocksForThisPass = Math.ceil(subjectData.totalBlocks / passCoverage);
       let remainingBlocks = blocksForThisPass;
