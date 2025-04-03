@@ -230,6 +230,58 @@
   border: 2px dashed white !important;
 }
 
+/* Floating hover tooltip for events */
+.event-hover-tooltip {
+  position: absolute;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  max-width: 300px;
+  min-width: 200px;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border: 1px solid rgba(0,0,0,0.1);
+  overflow: auto;
+  max-height: 400px;
+}
+
+.event-hover-tooltip.visible {
+  opacity: 1;
+}
+
+.event-hover-tooltip-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 6px;
+}
+
+.event-hover-tooltip-content {
+  font-size: 0.85rem;
+}
+
+.event-hover-tooltip ul {
+  margin: 0;
+  padding-left: 8px;
+  list-style-type: none;
+}
+
+.event-hover-tooltip li {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.event-hover-tooltip li::before {
+  content: "•";
+  display: inline-block;
+  margin-right: 6px;
+  color: inherit;
+}
+
 /* Session detail overlay */
 .session-detail-overlay {
   position: fixed;

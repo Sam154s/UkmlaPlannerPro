@@ -120,6 +120,14 @@ export default function Timetable() {
   // State for session detail modal
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  
+  // State for hover tooltip
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipContent, setTooltipContent] = useState<{
+    subject: string;
+    topics: any[];
+    position: {top: number; left: number};
+  } | null>(null);
 
   // Loaded flag to prevent multiple loads
   const preferencesLoaded = useRef(false);
@@ -334,6 +342,35 @@ export default function Timetable() {
     if (!preferencesLoaded.current) return;
     localStorage.setItem(STORAGE_KEYS.USER_EVENTS, JSON.stringify(userEvents));
   }, [userEvents]);
+  
+  // Custom mouse event handlers for the event hover tooltip
+  const handleEventMouseEnter = (info: any) => {
+    const event = info.event;
+    if (event.extendedProps?.isHoliday) return;
+    
+    const topics = event.extendedProps?.topics || [];
+    if (!topics.length) return;
+    
+    // Get position from the DOM element
+    const rect = info.el.getBoundingClientRect();
+    
+    // Set tooltip content
+    setTooltipContent({
+      subject: event.title,
+      topics: topics,
+      position: {
+        top: rect.top + window.scrollY,
+        left: rect.right + window.scrollX + 10
+      }
+    });
+    
+    // Show tooltip
+    setTooltipVisible(true);
+  };
+  
+  const handleEventMouseLeave = () => {
+    setTooltipVisible(false);
+  };
   
   // Calendar midnight refresh
   useEffect(() => {
@@ -703,6 +740,30 @@ export default function Timetable() {
       {/* Session detail modal */}
       {isSessionDetailOpen && <SessionDetailModal />}
       
+      {/* Custom Event Hover Tooltip */}
+      {tooltipVisible && tooltipContent && (
+        <div 
+          className={`event-hover-tooltip ${tooltipVisible ? 'visible' : ''}`}
+          style={{
+            top: `${tooltipContent.position.top}px`,
+            left: `${tooltipContent.position.left}px`
+          }}
+        >
+          <div className="event-hover-tooltip-header">
+            {tooltipContent.subject} - Session Contents
+          </div>
+          <div className="event-hover-tooltip-content">
+            <ul>
+              {tooltipContent.topics.map((topic, index) => (
+                <li key={index}>
+                  {topic.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gradient-theme">
@@ -918,6 +979,8 @@ export default function Timetable() {
           eventContent={renderEventContent}
           editable={true}
           eventDrop={handleEventDrop}
+          eventMouseEnter={handleEventMouseEnter}
+          eventMouseLeave={handleEventMouseLeave}
           allDaySlot={true}
           slotMinTime="06:00:00"
           slotMaxTime="23:00:00"
