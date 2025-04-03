@@ -33,7 +33,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { RefreshCw, Calendar as CalendarIcon, PlusCircle, Sparkles } from "lucide-react";
+import { RefreshCw, Calendar as CalendarIcon, PlusCircle, Sparkles, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 import { UserEvent, UserPerformance } from '@/utils/spiralAlgorithm';
@@ -77,6 +78,8 @@ const STORAGE_KEYS = {
   HOLIDAYS: 'holiday-events',
   USER_EVENTS: 'user-events',
   USER_PERFORMANCE: 'user-performance',
+  REVISION_COUNTS: 'revision-counts',
+  STUDY_EVENTS: 'study-events',
 };
 
 // Generate a random ID for events
@@ -110,6 +113,13 @@ export default function Timetable() {
     subjects: {},
     topics: {},
   });
+  
+  // State for tracking session study counts
+  const [sessionRevisionCounts, setSessionRevisionCounts] = useState<Record<string, number>>({});
+  
+  // State for session detail modal
+  const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   // Loaded flag to prevent multiple loads
   const preferencesLoaded = useRef(false);
@@ -121,7 +131,13 @@ export default function Timetable() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Load saved preferences on first mount
+  // Save study events when they change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+    localStorage.setItem(STORAGE_KEYS.STUDY_EVENTS, JSON.stringify(studyEvents));
+  }, [studyEvents]);
+
+// Load saved preferences on first mount
   useEffect(() => {
     if (preferencesLoaded.current) return;
     
@@ -137,6 +153,26 @@ export default function Timetable() {
         setSelectedSubjects(parsedPreferences.selectedSubjects);
       } catch (error) {
         console.error('Failed to parse saved preferences', error);
+      }
+    }
+    
+    // Load saved study events directly
+    const savedStudyEvents = localStorage.getItem(STORAGE_KEYS.STUDY_EVENTS);
+    if (savedStudyEvents) {
+      try {
+        setStudyEvents(JSON.parse(savedStudyEvents));
+      } catch (error) {
+        console.error('Failed to parse saved study events', error);
+      }
+    }
+    
+    // Load saved revision counts
+    const savedRevisionCounts = localStorage.getItem(STORAGE_KEYS.REVISION_COUNTS);
+    if (savedRevisionCounts) {
+      try {
+        setSessionRevisionCounts(JSON.parse(savedRevisionCounts));
+      } catch (error) {
+        console.error('Failed to parse saved revision counts', error);
       }
     }
 
@@ -543,8 +579,99 @@ export default function Timetable() {
   // Combine study events and holidays for the calendar
   const allEvents = [...studyEvents, ...holidayEvents];
 
+  // Add session detail modal component
+  const SessionDetailModal = () => {
+    if (!selectedEvent) return null;
+    
+    const event = selectedEvent;
+    const topics = event.extendedProps?.topics || [];
+    const eventId = event.id;
+    const studyCount = sessionRevisionCounts[eventId] || 0;
+    
+    // Calculate duration in minutes
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+    const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+    
+    // Calculate phase durations (10% orientation, 45% learning, 45% practice)
+    const orientationMinutes = Math.round(durationMinutes * 0.1);
+    const learningMinutes = Math.round(durationMinutes * 0.45);
+    const practiceMinutes = durationMinutes - orientationMinutes - learningMinutes;
+    
+    return (
+      <div className="session-detail-overlay" onClick={() => setIsSessionDetailOpen(false)}>
+        <div 
+          className="session-detail-card dark:bg-gray-800 dark:text-white" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">{event.title} Session</h2>
+            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+              Studied {studyCount} {studyCount === 1 ? 'time' : 'times'}
+            </Badge>
+            <button 
+              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setIsSessionDetailOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+            {format(startDate, 'EEEE, MMM d, yyyy • h:mm a')} - {format(endDate, 'h:mm a')}
+            <span className="ml-2">({durationMinutes} minutes)</span>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Orientation Phase */}
+            <div className="session-phase phase-orientation">
+              <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                Orientation Phase ({orientationMinutes} min)
+              </h3>
+              <p className="text-sm">
+                Review session goals and prepare your learning environment. 
+                Connect this material with what you already know.
+              </p>
+            </div>
+            
+            {/* Learning Phase */}
+            <div className="session-phase phase-learning">
+              <h3 className="font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
+                Learning Phase ({learningMinutes} min)
+              </h3>
+              <div className="space-y-2">
+                <p className="text-sm font-medium mb-2">Focus on these topics:</p>
+                <ul className="space-y-1 max-h-40 overflow-y-auto">
+                  {topics.map((topic: any, index: number) => (
+                    <li key={index} className="text-sm ml-2">
+                      • {topic.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            
+            {/* Practice Phase */}
+            <div className="session-phase phase-practice">
+              <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
+                Practice Phase ({practiceMinutes} min)
+              </h3>
+              <p className="text-sm">
+                Test your knowledge with practice questions. Try explaining topics out loud 
+                or teaching them to someone else. Create summary notes for later review.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="container mx-auto p-4 space-y-4 max-w-full h-[calc(100vh-80px)] flex flex-col">
+      {/* Session detail modal */}
+      {isSessionDetailOpen && <SessionDetailModal />}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gradient-theme">
@@ -996,7 +1123,7 @@ const populateSessionDetails = () => {
 // Run the function
 populateSessionDetails();
 
-function renderEventContent(eventInfo: any) {
+const renderEventContent = (eventInfo: any) => {
   const event = eventInfo.event;
   const topics = event.extendedProps?.topics;
   const isHoliday = event.extendedProps?.isHoliday;
@@ -1008,23 +1135,24 @@ function renderEventContent(eventInfo: any) {
       </div>
     );
   }
-
-  // Handle click to show detailed session view
+  
+  // Handle click to show detailed session information
   const handleSessionClick = () => {
-    // We'll use Radix UI Dialog for a better UX
-    const dialogElement = document.getElementById('session-detail-dialog-trigger');
-    if (dialogElement) {
-      (dialogElement as HTMLButtonElement).click();
+    // Store the selected event info
+    setSelectedEvent(event);
+    setIsSessionDetailOpen(true);
+    
+    // Increment the study count for this session
+    const eventId = event.id;
+    setSessionRevisionCounts(prev => {
+      const newCounts = { ...prev };
+      newCounts[eventId] = (newCounts[eventId] || 0) + 1;
       
-      // Store the selected event info in the data attributes
-      const detailsElement = document.getElementById('session-detail-content');
-      if (detailsElement) {
-        detailsElement.setAttribute('data-event-title', event.title);
-        detailsElement.setAttribute('data-event-topics', JSON.stringify(topics || []));
-        detailsElement.setAttribute('data-event-start', event.start?.toISOString() || '');
-        detailsElement.setAttribute('data-event-end', event.end?.toISOString() || '');
-      }
-    }
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.REVISION_COUNTS, JSON.stringify(newCounts));
+      
+      return newCounts;
+    });
   };
 
   return (
