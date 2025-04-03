@@ -160,3 +160,87 @@ html, body, #root {
 iframe {
   background-color: transparent;
 }
+
+/* Custom hover tooltip styles for Heatmap */
+.heatmap-tooltip {
+  position: absolute;
+  z-index: 100;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-width: 300px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+.heatmap-tooltip.visible {
+  visibility: visible;
+  opacity: 1;
+}
+
+.dark .heatmap-tooltip {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+/* Event hover tooltip for calendar events */
+.event-hover-tooltip {
+  position: absolute;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  width: 250px;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.event-hover-tooltip-header {
+  background-color: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+}
+
+.event-hover-tooltip-content {
+  padding: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.event-hover-tooltip-content ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.event-hover-tooltip-content li {
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.event-hover-tooltip-content li:last-child {
+  border-bottom: none;
+}
+
+.dark .event-hover-tooltip {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.dark .event-hover-tooltip-header {
+  background-color: #111827;
+  border-color: #374151;
+}
+
+.dark .event-hover-tooltip-content li {
+  border-color: #374151;
+}

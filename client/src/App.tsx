@@ -11,6 +11,7 @@ import Timetable from "@/pages/Timetable";
 import SubjectsRatings from "@/pages/SubjectsRatings";
 import Dashboard from "@/pages/Dashboard";
 import Settings from "@/pages/Settings";
+import Heatmap from "@/pages/Heatmap";
 import { SiteSidebar } from "@/components/ui/site-sidebar";
 import { FloatingChat } from "@/components/ui/floating-chat";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,6 +36,7 @@ function Router() {
             </Route>
             <ProtectedRoute path="/timetable" component={Timetable} />
             <ProtectedRoute path="/subjects" component={SubjectsRatings} />
+            <ProtectedRoute path="/heatmap" component={Heatmap} />
             <ProtectedRoute path="/settings" component={Settings} />
             <Route component={NotFound} />
           </Switch>

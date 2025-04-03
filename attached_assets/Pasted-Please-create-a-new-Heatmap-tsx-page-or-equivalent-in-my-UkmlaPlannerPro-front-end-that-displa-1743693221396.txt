@@ -1,0 +1,42 @@
+Please create a new “Heatmap.tsx” page (or equivalent) in my “UkmlaPlannerPro” front-end that displays a revision heatmap. The code should:
+
+1. **Read userPerformance Data**  
+   - Assume we have an object like:
+     ```ts
+     // userPerformance[subject][condition] = {
+     //   timesRevised: number,
+     //   rating: number
+     // }
+     ```
+   - Each cell in the heatmap corresponds to a (subject, condition) pair.
+
+2. **Custom Grid Heatmap**  
+   - Create a grid or table layout with one row per subject, and columns for each condition in that subject.
+   - For each cell, compute a background colour based on:
+     - “timesRevised” → affects the brightness or saturation
+     - “rating” → affects the hue (e.g. red=low rating, green=high rating)
+
+3. **Colour Scale Logic**  
+   - Write a small helper function, e.g.:
+     ```ts
+     function getHeatmapColor(times: number, rating: number) {
+       // rating: 0–10 => hue
+       // times: 0–some max => lighten/darken
+       // return a CSS colour string, e.g., hsl(...) or rgba(...)
+     }
+     ```
+   - If times or rating is missing, default to a neutral grey or white.
+
+4. **Tooltips**  
+   - On hover, display a small tooltip with “Times Revised: X” and “Confidence Rating: Y” or similar. You can use your existing tooltip component or a small custom one.
+
+5. **Page Layout**  
+   - Let’s call it `Heatmap.tsx`.  
+   - Provide a brief heading (e.g. “Revision Heatmap”), then a scrollable grid so the user can see all subjects and conditions.  
+   - If the userPerformance data is large, consider a “virtualized” grid or some pagination.
+
+6. **Install / Summaries**  
+   - If needed, you can install a small library like “react-tooltip” (or use your own tooltip approach).  
+   - At the end of your output, please provide a short summary of how the new “Heatmap” page works (no filler data).
+
+Return the new `Heatmap.tsx` code in full, along with any supporting changes (like a route addition or a menu link to “Heatmap”) and a concise explanation at the bottom about the color scale and layout. No extra placeholders or dummy data, please.
