@@ -322,12 +322,9 @@ export default function Heatmap() {
                   <h3 className="font-semibold mb-1 text-sm line-clamp-2 h-10">
                     {subject.name}
                   </h3>
-                  {/* Visual indicator of revision frequency */}
-                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-theme rounded-full"
-                      style={{ width: `${Math.min(100, avgRevisions * 20)}%` }}
-                    ></div>
+                  <div className="text-xs">
+                    <div>Avg. Times: {avgRevisions.toFixed(1)}</div>
+                    <div>Avg. Rating: {avgRating.toFixed(1)}</div>
                   </div>
                 </div>
               );
