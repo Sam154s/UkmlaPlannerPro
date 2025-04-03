@@ -12,11 +12,21 @@ export interface Topic {
     isHighYield: boolean;
     includeInExamRevision: boolean;
   };
+  // For time tracking in the algorith
+  allocatedTimeMinutes?: number;
+}
+
+export interface ConditionGroup {
+  name: string;
+  conditions: string[]; // List of topic names in this group
+  userDefined?: boolean; // Flag for user-created groups
 }
 
 export interface Subject {
   name: string;
   topics: Topic[];
+  // New property for topic grouping
+  conditionGroups: ConditionGroup[];
 }
 
 export interface ExamDate {
@@ -28,9 +38,122 @@ export interface ExamDate {
 
 export type SubjectsData = Subject[];
 
-const masterSubjects: SubjectsData = [
+// Subjects data - this will be processed to ensure all subjects have conditionGroups
+const subjectsData = [
   {
     "name": "Acute and emergency",
+    "conditionGroups": [
+      {
+        "name": "Metabolic Disorders",
+        "conditions": [
+          "Acid-base abnormality",
+          "Acute kidney injury",
+          "Dehydration",
+          "Diabetic ketoacidosis",
+          "Hyperosmolar hyperglycaemic state"
+        ]
+      },
+      {
+        "name": "Respiratory Emergencies",
+        "conditions": [
+          "Acute bronchitis",
+          "Chronic obstructive pulmonary disease",
+          "Pneumothorax",
+          "Respiratory arrest",
+          "Respiratory failure",
+          "Pneumonia"
+        ]
+      },
+      {
+        "name": "Cardiovascular Emergencies",
+        "conditions": [
+          "Acute coronary syndromes",
+          "Aortic aneurysm",
+          "Arrhythmias",
+          "Cardiac arrest",
+          "Cardiac failure",
+          "Deep vein thrombosis",
+          "Myocardial infarction",
+          "Pulmonary embolism",
+          "Unstable angina"
+        ]
+      },
+      {
+        "name": "Allergic Reactions",
+        "conditions": [
+          "Allergic disorder",
+          "Anaphylaxis"
+        ]
+      },
+      {
+        "name": "Neurological Emergencies",
+        "conditions": [
+          "Epilepsy",
+          "Extradural haemorrhage",
+          "Raised intracranial pressure",
+          "Stroke",
+          "Subarachnoid haemorrhage",
+          "Subdural haemorrhage", 
+          "Meningitis"
+        ]
+      },
+      {
+        "name": "Trauma and Orthopedic Emergencies",
+        "conditions": [
+          "Compartment syndrome",
+          "Spinal cord compression",
+          "Spinal cord injury",
+          "Spinal fracture"
+        ]
+      },
+      {
+        "name": "Infections",
+        "conditions": [
+          "Necrotising fasciitis",
+          "Sepsis",
+          "Meningitis"
+        ]
+      },
+      {
+        "name": "Gynecologic and Urologic Emergencies",
+        "conditions": [
+          "Ectopic pregnancy",
+          "Postpartum haemorrhage",
+          "Testicular torsion",
+          "Toxic shock syndrome"
+        ]
+      },
+      {
+        "name": "Hematologic Emergencies",
+        "conditions": [
+          "Haemoglobinopathies",
+          "Epistaxis",
+          "Pancytopenia",
+          "Transfusion reactions"
+        ]
+      },
+      {
+        "name": "Toxicology and Substance-Related",
+        "conditions": [
+          "Drug overdose",
+          "Self-harm",
+          "Substance use disorder"
+        ]
+      },
+      {
+        "name": "Environmental Emergencies",
+        "conditions": [
+          "Hyperthermia and hypothermia"
+        ]
+      },
+      {
+        "name": "Special Conditions",
+        "conditions": [
+          "Non-accidental injury",
+          "Gastrointestinal perforation"
+        ]
+      }
+    ],
     "topics": [
       {
         "name": "Acid-base abnormality",
@@ -428,6 +551,67 @@ const masterSubjects: SubjectsData = [
   },
   {
     "name": "Cancer",
+    "conditionGroups": [
+      {
+        "name": "Skin Cancers",
+        "conditions": [
+          "Basal cell carcinoma",
+          "Malignant melanoma",
+          "Squamous cell carcinoma"
+        ]
+      },
+      {
+        "name": "Urological Cancers",
+        "conditions": [
+          "Bladder cancer",
+          "Prostate cancer",
+          "Testicular cancer"
+        ]
+      },
+      {
+        "name": "Metastatic Conditions",
+        "conditions": [
+          "Brain metastases",
+          "Metastatic disease",
+          "Spinal cord compression"
+        ]
+      },
+      {
+        "name": "Female Reproductive Cancers",
+        "conditions": [
+          "Breast cancer",
+          "Cervical cancer",
+          "Endometrial cancer",
+          "Ovarian cancer"
+        ]
+      },
+      {
+        "name": "Gastrointestinal Cancers",
+        "conditions": [
+          "Colorectal tumours",
+          "Gastric cancer",
+          "Oesophageal cancer",
+          "Pancreatic cancer"
+        ]
+      },
+      {
+        "name": "Hematologic Malignancies",
+        "conditions": [
+          "Leukaemia",
+          "Lymphoma",
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Other Cancer Conditions",
+        "conditions": [
+          "Hypercalcaemia of malignancy",
+          "Lung cancer",
+          "Pathological fracture",
+          "Patient on anti-coagulant therapy"
+        ]
+      }
+    ],
     "topics": [
       {
         "name": "Basal cell carcinoma",
@@ -625,6 +809,80 @@ const masterSubjects: SubjectsData = [
   },
   {
     "name": "Cardiovascular",
+    "conditionGroups": [
+      {
+        "name": "Cardiac Emergencies",
+        "conditions": [
+          "Acute coronary syndromes",
+          "Cardiac arrest",
+          "Vasovagal syncope"
+        ]
+      },
+      {
+        "name": "Aortic Conditions",
+        "conditions": [
+          "Aneurysms, ischaemic limb and occlusions",
+          "Aortic aneurysm",
+          "Aortic dissection"
+        ]
+      },
+      {
+        "name": "Heart Failure and Valvular Disease",
+        "conditions": [
+          "Cardiac failure",
+          "Aortic valve disease",
+          "Mitral valve disease",
+          "Right heart valve disease"
+        ]
+      },
+      {
+        "name": "Conduction Abnormalities",
+        "conditions": [
+          "Arrhythmias"
+        ]
+      },
+      {
+        "name": "Thrombotic Conditions",
+        "conditions": [
+          "Arterial thrombosis",
+          "Deep vein thrombosis",
+          "Pulmonary embolism"
+        ]
+      },
+      {
+        "name": "Peripheral Vascular Conditions",
+        "conditions": [
+          "Arterial ulcers",
+          "Gangrene",
+          "Peripheral vascular disease",
+          "Venous ulcers"
+        ]
+      },
+      {
+        "name": "Hypertensive Conditions",
+        "conditions": [
+          "Essential or secondary hypertension",
+          "Pulmonary hypertension"
+        ]
+      },
+      {
+        "name": "Inflammatory Cardiac Conditions",
+        "conditions": [
+          "Infective endocarditis",
+          "Myocarditis",
+          "Pericardial disease"
+        ]
+      },
+      {
+        "name": "Ischaemic Conditions",
+        "conditions": [
+          "Intestinal ischaemia",
+          "Ischaemic heart disease",
+          "Transient ischaemic attacks",
+          "Stroke"
+        ]
+      }
+    ],
     "topics": [
       {
         "name": "Acute coronary syndromes",
@@ -6014,5 +6272,17 @@ const masterSubjects: SubjectsData = [
     ]
   }
 ];
+
+// Process the subjects data to ensure all subjects have conditionGroups
+const masterSubjects: SubjectsData = subjectsData.map(subject => {
+  // If subject doesn't have conditionGroups, add an empty array
+  if (!subject.conditionGroups) {
+    return {
+      ...subject,
+      conditionGroups: []
+    };
+  }
+  return subject;
+});
 
 export default masterSubjects;

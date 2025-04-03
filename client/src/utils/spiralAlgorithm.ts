@@ -76,7 +76,7 @@ function calculateTopicImportance(topic: any): number {
   ) / 3;
 }
 
-// Find related topics for connections based on importance similarity
+// Find related topics for connections with preference for same condition group
 function findRelatedTopics(
   currentSubject: string,
   currentTopic: string,
@@ -84,15 +84,44 @@ function findRelatedTopics(
   excludeTopics: string[] = []
 ): string[] {
   const relatedTopics: string[] = [];
-  const currentTopicData = subjectsData
-    .find(s => s.name === currentSubject)
-    ?.topics.find(t => t.name === currentTopic);
+  const sameGroupTopics: string[] = [];
+  
+  // Find the current subject and topic
+  const currentSubjectData = subjectsData.find(s => s.name === currentSubject);
+  const currentTopicData = currentSubjectData?.topics.find(t => t.name === currentTopic);
 
-  if (!currentTopicData) return relatedTopics;
+  if (!currentTopicData || !currentSubjectData) return relatedTopics;
+
+  // Find which condition group(s) the current topic belongs to
+  const topicGroups: string[] = [];
+  currentSubjectData.conditionGroups.forEach(group => {
+    if (group.conditions.includes(currentTopic)) {
+      topicGroups.push(group.name);
+    }
+  });
 
   subjectsData.forEach(subject => {
+    // First pass: look for topics in the same condition group
+    if (topicGroups.length > 0 && subject.name === currentSubject) {
+      subject.conditionGroups
+        .filter(group => topicGroups.includes(group.name))
+        .forEach(group => {
+          group.conditions.forEach(topicName => {
+            if (topicName !== currentTopic && 
+                !excludeTopics.includes(`${subject.name}: ${topicName}`)) {
+              const topicData = subject.topics.find(t => t.name === topicName);
+              if (topicData) {
+                sameGroupTopics.push(`${subject.name}: ${topicName}`);
+              }
+            }
+          });
+        });
+    }
+    
+    // Second pass: look for topics with similar importance
     subject.topics.forEach(topic => {
       if (excludeTopics.includes(`${subject.name}: ${topic.name}`)) return;
+      if (sameGroupTopics.includes(`${subject.name}: ${topic.name}`)) return;
 
       const importanceDiff = Math.abs(
         calculateTopicImportance(topic) - calculateTopicImportance(currentTopicData)
@@ -104,7 +133,9 @@ function findRelatedTopics(
     });
   });
 
-  return relatedTopics.slice(0, 2);
+  // Prioritize topics from the same condition group
+  const combinedTopics = [...sameGroupTopics, ...relatedTopics];
+  return combinedTopics.slice(0, 2);
 }
 
 // Calculate performance multiplier based on user performance data
@@ -125,13 +156,15 @@ function getPerformanceMultiplier(
   return 1 + (LOW_PERFORMANCE_BOOST - 1) * (1 - performance);
 }
 
-// Get topics sorted by performance (struggling topics first)
+// Get topics sorted by performance and condition groups
 function getTopicsByPerformance(
   subject: SubjectWithPriority, 
-  userPerformance?: UserPerformance
+  userPerformance?: UserPerformance,
+  subjectsData?: SubjectsData
 ): any[] {
   const topics = [...subject.topics];
   
+  // First sort by performance if available
   if (userPerformance?.topics) {
     topics.sort((a, b) => {
       const topicKeyA = `${subject.subject}: ${a.name}`;
@@ -145,6 +178,69 @@ function getTopicsByPerformance(
     });
   }
   
+  // If we have access to the subjects data, we can group by condition groups
+  if (subjectsData) {
+    const subjectData = subjectsData.find(s => s.name === subject.subject);
+    if (subjectData && subjectData.conditionGroups.length > 0) {
+      // Map topics to their condition groups
+      const topicGroups = new Map<string, string[]>();
+      
+      // Create a mapping of topic names to their condition groups
+      subjectData.conditionGroups.forEach(group => {
+        group.conditions.forEach(topicName => {
+          if (!topicGroups.has(topicName)) {
+            topicGroups.set(topicName, []);
+          }
+          topicGroups.get(topicName)?.push(group.name);
+        });
+      });
+      
+      // Regroup topics by condition groups while maintaining performance ordering
+      const groupedTopics: any[] = [];
+      const processedTopics = new Set<string>();
+      
+      // Process topics in their current (performance-based) order
+      for (const topic of topics) {
+        if (processedTopics.has(topic.name)) continue;
+        
+        // Add this topic to the result
+        groupedTopics.push(topic);
+        processedTopics.add(topic.name);
+        
+        // Find the condition groups this topic belongs to
+        const groups = topicGroups.get(topic.name) || [];
+        
+        // For each group, add related topics that haven't been processed
+        groups.forEach(groupName => {
+          const groupConditions = subjectData.conditionGroups
+            .find(g => g.name === groupName)?.conditions || [];
+          
+          // Add other topics from the same group that haven't been processed yet
+          groupConditions.forEach(relatedTopicName => {
+            if (relatedTopicName !== topic.name && !processedTopics.has(relatedTopicName)) {
+              const relatedTopic = topics.find(t => t.name === relatedTopicName);
+              if (relatedTopic) {
+                groupedTopics.push(relatedTopic);
+                processedTopics.add(relatedTopicName);
+              }
+            }
+          });
+        });
+      }
+      
+      // Add any remaining topics not in condition groups
+      topics.forEach(topic => {
+        if (!processedTopics.has(topic.name)) {
+          groupedTopics.push(topic);
+          processedTopics.add(topic.name);
+        }
+      });
+      
+      return groupedTopics;
+    }
+  }
+  
+  // Fallback to just performance-sorted topics
   return topics;
 }
 
@@ -393,8 +489,8 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       let dailyHoursUsed = 0;
       let blockCount = 0; // Count blocks for interjection timing
       
-      // Sort topics by performance for this subject - struggling topics first
-      const sortedTopics = getTopicsByPerformance(subjectData, userPerformance);
+      // Sort topics by performance and group by condition groups
+      const sortedTopics = getTopicsByPerformance(subjectData, userPerformance, subjectsData);
 
       // Process blocks for this subject in this pass
       while (remainingBlocks > 0) {
@@ -407,7 +503,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
           );
           
           if (underperformingSubject) {
-            const underperformingTopics = getTopicsByPerformance(underperformingSubject, userPerformance);
+            const underperformingTopics = getTopicsByPerformance(underperformingSubject, userPerformance, subjectsData);
             
             // Find next available time slot
             const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(

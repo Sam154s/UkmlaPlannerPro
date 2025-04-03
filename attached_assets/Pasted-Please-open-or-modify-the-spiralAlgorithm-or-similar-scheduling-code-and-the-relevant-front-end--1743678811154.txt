@@ -1,0 +1,31 @@
+Please open or modify the “spiralAlgorithm” (or similar scheduling) code and the relevant front-end pages (where we define subject groups, e.g., “Subjects and Ratings” page). I want you to:
+
+1. **Integrate the Grouped Condition Sets**:
+   - We have a master list of conditions grouped by subject (Acute & Emergency, Cancer, etc.), each group containing multiple conditions.
+   - For each condition, we already store difficulty + clinical + exam relevance. Sum these for a total “score.”
+
+2. **Allocate Time by Weighted Scores**:
+   - Total time for each subject is determined by the “blocks” we assigned (e.g., 12 blocks for a subject → 30 hours). 
+   - Within each subject, each condition’s share of that 30 hours is `(conditionScore / sumOfAllScoresInSubject) * 30`.
+   - Sum the time of all conditions in a group to find that group’s total time requirement. Round to the nearest 5 minutes.
+
+3. **Schedule Groups in Each Daily Session**:
+   - The daily session has a set number of hours. If a group only uses part of that time, automatically pull in the next group from the same subject (or move on to the next subject) until you fill the day’s allotment.
+   - Each block or session is still structured with:
+     - A short orientation (5 min)
+     - The main study portion
+     - A final Q&A/Anki/Passmed portion.
+
+4. **Subsequent Passes & Difficult Topics**:
+   - For repeated passes, if userPerformance (or difficulty rating) is low, schedule that group more frequently.
+   - For example, if the user found “DKA” especially tough, the next pass increases DKA’s share or re-injects it earlier than normal. 
+   - Keep the spiral approach (multiple passes) but adapt group frequency based on performance.
+
+5. **Allow User to Override Groupings**:
+   - On the “Subjects and Ratings” page, include a function or UI so students can create/edit groupings for each subject.
+   - Make it clear they’re encouraged to form their own groups or rearrange existing ones for better personal learning.
+
+6. **Show the Final Code & Short Summary**:
+   - Provide updated code for the scheduling logic (spiralAlgorithm or a new function) that implements all of the above. 
+   - Show me how you changed the front-end “Subjects and Ratings” (or a new settings page) to let students override these default groupings with a custom grouping UI. 
+   - Offer a brief explanation of the major changes at the end—no extra filler or dummy data, please.
