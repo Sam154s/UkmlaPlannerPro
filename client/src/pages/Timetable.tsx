@@ -130,6 +130,37 @@ export default function Timetable() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  
+  // Handle session click events from calendar events
+  useEffect(() => {
+    const handleSessionClickEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ eventId: string, event: any }>;
+      const eventId = customEvent.detail.eventId;
+      const event = customEvent.detail.event;
+      
+      // Store the selected event info
+      setSelectedEvent(event);
+      setIsSessionDetailOpen(true);
+      
+      // Increment the study count for this session
+      setSessionRevisionCounts((prev: Record<string, number>) => {
+        const newCounts = { ...prev };
+        newCounts[eventId] = (newCounts[eventId] || 0) + 1;
+        
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEYS.REVISION_COUNTS, JSON.stringify(newCounts));
+        
+        return newCounts;
+      });
+    };
+    
+    document.addEventListener('session:click', handleSessionClickEvent);
+    
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener('session:click', handleSessionClickEvent);
+    };
+  }, []);
 
   // Save study events when they change
   useEffect(() => {
@@ -1136,27 +1167,18 @@ const renderEventContent = (eventInfo: any) => {
     );
   }
   
-  // Handle click to show detailed session information
+  // Reference to the component's state variables
   const handleSessionClick = () => {
-    // Store the selected event info
-    setSelectedEvent(event);
-    setIsSessionDetailOpen(true);
-    
-    // Increment the study count for this session
-    const eventId = event.id;
-    setSessionRevisionCounts(prev => {
-      const newCounts = { ...prev };
-      newCounts[eventId] = (newCounts[eventId] || 0) + 1;
-      
-      // Save to localStorage
-      localStorage.setItem(STORAGE_KEYS.REVISION_COUNTS, JSON.stringify(newCounts));
-      
-      return newCounts;
-    });
+    // Use the parent component's state setters
+    window.setTimeout(() => {
+      // We'll call these methods from the parent scope
+      // This is a workaround to avoid context issues in the rendering function
+      const clickEvent = new CustomEvent('session:click', { 
+        detail: { eventId: event.id, event: event }
+      });
+      document.dispatchEvent(clickEvent);
+    }, 0);
   };
-
-  // Get the counter for how many times this session has been studied
-  const revisionCount = sessionRevisionCounts[event.id] || 0;
 
   return (
     <TooltipProvider>
@@ -1168,11 +1190,6 @@ const renderEventContent = (eventInfo: any) => {
           >
             <div className="text-sm font-semibold">
               {event.title}
-              {revisionCount > 0 && (
-                <span className="ml-1 text-xs bg-white/20 px-1 rounded-full inline-flex items-center justify-center">
-                  {revisionCount}
-                </span>
-              )}
             </div>
             {/* Only show the subject title, not the topics */}
           </div>
@@ -1182,11 +1199,6 @@ const renderEventContent = (eventInfo: any) => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-sm">{event.title} - Session Contents:</p>
-                {revisionCount > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    Revised {revisionCount} {revisionCount === 1 ? 'time' : 'times'}
-                  </Badge>
-                )}
               </div>
               <div className="max-h-60 overflow-y-auto pr-2">
                 <ul className="space-y-1">
