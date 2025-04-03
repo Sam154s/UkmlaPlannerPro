@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog';
 import masterSubjects from '@/data/masterSubjects';
 import { Subject, Topic } from '@/data/masterSubjects';
 import { UserPerformance } from '@/utils/spiralAlgorithm';
@@ -21,7 +28,8 @@ export default function Heatmap() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'subject' | 'timesRevised'>('subject');
   const [maxTimesRevised, setMaxTimesRevised] = useState(1);
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     // Load user performance from localStorage
@@ -201,12 +209,10 @@ export default function Heatmap() {
     }
   };
   
-  // Toggle expansion state for a subject
-  const toggleSubjectExpansion = (subjectName: string) => {
-    setExpandedSubjects(prev => ({
-      ...prev,
-      [subjectName]: !prev[subjectName]
-    }));
+  // Handle subject selection and dialog open
+  const handleSubjectClick = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setDialogOpen(true);
   };
   
   // Calculate average times revised for a subject
@@ -317,7 +323,7 @@ export default function Heatmap() {
                   key={subject.name}
                   className="p-3 rounded-lg border flex flex-col items-center text-center cursor-pointer hover:shadow-md transition-shadow"
                   style={{ backgroundColor: bgColor }}
-                  onClick={() => toggleSubjectExpansion(subject.name)}
+                  onClick={() => handleSubjectClick(subject)}
                 >
                   <h3 className="font-semibold mb-1 text-sm line-clamp-2 h-10">
                     {subject.name}
@@ -333,120 +339,85 @@ export default function Heatmap() {
         </CardContent>
       </Card>
 
-      {/* Detailed Subject Breakdowns */}
-      <div className="space-y-4">
-        {getSortedSubjects().map((subject) => {
-          const isExpanded = !!expandedSubjects[subject.name];
-          const subjectColor = getSubjectOverviewColor(subject);
+      {/* Subject Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gradient-theme">
+              {selectedSubject?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Detailed revision progress for {selectedSubject?.name}
+            </DialogDescription>
+          </DialogHeader>
           
-          return (
-            <Card key={subject.name} className="overflow-hidden">
-              <div 
-                className="p-3 flex justify-between items-center cursor-pointer hover:bg-muted/10 transition-colors"
-                style={{ backgroundColor: subjectColor }}
-                onClick={() => toggleSubjectExpansion(subject.name)}
-              >
-                <h3 className="font-semibold">{subject.name}</h3>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg 
-                    width="15" 
-                    height="15" 
-                    viewBox="0 0 15 15" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`transform transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-                  >
-                    <path d="M3.13523 6.15803C3.3241 5.95657 3.64052 5.94637 3.84197 6.13523L7.5 9.56464L11.158 6.13523C11.3595 5.94637 11.6759 5.95657 11.8648 6.15803C12.0536 6.35949 12.0434 6.67591 11.842 6.86477L7.84197 10.6148C7.64964 10.7951 7.35036 10.7951 7.15803 10.6148L3.15803 6.86477C2.95657 6.67591 2.94637 6.35949 3.13523 6.15803Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
-                </Button>
-              </div>
-              
-              {isExpanded && (
-                <CardContent className="p-0">
-                  <div className="overflow-auto max-h-[400px]">
-                    <table className="w-full border-collapse">
-                      <thead className="sticky top-0 bg-background z-10">
-                        <tr>
-                          <th className="min-w-[200px] p-3 text-left font-semibold border-b">Condition Group</th>
-                          <th className="min-w-[300px] p-3 text-left font-semibold border-b">Condition</th>
-                          <th className="min-w-[120px] p-3 text-center font-semibold border-b">Times Revised</th>
-                          <th className="min-w-[120px] p-3 text-center font-semibold border-b">Confidence</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {getConditionGroups(subject).map((groupName) => {
-                          const topicsInGroup = getTopicsInConditionGroup(subject, groupName);
+          {selectedSubject && (
+            <div className="overflow-auto flex-1">
+              <table className="w-full border-collapse">
+                <thead className="sticky top-0 bg-background z-10">
+                  <tr>
+                    <th className="min-w-[200px] p-3 text-left font-semibold border-b">Condition Group</th>
+                    <th className="min-w-[300px] p-3 text-left font-semibold border-b">Condition</th>
+                    <th className="min-w-[120px] p-3 text-center font-semibold border-b">Times Revised</th>
+                    <th className="min-w-[120px] p-3 text-center font-semibold border-b">Confidence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getConditionGroups(selectedSubject).map((groupName) => {
+                    const topicsInGroup = getTopicsInConditionGroup(selectedSubject, groupName);
+                    
+                    return topicsInGroup.map((topic, topicIndex) => {
+                      const performance = userPerformance[selectedSubject.name]?.[topic.name] || { 
+                        timesRevised: 0, 
+                        rating: 0 
+                      };
+                      
+                      // Use theme-based color for cells that focuses only on revision count
+                      const cellColor = getConditionRevisionColor(performance.timesRevised);
+                      
+                      return (
+                        <tr 
+                          key={`${selectedSubject.name}-${groupName}-${topic.name}`}
+                          className="hover:bg-muted/40 transition-colors"
+                        >
+                          {/* Show group name only for first row of each group */}
+                          {topicIndex === 0 ? (
+                            <td 
+                              className="p-3 border-b font-medium"
+                              rowSpan={topicsInGroup.length}
+                            >
+                              {groupName}
+                            </td>
+                          ) : null}
                           
-                          return topicsInGroup.map((topic, topicIndex) => {
-                            const performance = userPerformance[subject.name]?.[topic.name] || { 
-                              timesRevised: 0, 
-                              rating: 0 
-                            };
-                            
-                            // Use theme-based color for cells that focuses only on revision count
-                            const cellColor = getConditionRevisionColor(performance.timesRevised);
-                            
-                            return (
-                              <tr 
-                                key={`${subject.name}-${groupName}-${topic.name}`}
-                                className="hover:bg-muted/40 transition-colors"
-                              >
-                                {/* Show group name only for first row of each group */}
-                                {topicIndex === 0 ? (
-                                  <td 
-                                    className="p-3 border-b font-medium"
-                                    rowSpan={topicsInGroup.length}
-                                  >
-                                    {groupName}
-                                  </td>
-                                ) : null}
-                                
-                                <td className="p-3 border-b">
-                                  {topic.name}
-                                </td>
-                                <td 
-                                  className="p-3 border-b text-center relative group"
-                                  style={{ backgroundColor: cellColor }}
-                                >
-                                  {performance.timesRevised > 0 ? performance.timesRevised : '-'}
-                                  
-                                  {/* Tooltip */}
-                                  <div className="absolute hidden group-hover:block bg-background border rounded-md shadow-lg p-2 z-20 w-64 -translate-y-full left-1/2 -translate-x-1/2 mb-2">
-                                    <div className="font-semibold mb-1">{topic.name}</div>
-                                    <div className="text-sm">
-                                      <div className="flex justify-between mb-1">
-                                        <span>Times Revised:</span>
-                                        <span>{performance.timesRevised || 0}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>Confidence Rating:</span>
-                                        <span>{performance.rating.toFixed(1)}/10</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td 
-                                  className="p-3 border-b text-center"
-                                  style={{ backgroundColor: cellColor }}
-                                >
-                                  {performance.rating > 0 ? 
-                                    `${(performance.rating).toFixed(1)}/10` : 
-                                    '-'
-                                  }
-                                </td>
-                              </tr>
-                            );
-                          });
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+                          <td className="p-3 border-b">
+                            {topic.name}
+                          </td>
+                          <td 
+                            className="p-3 border-b text-center relative group"
+                            style={{ backgroundColor: cellColor }}
+                          >
+                            {performance.timesRevised > 0 ? performance.timesRevised : '-'}
+                          </td>
+                          <td 
+                            className="p-3 border-b text-center"
+                            style={{ backgroundColor: cellColor }}
+                          >
+                            {performance.rating > 0 ? 
+                              `${(performance.rating).toFixed(1)}/10` : 
+                              '-'
+                            }
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
         <h3 className="font-semibold mb-2">Revision Intensity Legend</h3>
