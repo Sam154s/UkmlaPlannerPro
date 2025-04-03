@@ -21,6 +21,7 @@ export default function Heatmap() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'subject' | 'timesRevised'>('subject');
   const [maxTimesRevised, setMaxTimesRevised] = useState(1);
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Load user performance from localStorage
@@ -169,6 +170,40 @@ export default function Heatmap() {
     }
   };
   
+  // Toggle expansion state for a subject
+  const toggleSubjectExpansion = (subjectName: string) => {
+    setExpandedSubjects(prev => ({
+      ...prev,
+      [subjectName]: !prev[subjectName]
+    }));
+  };
+  
+  // Calculate average times revised for a subject
+  const getSubjectAverageRevisions = (subject: Subject): number => {
+    const topics = Object.values(userPerformance[subject.name] || {});
+    if (topics.length === 0) return 0;
+    
+    const totalRevisions = topics.reduce((sum, entry) => sum + (entry.timesRevised || 0), 0);
+    return totalRevisions / topics.length;
+  };
+  
+  // Calculate average confidence rating for a subject
+  const getSubjectAverageRating = (subject: Subject): number => {
+    const topics = Object.values(userPerformance[subject.name] || {});
+    if (topics.length === 0) return 0;
+    
+    const totalRating = topics.reduce((sum, entry) => sum + (entry.rating || 0), 0);
+    return totalRating / topics.length;
+  };
+  
+  // Get color for subject overview based on average revisions and ratings
+  const getSubjectOverviewColor = (subject: Subject): string => {
+    const avgRevisions = getSubjectAverageRevisions(subject);
+    const avgRating = getSubjectAverageRating(subject);
+    
+    return getHeatmapColor(avgRevisions, avgRating);
+  };
+  
   // Get all unique topic names across subjects
   const getAllTopicNames = (): string[] => {
     const topicSet = new Set<string>();
@@ -234,110 +269,162 @@ export default function Heatmap() {
         </div>
       </div>
       
-      <Card className="overflow-hidden">
+      {/* Subject Overview Heatmap */}
+      <Card className="overflow-hidden mb-6">
         <CardHeader className="bg-muted/50 py-3">
-          <CardTitle className="text-lg">Revision Progress</CardTitle>
+          <CardTitle className="text-lg">Subject Overview</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-auto max-h-[calc(100vh-200px)]">
-            <table className="w-full border-collapse">
-              <thead className="sticky top-0 bg-background z-10">
-                <tr>
-                  <th className="min-w-[200px] p-3 text-left font-semibold border-b">Subject</th>
-                  <th className="min-w-[100px] p-3 text-left font-semibold border-b">Condition Group</th>
-                  <th className="min-w-[150px] p-3 text-left font-semibold border-b">Condition</th>
-                  <th className="min-w-[120px] p-3 text-left font-semibold border-b">Times Revised</th>
-                  <th className="min-w-[120px] p-3 text-left font-semibold border-b">Confidence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getSortedSubjects().map((subject) => (
-                  // For each condition group in the subject
-                  getConditionGroups(subject).map((groupName, groupIndex) => {
-                    const topicsInGroup = getTopicsInConditionGroup(subject, groupName);
-                    
-                    return (
-                      // For each topic in the condition group
-                      topicsInGroup.map((topic, topicIndex) => {
-                        const performance = userPerformance[subject.name]?.[topic.name] || { 
-                          timesRevised: 0, 
-                          rating: 0 
-                        };
-                        
-                        const cellColor = getHeatmapColor(
-                          performance.timesRevised,
-                          performance.rating
-                        );
-                        
-                        return (
-                          <tr 
-                            key={`${subject.name}-${groupName}-${topic.name}`}
-                            className="hover:bg-muted/40 transition-colors"
-                          >
-                            {/* Show subject name only for first row of each subject */}
-                            {topicIndex === 0 && groupIndex === 0 ? (
-                              <td 
-                                className="p-3 border-b"
-                                rowSpan={subject.topics.length}
-                              >
-                                {subject.name}
-                              </td>
-                            ) : null}
-                            
-                            {/* Show group name only for first row of each group */}
-                            {topicIndex === 0 ? (
-                              <td 
-                                className="p-3 border-b"
-                                rowSpan={topicsInGroup.length}
-                              >
-                                {groupName}
-                              </td>
-                            ) : null}
-                            
-                            <td className="p-3 border-b">
-                              {topic.name}
-                            </td>
-                            <td 
-                              className="p-3 border-b text-center relative group"
-                              style={{ backgroundColor: cellColor }}
-                            >
-                              {performance.timesRevised > 0 ? performance.timesRevised : '-'}
-                              
-                              {/* Tooltip */}
-                              <div className="absolute hidden group-hover:block bg-background border rounded-md shadow-lg p-2 z-20 w-64 -translate-y-full left-1/2 -translate-x-1/2 mb-2">
-                                <div className="font-semibold mb-1">{topic.name}</div>
-                                <div className="text-sm">
-                                  <div className="flex justify-between mb-1">
-                                    <span>Times Revised:</span>
-                                    <span>{performance.timesRevised || 0}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Confidence Rating:</span>
-                                    <span>{performance.rating.toFixed(1)}/10</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td 
-                              className="p-3 border-b"
-                              style={{ backgroundColor: cellColor }}
-                            >
-                              {performance.rating > 0 ? 
-                                `${(performance.rating).toFixed(1)}/10` : 
-                                '-'
-                              }
-                            </td>
-                          </tr>
-                        );
-                      })
-                    );
-                  })
-                ))}
-              </tbody>
-            </table>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {getSortedSubjects().map((subject) => {
+              const avgRevisions = getSubjectAverageRevisions(subject);
+              const avgRating = getSubjectAverageRating(subject);
+              const bgColor = getSubjectOverviewColor(subject);
+              
+              return (
+                <div 
+                  key={subject.name}
+                  className="p-3 rounded-lg border flex flex-col items-center text-center cursor-pointer hover:shadow-md transition-shadow"
+                  style={{ backgroundColor: bgColor }}
+                  onClick={() => toggleSubjectExpansion(subject.name)}
+                >
+                  <h3 className="font-semibold mb-1 text-sm line-clamp-2 h-10">
+                    {subject.name}
+                  </h3>
+                  <div className="text-xs">
+                    <div>Avg. Times: {avgRevisions.toFixed(1)}</div>
+                    <div>Avg. Rating: {avgRating.toFixed(1)}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
+
+      {/* Detailed Subject Breakdowns */}
+      <div className="space-y-4">
+        {getSortedSubjects().map((subject) => {
+          const isExpanded = !!expandedSubjects[subject.name];
+          const subjectColor = getSubjectOverviewColor(subject);
+          
+          return (
+            <Card key={subject.name} className="overflow-hidden">
+              <div 
+                className="p-3 flex justify-between items-center cursor-pointer hover:bg-muted/10 transition-colors"
+                style={{ backgroundColor: subjectColor }}
+                onClick={() => toggleSubjectExpansion(subject.name)}
+              >
+                <h3 className="font-semibold">{subject.name}</h3>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm">
+                    <span>Avg Revisions: {getSubjectAverageRevisions(subject).toFixed(1)}</span>
+                    <span className="mx-2">•</span>
+                    <span>Avg Confidence: {getSubjectAverageRating(subject).toFixed(1)}/10</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <svg 
+                      width="15" 
+                      height="15" 
+                      viewBox="0 0 15 15" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`transform transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                    >
+                      <path d="M3.13523 6.15803C3.3241 5.95657 3.64052 5.94637 3.84197 6.13523L7.5 9.56464L11.158 6.13523C11.3595 5.94637 11.6759 5.95657 11.8648 6.15803C12.0536 6.35949 12.0434 6.67591 11.842 6.86477L7.84197 10.6148C7.64964 10.7951 7.35036 10.7951 7.15803 10.6148L3.15803 6.86477C2.95657 6.67591 2.94637 6.35949 3.13523 6.15803Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+              
+              {isExpanded && (
+                <CardContent className="p-0">
+                  <div className="overflow-auto max-h-[400px]">
+                    <table className="w-full border-collapse">
+                      <thead className="sticky top-0 bg-background z-10">
+                        <tr>
+                          <th className="min-w-[200px] p-3 text-left font-semibold border-b">Condition Group</th>
+                          <th className="min-w-[300px] p-3 text-left font-semibold border-b">Condition</th>
+                          <th className="min-w-[120px] p-3 text-center font-semibold border-b">Times Revised</th>
+                          <th className="min-w-[120px] p-3 text-center font-semibold border-b">Confidence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getConditionGroups(subject).map((groupName) => {
+                          const topicsInGroup = getTopicsInConditionGroup(subject, groupName);
+                          
+                          return topicsInGroup.map((topic, topicIndex) => {
+                            const performance = userPerformance[subject.name]?.[topic.name] || { 
+                              timesRevised: 0, 
+                              rating: 0 
+                            };
+                            
+                            const cellColor = getHeatmapColor(
+                              performance.timesRevised,
+                              performance.rating
+                            );
+                            
+                            return (
+                              <tr 
+                                key={`${subject.name}-${groupName}-${topic.name}`}
+                                className="hover:bg-muted/40 transition-colors"
+                              >
+                                {/* Show group name only for first row of each group */}
+                                {topicIndex === 0 ? (
+                                  <td 
+                                    className="p-3 border-b font-medium"
+                                    rowSpan={topicsInGroup.length}
+                                  >
+                                    {groupName}
+                                  </td>
+                                ) : null}
+                                
+                                <td className="p-3 border-b">
+                                  {topic.name}
+                                </td>
+                                <td 
+                                  className="p-3 border-b text-center relative group"
+                                  style={{ backgroundColor: cellColor }}
+                                >
+                                  {performance.timesRevised > 0 ? performance.timesRevised : '-'}
+                                  
+                                  {/* Tooltip */}
+                                  <div className="absolute hidden group-hover:block bg-background border rounded-md shadow-lg p-2 z-20 w-64 -translate-y-full left-1/2 -translate-x-1/2 mb-2">
+                                    <div className="font-semibold mb-1">{topic.name}</div>
+                                    <div className="text-sm">
+                                      <div className="flex justify-between mb-1">
+                                        <span>Times Revised:</span>
+                                        <span>{performance.timesRevised || 0}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Confidence Rating:</span>
+                                        <span>{performance.rating.toFixed(1)}/10</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td 
+                                  className="p-3 border-b text-center"
+                                  style={{ backgroundColor: cellColor }}
+                                >
+                                  {performance.rating > 0 ? 
+                                    `${(performance.rating).toFixed(1)}/10` : 
+                                    '-'
+                                  }
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          );
+        })}
+      </div>
       
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
         <h3 className="font-semibold mb-2">Color Scale Legend</h3>
