@@ -38,6 +38,7 @@ import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 import { UserEvent, UserPerformance } from '@/utils/spiralAlgorithm';
 import { cn } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
 import '../styles/calendar.css';
 
 // Types
@@ -82,6 +83,9 @@ const STORAGE_KEYS = {
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 export default function Timetable() {
+  // Get toast notification function
+  const { toast } = useToast();
+  
   // State for user preferences
   const [weeklyHours, setWeeklyHours] = useState(DEFAULT_PREFERENCES.weeklyHours);
   const [yearGroup, setYearGroup] = useState(DEFAULT_PREFERENCES.yearGroup);
@@ -409,10 +413,86 @@ export default function Timetable() {
   };
   
   // Run AI reflow (placeholder function for future implementation)
-  const handleAiReflow = () => {
-    // This would integrate with OpenAI or other AI service
-    // For now, just re-run the generation algorithm
-    handleGenerate();
+  const handleAiReflow = async () => {
+    // Only proceed if we have study events to reflow
+    if (studyEvents.length === 0) return;
+    
+    try {
+      // Show loading state
+      toast({
+        title: "AI Reflow in progress",
+        description: "Analyzing your schedule and optimizing your study plan...",
+        duration: 5000,
+      });
+      
+      // Convert events to a format suitable for AI
+      const formattedEvents = studyEvents.map(event => ({
+        subject: event.title,
+        date: event.start.split('T')[0],
+        startTime: event.start.split('T')[1].substring(0, 5),
+        endTime: event.end.split('T')[1].substring(0, 5),
+        topics: event.extendedProps?.topics || []
+      }));
+      
+      // Call the backend API which will use OpenAI
+      const response = await fetch('/api/ai-reflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          events: formattedEvents,
+          preferences: {
+            weeklyStudyHours: weeklyHours,
+            yearGroup,
+            daysPerWeek,
+            favouriteSubjects: selectedSubjects,
+          },
+          userEvents, // Existing holidays/blocked time
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get AI optimized schedule');
+      }
+      
+      const data = await response.json();
+      
+      // Convert optimized schedule back to calendar events
+      const optimizedEvents = data.events.map((block: any) => ({
+        id: generateId(),
+        title: block.subject,
+        start: `${block.date}T${block.startTime}`,
+        end: `${block.date}T${block.endTime}`,
+        backgroundColor: getSubjectColor(block.subject),
+        borderColor: block.isInterleaved ? '#ffffff' : getSubjectColor(block.subject),
+        classNames: block.isInterleaved ? ['interjection-event'] : undefined,
+        extendedProps: {
+          topics: block.topics
+        }
+      }));
+      
+      // Update calendar with new events
+      setStudyEvents(optimizedEvents);
+      
+      toast({
+        title: "AI Reflow complete",
+        description: "Your schedule has been optimized for better knowledge retention.",
+        duration: 3000,
+      });
+      
+    } catch (error) {
+      console.error('AI Reflow error:', error);
+      toast({
+        title: "AI Reflow failed",
+        description: "Falling back to standard algorithm. Please try again later.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      
+      // Fallback to standard algorithm
+      handleGenerate();
+    }
   };
 
   // Get color for a subject (using official UKMLA content map headings)
@@ -608,6 +688,7 @@ export default function Timetable() {
                   onWeeklyHoursChange={setWeeklyHours}
                   onYearGroupChange={setYearGroup}
                   onDaysPerWeekChange={setDaysPerWeek}
+                  onGenerate={handleGenerate}
                 />
 
                 <div className="space-y-4">
@@ -722,19 +803,56 @@ export default function Timetable() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-2">Main Topics</h3>
-                <ul className="space-y-2 list-disc list-inside" id="session-detail-topics">
-                  {/* Topics will be populated from data attributes */}
-                </ul>
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <span className="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">10%</span>
+                  Orientation Phase
+                </h3>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    Quick overview of all topics to orient yourself (10 minutes)
+                  </p>
+                  <ul className="space-y-2 list-disc list-inside mt-2" id="session-detail-all-topics">
+                    {/* All topics will be populated here */}
+                  </ul>
+                </div>
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-2">Connections</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground" id="session-detail-connections">
-                  {/* Connections will be populated from data attributes */}
-                </ul>
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <span className="bg-emerald-100 text-emerald-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">45%</span>
+                  Learning Phase
+                </h3>
+                <div className="bg-emerald-50 p-3 rounded-lg">
+                  <p className="text-sm text-emerald-800 mb-2">
+                    Focused study on main topics (45 minutes)
+                  </p>
+                  <ul className="space-y-2 list-disc list-inside" id="session-detail-topics">
+                    {/* Main topics will be populated here */}
+                  </ul>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <span className="bg-violet-100 text-violet-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">45%</span>
+                  Practice Phase
+                </h3>
+                <div className="bg-violet-50 p-3 rounded-lg">
+                  <p className="text-sm text-violet-800 mb-2">
+                    Practice questions on SPRANKI, PassMed, or QuesMed (45 minutes)
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <a href="https://www.spranki.com/" target="_blank" rel="noopener noreferrer" className="text-xs bg-white px-2 py-1 rounded border border-violet-200 text-violet-800 hover:bg-violet-100 transition-colors">SPRANKI</a>
+                    <a href="https://www.passmed.com/" target="_blank" rel="noopener noreferrer" className="text-xs bg-white px-2 py-1 rounded border border-violet-200 text-violet-800 hover:bg-violet-100 transition-colors">PassMed</a>
+                    <a href="https://www.quesmed.com/" target="_blank" rel="noopener noreferrer" className="text-xs bg-white px-2 py-1 rounded border border-violet-200 text-violet-800 hover:bg-violet-100 transition-colors">QuesMed</a>
+                  </div>
+                  <ul className="space-y-2 list-disc list-inside mt-3 text-sm" id="session-detail-connections">
+                    <li className="italic text-violet-700">Focus on related concepts:</li>
+                    {/* Connection topics will be populated here */}
+                  </ul>
+                </div>
               </div>
             </div>
             
@@ -796,33 +914,77 @@ const populateSessionDetails = () => {
         }
         
         // Populate topics
+        const allTopicsElement = document.getElementById('session-detail-all-topics');
         const topicsElement = document.getElementById('session-detail-topics');
         const connectionsElement = document.getElementById('session-detail-connections');
         
-        if (topicsElement && connectionsElement) {
+        if (allTopicsElement && topicsElement && connectionsElement) {
           // Clear previous content
+          allTopicsElement.innerHTML = '';
           topicsElement.innerHTML = '';
-          connectionsElement.innerHTML = '';
+          connectionsElement.innerHTML = '<li class="italic text-violet-700">Focus on related concepts:</li>';
           
-          // Add main topics
+          // Get all topics (main + connections)
           const mainTopics = topics.filter((t: any) => t.type === 'main');
+          const connectionTopics = topics.filter((t: any) => t.type === 'connection');
+          
+          // Add all topics to orientation phase (main + connections)
+          const allTopics = new Set<string>();
+          
+          // Add main topics to the set
+          mainTopics.forEach((topic: any) => {
+            allTopics.add(topic.name);
+          });
+          
+          // Add connection topics to the set
+          connectionTopics.forEach((topic: any) => {
+            if (topic.connectionTopics && topic.connectionTopics.length > 0) {
+              topic.connectionTopics.forEach((connection: string) => {
+                // Extract just the topic name from "Subject: Topic"
+                const topicName = connection.split(': ').pop() || connection;
+                allTopics.add(topicName);
+              });
+            }
+          });
+          
+          // Add all topics to orientation phase section
+          allTopics.forEach((topicName) => {
+            const li = document.createElement('li');
+            li.textContent = topicName;
+            li.className = 'text-xs'; // Smaller font for quick overview
+            allTopicsElement.appendChild(li);
+          });
+          
+          // Add main topics to learning phase section
           mainTopics.forEach((topic: any) => {
             const li = document.createElement('li');
             li.textContent = topic.name;
             topicsElement.appendChild(li);
           });
           
-          // Add connection topics
-          const connectionTopics = topics.filter((t: any) => t.type === 'connection');
+          // Add connection topics to practice phase section
+          let connectionsAdded = false;
           connectionTopics.forEach((topic: any) => {
             if (topic.connectionTopics && topic.connectionTopics.length > 0) {
               topic.connectionTopics.forEach((connection: string) => {
+                // Extract just the topic name from "Subject: Topic"
+                const [subject, topicName] = connection.split(': ');
+                
                 const li = document.createElement('li');
-                li.textContent = connection;
+                li.textContent = topicName + (subject ? ` (${subject})` : '');
                 connectionsElement.appendChild(li);
+                connectionsAdded = true;
               });
             }
           });
+          
+          // If no connections were added, add a placeholder
+          if (!connectionsAdded) {
+            const li = document.createElement('li');
+            li.textContent = 'Focus on main topics from learning phase';
+            li.className = 'italic';
+            connectionsElement.appendChild(li);
+          }
         }
       } catch (error) {
         console.error('Error populating session details:', error);

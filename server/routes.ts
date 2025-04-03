@@ -204,6 +204,88 @@ Always maintain a helpful and supportive tone. If you don't know something, be h
       }
     }
   });
+  
+  app.post("/api/ai-reflow", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { events, preferences, userEvents } = req.body;
+      
+      // Format data for OpenAI
+      const prompt = JSON.stringify({
+        events,
+        preferences,
+        userEvents,
+        instructions: "Optimize this medical study schedule to improve knowledge retention through spaced repetition and interleaving techniques. Consider spacing similar subjects apart, interleaving related concepts, and prioritizing difficult topics based on the student preferences. The response must be a JSON array of study blocks with the same structure as the input events."
+      });
+      
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI specialized in medical education and optimizing study schedules. 
+You're tasked with taking an existing UKMLA (UK Medical Licensing Assessment) study schedule and optimizing it for better knowledge retention using principles of:
+
+1. Spaced repetition
+2. Interleaving (mixing related topics)
+3. Appropriate spacing between related concepts
+4. Balanced distribution of study sessions
+5. Considering student preferences and constraints
+
+When scheduling, consider:
+- Priority subjects specified by the student
+- Current year of medical school (1-5)
+- Available weekly study hours
+- Blocked time periods that can't be used (holidays, etc)
+- Existing performance data, if available
+
+Your output MUST be a JSON array of study blocks with the exact same structure as the input, but with optimized scheduling.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 4000,
+        response_format: { type: "json_object" }
+      });
+      
+      let optimizedSchedule;
+      
+      try {
+        const responseContent = completion.choices[0]?.message?.content || "{}";
+        optimizedSchedule = JSON.parse(responseContent);
+        
+        // Ensure we have events in the response
+        if (!optimizedSchedule.events || !Array.isArray(optimizedSchedule.events)) {
+          throw new Error("Invalid response format from AI");
+        }
+        
+        res.json(optimizedSchedule);
+      } catch (parseError) {
+        console.error("Error parsing AI response:", parseError);
+        
+        // Fall back to the original schedule
+        res.json({ 
+          events,
+          message: "AI optimization failed, returning original schedule"
+        });
+      }
+    } catch (error: any) {
+      console.error("OpenAI API error in AI Reflow:", error);
+      
+      // Return the original events as fallback
+      res.json({ 
+        events: req.body.events,
+        message: "AI reflow encountered an error. Using original schedule."
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

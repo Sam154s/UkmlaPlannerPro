@@ -152,7 +152,7 @@
   display: none !important;
 }
 
-/* Modern, floating events */
+/* Modern, floating events - with vertical display */
 .fc .fc-timegrid-event,
 .fc .fc-daygrid-event {
   border-radius: 0.5rem;
@@ -162,11 +162,21 @@
   transition: all 0.15s ease;
   border-width: 0 !important;
   overflow: hidden;
+  width: 90% !important; /* Fixed width to ensure vertical stacking */
+  left: 5% !important; /* Center in column */
+  right: auto !important; /* Reset any right positioning */
+}
+
+/* Ensure events are properly positioned vertically based on their time */
+.fc-timegrid-col-events {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .fc .fc-timegrid-event:hover,
 .fc .fc-daygrid-event:hover {
-  transform: translateY(-1px) scale(1.01);
+  transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   z-index: 10;
 }
