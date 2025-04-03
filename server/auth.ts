@@ -103,7 +103,22 @@ export function setupAuth(app: Express) {
       }
       req.login(user, (err) => {
         if (err) return next(err);
-        res.json(user);
+        
+        // Save rememberMe preference if provided
+        if (req.body.rememberMe !== undefined) {
+          storage.updateUser(user.id, { remember_me: req.body.rememberMe })
+            .then(() => {
+              // Update cookie max age if rememberMe is true
+              if (req.body.rememberMe && req.session.cookie) {
+                // Set to 30 days
+                req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+              }
+              res.json(user);
+            })
+            .catch(next);
+        } else {
+          res.json(user);
+        }
       });
     })(req, res, next);
   });

@@ -8,9 +8,13 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  username: text("username").unique(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  weekly_hours: integer("weekly_hours").default(10),
+  year_group: integer("year_group").default(3),
+  days_per_week: integer("days_per_week").default(5),
+  selected_subjects: text("selected_subjects").array(),
+  color_scheme: jsonb("color_scheme"),
+  timetable_events: jsonb("timetable_events"),
+  remember_me: boolean("remember_me").default(false),
 });
 
 // User settings and preferences
@@ -97,7 +101,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
-  username: true,
 }).extend({
   confirmPassword: z.string()
     .min(1, "Please confirm your password")
