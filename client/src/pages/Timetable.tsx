@@ -1155,37 +1155,56 @@ const renderEventContent = (eventInfo: any) => {
     });
   };
 
+  // Get the counter for how many times this session has been studied
+  const revisionCount = sessionRevisionCounts[event.id] || 0;
+
   return (
     <TooltipProvider>
-      <Tooltip>
+      <Tooltip delayDuration={200}>
         <TooltipTrigger asChild>
           <div 
             className="w-full h-full p-1 cursor-pointer transition-opacity hover:opacity-90" 
             onClick={handleSessionClick}
           >
-            <div className="text-sm font-semibold">{event.title}</div>
+            <div className="text-sm font-semibold">
+              {event.title}
+              {revisionCount > 0 && (
+                <span className="ml-1 text-xs bg-white/20 px-1 rounded-full inline-flex items-center justify-center">
+                  {revisionCount}
+                </span>
+              )}
+            </div>
             {/* Only show the subject title, not the topics */}
           </div>
         </TooltipTrigger>
         {topics && topics.length > 0 && (
-          <TooltipContent className="w-80 max-h-80 overflow-auto bg-white/95 backdrop-blur-sm border shadow-lg">
+          <TooltipContent side="right" align="start" className="z-50 w-80 max-h-80 overflow-auto bg-white/95 backdrop-blur-sm border shadow-lg p-3">
             <div className="space-y-2">
-              <p className="font-semibold text-sm">{event.title} - Session Contents:</p>
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-sm">{event.title} - Session Contents:</p>
+                {revisionCount > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    Revised {revisionCount} {revisionCount === 1 ? 'time' : 'times'}
+                  </Badge>
+                )}
+              </div>
               <div className="max-h-60 overflow-y-auto pr-2">
                 <ul className="space-y-1">
                   {topics.map((topic: any, index: number) => (
-                    <li key={index} className="text-sm flex items-center gap-1">
-                      {topic.type === 'main' ? (
-                        <span className="inline-block w-2 h-2 bg-theme rounded-full mr-1"></span>
-                      ) : (
-                        <span className="inline-block w-2 h-2 border border-theme rounded-full mr-1"></span>
-                      )}
-                      {topic.name}
+                    <li key={index} className="text-sm flex items-start gap-1">
+                      <span className="mt-1 inline-block w-2 h-2 flex-shrink-0">
+                        {topic.type === 'main' ? (
+                          <span className="inline-block w-2 h-2 bg-theme rounded-full"></span>
+                        ) : (
+                          <span className="inline-block w-2 h-2 border border-theme rounded-full"></span>
+                        )}
+                      </span>
+                      <span>{topic.name}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <p className="text-xs italic pt-2 border-t">Click for detailed session structure</p>
+              <p className="text-xs italic pt-2 border-t mt-2">Click for detailed session structure</p>
             </div>
           </TooltipContent>
         )}
