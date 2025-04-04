@@ -1,6 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ExamDate, ExamCountdown } from "@/components/ui/exam-countdown";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { differenceInDays, format } from "date-fns";
 import {
   Clock,
   Calendar,
@@ -10,9 +23,33 @@ import {
   Clock4,
   AlertCircle,
   BarChart3,
-} from "lucide-react";
+  AlarmClock,
+}  from "lucide-react";
 
 export default function Dashboard() {
+  // State for exams
+  const [examDates, setExamDates] = useState<ExamDate[]>([]);
+  
+  // Load exam dates from localStorage
+  useEffect(() => {
+    const savedExamDates = localStorage.getItem('exam-dates');
+    if (savedExamDates) {
+      try {
+        setExamDates(JSON.parse(savedExamDates));
+      } catch (error) {
+        console.error('Failed to parse saved exam dates', error);
+      }
+    }
+  }, []);
+  
+  // Get closest upcoming exam
+  const closestExam = examDates
+    .filter(exam => new Date(exam.date) > new Date())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  
+  // Calculate days until exam
+  const daysUntil = closestExam ? differenceInDays(new Date(closestExam.date), new Date()) : null;
+  
   // Placeholder data
   const studyProgress = {
     hoursStudied: 6,
@@ -131,13 +168,78 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Exam Countdown</CardTitle>
-            <Clock4 className="h-4 w-4 text-theme" />
+            <AlarmClock className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-theme">14 days</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Until UKMLA exam
-            </p>
+            {closestExam ? (
+              <>
+                <div className="flex items-center gap-2">
+                  {daysUntil !== null && (
+                    <>
+                      <div 
+                        className={`p-2 rounded-full ${
+                          daysUntil <= 7 ? 'bg-red-50 text-red-700' :
+                          daysUntil <= 14 ? 'bg-orange-50 text-orange-700' :
+                          'bg-blue-50 text-blue-700'
+                        } w-14 h-14 flex flex-col items-center justify-center`}
+                      >
+                        <span className="text-xl font-bold">{daysUntil}</span>
+                        <span className="text-[10px]">days</span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-theme">{closestExam.name}</div>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(closestExam.date), 'MMMM do, yyyy')}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {closestExam.subjects.length > 0 && (
+                  <div className="mt-2">
+                    <div className="flex flex-wrap gap-1">
+                      {closestExam.subjects.slice(0, 2).map(subject => (
+                        <Badge key={subject} variant="outline" className="text-xs bg-slate-50 border-slate-200">
+                          {subject}
+                        </Badge>
+                      ))}
+                      {closestExam.subjects.length > 2 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{closestExam.subjects.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                No upcoming exams scheduled
+              </div>
+            )}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" size="sm" className="p-0 h-auto mt-2">
+                  <span className="text-xs">Set exam date</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Exam Countdown</DialogTitle>
+                  <DialogDescription>
+                    Track the time remaining until your important exams
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <ExamCountdown
+                  examDates={examDates}
+                  onUpdateExamDates={(updatedExamDates) => {
+                    setExamDates(updatedExamDates);
+                    localStorage.setItem('exam-dates', JSON.stringify(updatedExamDates));
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 

@@ -4,8 +4,9 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timelinePlugin from '@fullcalendar/timeline';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
 import { AIEventChat } from '@/components/ui/ai-event-chat';
@@ -601,6 +602,53 @@ export default function Timetable() {
   // UI for the application
   return (
     <div className="container mx-auto p-4 space-y-4 max-w-full h-[calc(100vh-80px)] flex flex-col">
+      {/* Exam Countdown Box - Only shows if there's an upcoming exam */}
+      {examDates.length > 0 && examDates.some(exam => new Date(exam.date) > new Date()) && (
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+          {(() => {
+            const closestExam = examDates
+              .filter(exam => new Date(exam.date) > new Date())
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+            
+            if (!closestExam) return null;
+            
+            const daysUntil = differenceInDays(new Date(closestExam.date), new Date());
+            const weekColor = daysUntil <= 7 ? 'bg-red-50 text-red-700 border-red-200' : 
+                             daysUntil <= 14 ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                             'bg-blue-50 text-blue-700 border-blue-200';
+            
+            return (
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-shrink-0 w-48 flex flex-col items-center justify-center">
+                  <div className={`p-4 rounded-full ${weekColor} flex flex-col items-center justify-center w-24 h-24`}>
+                    <span className="text-2xl font-bold">{daysUntil}</span>
+                    <span className="text-xs">days left</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-slate-500">Upcoming Exam</h3>
+                  <h4 className="text-xl font-bold text-slate-800">{closestExam.name}</h4>
+                  <p className="text-sm text-slate-500 mt-1">{format(new Date(closestExam.date), 'EEEE, MMMM do, yyyy')}</p>
+                  
+                  {closestExam.subjects.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-slate-500 mb-1">Subjects:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {closestExam.subjects.map(subject => (
+                          <Badge key={subject} variant="outline" className="text-xs bg-slate-50 border-slate-200">
+                            {subject}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+      
       {/* Toolbar with controls */}
       <div className="bg-white rounded-xl shadow-lg p-4 border border-theme/10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -625,6 +673,30 @@ export default function Timetable() {
               onSelectedSubjectsChange={setSelectedSubjects}
               allSubjects={masterSubjects.map(s => s.name)}
             />
+            
+            {/* Show selected subjects as bubbles */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {selectedSubjects.length > 0 ? (
+                selectedSubjects.map(subject => (
+                  <div 
+                    key={subject}
+                    className="px-3 py-1 rounded-full text-sm bg-slate-100 border border-slate-200 flex items-center gap-1"
+                    style={{ backgroundColor: getSubjectColor(subject) + '33', borderColor: getSubjectColor(subject) + '66' }}
+                  >
+                    <span>{subject}</span>
+                    <button
+                      type="button"
+                      className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-slate-200"
+                      onClick={() => setSelectedSubjects(prev => prev.filter(s => s !== subject))}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-slate-500 italic">No subjects selected</div>
+              )}
+            </div>
           </div>
         </div>
         
