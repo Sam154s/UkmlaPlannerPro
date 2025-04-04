@@ -601,10 +601,10 @@ export default function Timetable() {
   
   // UI for the application
   return (
-    <div className="container mx-auto p-4 space-y-4 max-w-full h-[calc(100vh-80px)] flex flex-col">
+    <div className="container mx-auto p-4 space-y-4 max-w-full overflow-y-auto">
       {/* Exam Countdown Box - Only shows if there's an upcoming exam */}
       {examDates.length > 0 && examDates.some(exam => new Date(exam.date) > new Date()) && (
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+        <div className="bg-white rounded-xl shadow-sm p-3 border border-slate-200 mb-3">
           {(() => {
             const closestExam = examDates
               .filter(exam => new Date(exam.date) > new Date())
@@ -619,26 +619,30 @@ export default function Timetable() {
             
             return (
               <div className="flex flex-wrap gap-4">
-                <div className="flex-shrink-0 w-48 flex flex-col items-center justify-center">
-                  <div className={`p-4 rounded-full ${weekColor} flex flex-col items-center justify-center w-24 h-24`}>
-                    <span className="text-2xl font-bold">{daysUntil}</span>
-                    <span className="text-xs">days left</span>
+                <div className="flex-shrink-0 w-24 flex flex-col items-center justify-center">
+                  <div className={`p-2 rounded-full ${weekColor} flex flex-col items-center justify-center w-16 h-16`}>
+                    <span className="text-lg font-bold">{daysUntil}</span>
+                    <span className="text-[10px]">days left</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-slate-500">Upcoming Exam</h3>
-                  <h4 className="text-xl font-bold text-slate-800">{closestExam.name}</h4>
-                  <p className="text-sm text-slate-500 mt-1">{format(new Date(closestExam.date), 'EEEE, MMMM do, yyyy')}</p>
+                  <h3 className="text-xs font-medium text-slate-500">Upcoming Exam</h3>
+                  <h4 className="text-lg font-bold text-slate-800">{closestExam.name}</h4>
+                  <p className="text-xs text-slate-500">{format(new Date(closestExam.date), 'MMMM do, yyyy')}</p>
                   
                   {closestExam.subjects.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-slate-500 mb-1">Subjects:</p>
+                    <div className="mt-1">
                       <div className="flex flex-wrap gap-1">
-                        {closestExam.subjects.map(subject => (
+                        {closestExam.subjects.slice(0, 3).map(subject => (
                           <Badge key={subject} variant="outline" className="text-xs bg-slate-50 border-slate-200">
                             {subject}
                           </Badge>
                         ))}
+                        {closestExam.subjects.length > 3 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{closestExam.subjects.length - 3} more
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -792,7 +796,7 @@ export default function Timetable() {
         
         <TabsContent value="calendar" className="space-y-4 pt-4">
           {/* Full-Page Calendar */}
-          <div className="flex-1 min-h-0 bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden">
+          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden" style={{ height: 'calc(80vh - 200px)' }}>
             <FullCalendar
               ref={setCalendarRef}
               plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, timelinePlugin]}
@@ -924,7 +928,7 @@ export default function Timetable() {
         </TabsContent>
         
         <TabsContent value="ai-assistant" className="pt-4">
-          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 p-4 h-[calc(85vh-120px)]">
+          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 p-4" style={{ height: 'calc(80vh - 200px)' }}>
             <AIEventChat 
               onAddEvent={handleAddAiEvent}
               onReflowSchedule={handleAiReflow}
