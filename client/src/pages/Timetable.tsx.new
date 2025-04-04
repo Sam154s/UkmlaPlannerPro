@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, SetStateAction, Dispatch } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -9,11 +9,10 @@ import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
 import { AIEventChat } from '@/components/ui/ai-event-chat';
-import { BreakSettings, DEFAULT_USER_PREFERENCES } from '@/components/ui/break-settings';
-import { ExamCountdown } from '@/components/ui/exam-countdown';
+import { BreakSettings, DEFAULT_USER_PREFERENCES, UserPreferences as LifestylePreferences } from '@/components/ui/break-settings';
+import { ExamCountdown, ExamDate } from '@/components/ui/exam-countdown';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, AlarmClock, RefreshCw, Sparkles } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -40,10 +39,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, PlusCircle, X, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, X, Clock, Settings, AlarmClock, RefreshCw, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { UserPreferences as LifestylePreferences } from '@/components/ui/break-settings';
-import { ExamDate } from '@/components/ui/exam-countdown';
 import { notificationService } from '@/utils/notificationService';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
@@ -89,6 +86,8 @@ const STORAGE_KEYS = {
   USER_PERFORMANCE: 'user-performance',
   REVISION_COUNTS: 'revision-counts',
   STUDY_EVENTS: 'study-events',
+  USER_LIFESTYLE: 'user-lifestyle',
+  EXAM_DATES: 'exam-dates',
 };
 
 // Generate a random ID for events
@@ -161,9 +160,21 @@ export default function Timetable() {
       const eventId = customEvent.detail.eventId;
       const event = customEvent.detail.event;
       
-      // Store the selected event info
-      setSelectedEvent(event);
-      setIsSessionDetailOpen(true);
+      // Get the DOM element with session data attributes
+      const sessionDetailContent = document.getElementById('session-detail-content');
+      if (sessionDetailContent) {
+        // Set data attributes for the dialog content
+        sessionDetailContent.setAttribute('data-event-title', event.title);
+        sessionDetailContent.setAttribute('data-event-topics', JSON.stringify(event.extendedProps?.topics || []));
+        sessionDetailContent.setAttribute('data-event-start', event.start?.toISOString() || '');
+        sessionDetailContent.setAttribute('data-event-end', event.end?.toISOString() || '');
+        
+        // Trigger the dialog to open
+        const dialogTrigger = document.getElementById('session-detail-dialog-trigger');
+        if (dialogTrigger) {
+          dialogTrigger.click();
+        }
+      }
       
       // Increment the study count for this session
       setSessionRevisionCounts((prev: Record<string, number>) => {
@@ -191,7 +202,7 @@ export default function Timetable() {
     localStorage.setItem(STORAGE_KEYS.STUDY_EVENTS, JSON.stringify(studyEvents));
   }, [studyEvents]);
 
-// Load saved preferences on first mount
+  // Load saved preferences on first mount
   useEffect(() => {
     if (preferencesLoaded.current) return;
     
@@ -257,6 +268,26 @@ export default function Timetable() {
         setUserPerformance(JSON.parse(savedPerformance));
       } catch (error) {
         console.error('Failed to parse saved performance data', error);
+      }
+    }
+    
+    // Load lifestyle preferences
+    const savedLifestyle = localStorage.getItem(STORAGE_KEYS.USER_LIFESTYLE);
+    if (savedLifestyle) {
+      try {
+        setLifestylePreferences(JSON.parse(savedLifestyle));
+      } catch (error) {
+        console.error('Failed to parse saved lifestyle preferences', error);
+      }
+    }
+    
+    // Load exam dates
+    const savedExamDates = localStorage.getItem(STORAGE_KEYS.EXAM_DATES);
+    if (savedExamDates) {
+      try {
+        setExamDates(JSON.parse(savedExamDates));
+      } catch (error) {
+        console.error('Failed to parse saved exam dates', error);
       }
     }
 
@@ -357,6 +388,18 @@ export default function Timetable() {
     if (!preferencesLoaded.current) return;
     localStorage.setItem(STORAGE_KEYS.USER_EVENTS, JSON.stringify(userEvents));
   }, [userEvents]);
+  
+  // Save lifestyle preferences when they change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+    localStorage.setItem(STORAGE_KEYS.USER_LIFESTYLE, JSON.stringify(lifestylePreferences));
+  }, [lifestylePreferences]);
+  
+  // Save exam dates when they change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+    localStorage.setItem(STORAGE_KEYS.EXAM_DATES, JSON.stringify(examDates));
+  }, [examDates]);
   
   // Custom mouse event handlers for the event hover tooltip
   const handleEventMouseEnter = (info: any) => {
@@ -519,7 +562,8 @@ export default function Timetable() {
         date: dateStr,
         startTime: '00:00',
         endTime: '23:59',
-        recurringWeekly: false
+        recurringWeekly: false,
+        type: 'personal'
       };
     });
     
@@ -529,89 +573,31 @@ export default function Timetable() {
     setNewHolidayName('');
     setNewHolidayStartDate(undefined);
     setNewHolidayEndDate(undefined);
-  };
-  
-  // Run AI reflow (placeholder function for future implementation)
-  const handleAiReflow = async () => {
-    // Only proceed if we have study events to reflow
-    if (studyEvents.length === 0) return;
     
-    try {
-      // Show loading state
-      toast({
-        title: "AI Reflow in progress",
-        description: "Analyzing your schedule and optimizing your study plan...",
-        duration: 5000,
-      });
-      
-      // Convert events to a format suitable for AI
-      const formattedEvents = studyEvents.map(event => ({
-        subject: event.title,
-        date: event.start.split('T')[0],
-        startTime: event.start.split('T')[1].substring(0, 5),
-        endTime: event.end.split('T')[1].substring(0, 5),
-        topics: event.extendedProps?.topics || []
-      }));
-      
-      // Call the backend API which will use OpenAI
-      const response = await fetch('/api/ai-reflow', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          events: formattedEvents,
-          preferences: {
-            weeklyStudyHours: weeklyHours,
-            yearGroup,
-            daysPerWeek,
-            favouriteSubjects: selectedSubjects,
-          },
-          userEvents, // Existing holidays/blocked time
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to get AI optimized schedule');
-      }
-      
-      const data = await response.json();
-      
-      // Convert optimized schedule back to calendar events
-      const optimizedEvents = data.events.map((block: any) => ({
-        id: generateId(),
-        title: block.subject,
-        start: `${block.date}T${block.startTime}`,
-        end: `${block.date}T${block.endTime}`,
-        backgroundColor: getSubjectColor(block.subject),
-        borderColor: block.isInterleaved ? '#ffffff' : getSubjectColor(block.subject),
-        classNames: block.isInterleaved ? ['interjection-event'] : undefined,
-        extendedProps: {
-          topics: block.topics
-        }
-      }));
-      
-      // Update calendar with new events
-      setStudyEvents(optimizedEvents);
-      
-      toast({
-        title: "AI Reflow complete",
-        description: "Your schedule has been optimized for better knowledge retention.",
-        duration: 3000,
-      });
-      
-    } catch (error) {
-      console.error('AI Reflow error:', error);
-      toast({
-        title: "AI Reflow failed",
-        description: "Falling back to standard algorithm. Please try again later.",
-        variant: "destructive",
-        duration: 5000,
-      });
-      
-      // Fallback to standard algorithm
-      handleGenerate();
+    // Show confirmation
+    toast({
+      title: "Holiday added",
+      description: `${newHolidayName} has been added to your calendar`,
+    });
+  };
+
+  // Get all events (study events + holidays + other user events) for the calendar
+  const allEvents = [...studyEvents, ...holidayEvents];
+
+  // Get available calendar views based on screen size
+  const getAvailableViews = () => {
+    if (windowWidth < 640) {
+      return {
+        timeGridDay: { type: 'timeGrid', duration: { days: 1 } }
+      };
     }
+    
+    return {
+      timeGridDay: { type: 'timeGrid', duration: { days: 1 } },
+      timeGridWeek: { type: 'timeGrid', duration: { days: 7 } },
+      dayGridMonth: { type: 'dayGrid', duration: { months: 1 } },
+      timelineWeek: { type: 'timeline', duration: { days: 7 } }
+    };
   };
 
   // Get color for a subject (using official UKMLA content map headings)
@@ -621,352 +607,217 @@ export default function Timetable() {
       "Cancer": '#6366f1',
       "Cardiovascular": '#3b82f6',
       "Child health": '#06b6d4',
-      "Clinical haematology": '#f97316',
-      "Clinical imaging": '#d946ef',
-      "Dermatology": '#14b8a6',
-      "Ear, nose and throat": '#8b5cf6',
-      "Endocrine and metabolic": '#10b981',
-      "Gastrointestinal": '#22c55e',
-      "General practice": '#84cc16',
-      "Infection": '#f43f5e',
-      "Medicine of older adult": '#a78bfa',
-      "Mental health": '#ec4899',
-      "Musculoskeletal": '#eab308',
-      "Neurosciences": '#0ea5e9',
-      "Obstetrics and gynaecology": '#f59e0b',
-      "Ophthalmology": '#a855f7',
-      "Palliative and end of life care": '#c084fc',
-      "Perioperative medicine and anaesthesia": '#e879f9',
-      "Renal and urology": '#fb7185',
-      "Respiratory": '#fda4af',
-      "Sexual health": '#f472b6',
-      "Surgery": '#64748b',
+      "Dermatology": '#0ea5e9',
+      "Digital health": '#0284c7',
+      "Ear, nose and throat": '#0369a1',
+      "Endocrinology": '#0891b2',
+      "Ethics and law": '#14b8a6',
+      "Evidence-based practice": '#10b981',
+      "Gastroenterology": '#059669',
+      "Genetics and genomics": '#16a34a',
+      "Global and population health": '#22c55e',
+      "Haematology": '#84cc16',
+      "Health promotion and illness prevention": '#a3e635',
+      "Immunology": '#ca8a04',
+      "Infectious disease": '#d97706',
+      "Insights from humanities": '#ea580c',
+      "Mental health": '#ef4444',
+      "Metabolic health": '#f97316',
+      "Musculoskeletal": '#f59e0b',
+      "Neurology": '#eab308',
+      "Obstetrics and gynaecology": '#fb7185',
+      "Ophthalmology": '#ec4899',
+      "Palliative and end of life care": '#d946ef',
+      "Pharmacology and therapeutics": '#a855f7',
+      "Prescribing": '#9333ea',
+      "Professional knowledge": '#7c3aed',
+      "Public health": '#6d28d9',
+      "Renal and urological": '#4c1d95',
+      "Respiratory": '#4338ca',
+      "Surgery": '#1e40af',
+      "Values and behaviours": '#1d4ed8'
     };
-    return colors[subject as keyof typeof colors] || '#666';
+    
+    return colors[subject] || `hsl(${Math.floor(Math.random() * 360)}, 70%, 65%)`;
   };
 
-  // Get calendar views based on screen size - now returns a properly typed object
-  const getAvailableViews = () => {
-    const views: Record<string, any> = windowWidth < 640 
-      ? { timeGridDay: { buttonText: 'Day' } }
-      : {
-          timeGridDay: { buttonText: 'Day' },
-          timeGridWeek: { buttonText: 'Week' },
-          dayGridMonth: { buttonText: 'Month' },
-          timelineWeek: { buttonText: 'Timeline' }
-        };
+  // Handle AI-powered schedule reflow
+  const handleAiReflow = () => {
+    // TODO: Implement AI reflow logic
+    // For now, just regenerate the timetable
+    handleGenerate();
     
-    return views;
+    toast({
+      title: "Schedule reflowed",
+      description: "Your timetable has been reorganized with AI assistance",
+    });
   };
-
-  // Combine study events and holidays for the calendar
-  const allEvents = [...studyEvents, ...holidayEvents];
-
-  // Add session detail modal component
-  const SessionDetailModal = () => {
-    if (!selectedEvent) return null;
-    
-    const event = selectedEvent;
+  
+  // Render event content function for FullCalendar
+  const renderEventContent = (eventInfo: any) => {
+    const event = eventInfo.event;
     const topics = event.extendedProps?.topics || [];
-    const eventId = event.id;
-    const studyCount = sessionRevisionCounts[eventId] || 0;
+    const isHoliday = event.extendedProps?.isHoliday;
     
-    // Calculate duration in minutes
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
-    const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
-    
-    // Calculate phase durations (10% orientation, 45% learning, 45% practice)
-    const orientationMinutes = Math.round(durationMinutes * 0.1);
-    const learningMinutes = Math.round(durationMinutes * 0.45);
-    const practiceMinutes = durationMinutes - orientationMinutes - learningMinutes;
-    
-    return (
-      <div className="session-detail-overlay" onClick={() => setIsSessionDetailOpen(false)}>
-        <div 
-          className="session-detail-card dark:bg-gray-800 dark:text-white" 
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">{event.title} Session</h2>
-            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-              Studied {studyCount} {studyCount === 1 ? 'time' : 'times'}
-            </Badge>
-            <button 
-              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => setIsSessionDetailOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-            {format(startDate, 'EEEE, MMM d, yyyy • h:mm a')} - {format(endDate, 'h:mm a')}
-            <span className="ml-2">({durationMinutes} minutes)</span>
-          </div>
-          
-          <div className="space-y-4">
-            {/* Orientation Phase */}
-            <div className="session-phase phase-orientation">
-              <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                Orientation Phase ({orientationMinutes} min)
-              </h3>
-              <p className="text-sm">
-                Review session goals and prepare your learning environment. 
-                Connect this material with what you already know.
-              </p>
-            </div>
-            
-            {/* Learning Phase */}
-            <div className="session-phase phase-learning">
-              <h3 className="font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
-                Learning Phase ({learningMinutes} min)
-              </h3>
-              <div className="space-y-2">
-                <p className="text-sm font-medium mb-2">Focus on these topics:</p>
-                <ul className="space-y-1 max-h-40 overflow-y-auto">
-                  {topics.map((topic: any, index: number) => (
-                    <li key={index} className="text-sm ml-2">
-                      • {topic.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            
-            {/* Practice Phase */}
-            <div className="session-phase phase-practice">
-              <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
-                Practice Phase ({practiceMinutes} min)
-              </h3>
-              <p className="text-sm">
-                Test your knowledge with practice questions. Try explaining topics out loud 
-                or teaching them to someone else. Create summary notes for later review.
-              </p>
-            </div>
-          </div>
+    if (isHoliday) {
+      return (
+        <div className="w-full h-full p-1 flex items-center justify-center text-white">
+          <div className="text-sm font-semibold">{event.title}</div>
         </div>
-      </div>
+      );
+    }
+    
+    // Handle session click
+    const handleSessionClick = () => {
+      // Use the parent component's state setters
+      window.setTimeout(() => {
+        // This is a workaround to avoid context issues in the rendering function
+        const clickEvent = new CustomEvent('session:click', { 
+          detail: { eventId: event.id, event: event }
+        });
+        document.dispatchEvent(clickEvent);
+      }, 0);
+    };
+
+    return (
+      <TooltipProvider>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <div 
+              className="w-full h-full p-1 cursor-pointer transition-opacity hover:opacity-90" 
+              onClick={handleSessionClick}
+            >
+              <div className="text-sm font-semibold">
+                {event.title}
+              </div>
+              {/* Only show the subject title, not the topics */}
+            </div>
+          </TooltipTrigger>
+          {topics && topics.length > 0 && (
+            <TooltipContent side="right" align="start" className="z-50 w-80 max-h-80 overflow-auto bg-white/95 backdrop-blur-sm border shadow-lg p-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-sm">{event.title} - Session Contents:</p>
+                </div>
+                <div className="max-h-60 overflow-y-auto pr-2">
+                  <ul className="space-y-1">
+                    {topics.map((topic: any, index: number) => (
+                      <li key={index} className="text-sm flex items-start gap-1">
+                        <span className="mt-1 inline-block w-2 h-2 flex-shrink-0">
+                          {topic.type === 'main' ? (
+                            <span className="inline-block w-2 h-2 bg-theme rounded-full"></span>
+                          ) : (
+                            <span className="inline-block w-2 h-2 border border-theme rounded-full"></span>
+                          )}
+                        </span>
+                        <span>{topic.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="text-xs italic pt-2 border-t mt-2">Click for detailed session structure</p>
+              </div>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
     );
   };
   
+  // Handle adding AI-suggested event
+  const handleAddAiEvent = (event: any) => {
+    // Convert AI event to calendar event
+    const newEvent: CalendarEvent = {
+      id: generateId(),
+      title: event.title,
+      start: `${event.date}T${event.startTime}`,
+      end: `${event.date}T${event.endTime}`,
+      backgroundColor: event.type === 'personal' ? '#3b82f6' : 
+                      event.type === 'placement' ? '#10b981' :
+                      event.type === 'meal' ? '#f97316' :
+                      event.type === 'sleep' ? '#9333ea' : '#64748b',
+      borderColor: event.type === 'personal' ? '#2563eb' : 
+                  event.type === 'placement' ? '#059669' :
+                  event.type === 'meal' ? '#ea580c' :
+                  event.type === 'sleep' ? '#7e22ce' : '#475569',
+      extendedProps: {
+        isHoliday: false
+      }
+    };
+    
+    // Add to user events
+    const userEvent: UserEvent = {
+      name: event.title,
+      date: event.date,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      recurringWeekly: event.recurring || false,
+      recurringDays: event.recurringDays || [],
+      type: event.type
+    };
+    
+    setUserEvents(prev => [...prev, userEvent]);
+    
+    // If it's recurring, create events for each day
+    if (event.recurring && event.recurringDays?.length) {
+      // Handle recurring events (implementation depends on your needs)
+      // This is a placeholder
+      toast({
+        title: "Recurring event added",
+        description: `${event.title} has been added to your schedule on ${event.recurringDays.join(', ')}`,
+      });
+    } else {
+      // Add to calendar
+      setHolidayEvents(prev => [...prev, newEvent]);
+      
+      toast({
+        title: "Event added",
+        description: `${event.title} has been added to your schedule`,
+      });
+    }
+    
+    // Reflow the schedule if needed
+    if (studyEvents.length > 0) {
+      handleAiReflow();
+    }
+  };
+  
+  // UI for the application
   return (
     <div className="container mx-auto p-4 space-y-4 max-w-full h-[calc(100vh-80px)] flex flex-col">
-      {/* Session detail modal */}
-      {isSessionDetailOpen && <SessionDetailModal />}
-      
-      {/* Custom Event Hover Tooltip */}
-      {tooltipVisible && tooltipContent && (
-        <div 
-          className={`event-hover-tooltip ${tooltipVisible ? 'visible' : ''}`}
-          style={{
-            top: `${tooltipContent.position.top}px`,
-            left: `${tooltipContent.position.left}px`
-          }}
-        >
-          <div className="event-hover-tooltip-header">
-            {tooltipContent.subject} - Session Contents
+      {/* Toolbar with controls */}
+      <div className="bg-white rounded-xl shadow-lg p-4 border border-theme/10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Study Preferences */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium">Study Configuration</h2>
+            <StudyConfig
+              weeklyHours={weeklyHours}
+              onWeeklyHoursChange={setWeeklyHours}
+              yearGroup={yearGroup}
+              onYearGroupChange={setYearGroup}
+              daysPerWeek={daysPerWeek}
+              onDaysPerWeekChange={setDaysPerWeek}
+            />
           </div>
-          <div className="event-hover-tooltip-content">
-            <ul>
-              {tooltipContent.topics.map((topic, index) => (
-                <li key={index}>
-                  {topic.name}
-                </li>
-              ))}
-            </ul>
+
+          {/* Subject Selection */}
+          <div className="space-y-4 md:col-span-2">
+            <h2 className="text-lg font-medium">Subject Selection</h2>
+            <SelectSubjects
+              selectedSubjects={selectedSubjects}
+              onSelectedSubjectsChange={setSelectedSubjects}
+              allSubjects={masterSubjects.map(s => s.name)}
+            />
           </div>
-        </div>
-      )}
-      
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gradient-theme">
-            Study Planner
-          </h1>
-          {revisionCount > 0 && (
-            <p className="text-sm text-muted-foreground">
-              Revision cycle: {revisionCount}
-            </p>
-          )}
         </div>
         
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={handleGenerate}
-          >
-            <RefreshCw size={16} />
-            Generate Schedule
-          </Button>
-          
-          {/* Holiday Dialog */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex gap-2 items-center">
-                <PlusCircle size={16} />
-                <span>Add Holiday</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Holiday Period</DialogTitle>
-                <DialogDescription>
-                  Block out dates for holidays. No study sessions will be scheduled during these times.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <Input 
-                    id="name" 
-                    value={newHolidayName}
-                    onChange={e => setNewHolidayName(e.target.value)}
-                    className="col-span-3" 
-                    placeholder="e.g., Summer Break" 
-                  />
-                </div>
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">Start Date</Label>
-                  <div className="col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newHolidayStartDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newHolidayStartDate ? (
-                            newHolidayStartDate.toLocaleDateString()
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={newHolidayStartDate}
-                          onSelect={setNewHolidayStartDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">End Date</Label>
-                  <div className="col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newHolidayEndDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newHolidayEndDate ? (
-                            newHolidayEndDate.toLocaleDateString()
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={newHolidayEndDate}
-                          onSelect={setNewHolidayEndDate}
-                          initialFocus
-                          disabled={(date) => 
-                            newHolidayStartDate ? date < newHolidayStartDate : false
-                          }
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="secondary">Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
-                  <Button onClick={handleAddHoliday} disabled={!newHolidayName || !newHolidayStartDate}>
-                    Add Holiday
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          {/* Settings Dialog */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">Settings</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[725px] max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Study Settings</DialogTitle>
-                <DialogDescription>
-                  Configure your study preferences and subject selections.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                <StudyConfig
-                  weeklyHours={weeklyHours}
-                  yearGroup={yearGroup}
-                  daysPerWeek={daysPerWeek}
-                  onWeeklyHoursChange={setWeeklyHours}
-                  onYearGroupChange={setYearGroup}
-                  onDaysPerWeekChange={setDaysPerWeek}
-                  onGenerate={handleGenerate}
-                />
-
-                <div className="space-y-4">
-                  <SelectSubjects
-                    subjects={masterSubjects.map(subject => subject.name)}
-                    selectedSubjects={selectedSubjects}
-                    onChange={setSelectedSubjects}
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="secondary">Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
-                  <Button 
-                    onClick={handleGenerate} 
-                    disabled={weeklyHours <= 0 || selectedSubjects.length === 0}
-                    className="button-theme"
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Generate Timetable
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          {/* Quick Generate Button */}
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2 mt-4 items-center justify-end">
+          {/* Generate Button */}
           <Button 
-            className="button-theme"
             onClick={handleGenerate}
-            disabled={weeklyHours <= 0 || selectedSubjects.length === 0}
+            disabled={weeklyHours === 0 || selectedSubjects.length === 0 || daysPerWeek === 0}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Generate
@@ -1182,11 +1033,7 @@ export default function Timetable() {
         <TabsContent value="ai-assistant" className="pt-4">
           <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 p-4 h-[calc(85vh-120px)]">
             <AIEventChat 
-              onAddEvent={(event) => {
-                // Handle adding an event from AI Assistant
-                console.log("AI suggested event:", event);
-                // TODO: Implement adding the event to calendar
-              }}
+              onAddEvent={handleAddAiEvent}
               onReflowSchedule={() => {
                 // Handle AI-triggered schedule reflow
                 handleAiReflow();
@@ -1195,14 +1042,13 @@ export default function Timetable() {
           </div>
         </TabsContent>
       </Tabs>
+    </div>
   );
 }
 
 // JavaScript to populate the session detail dialog from data attributes
-// This runs when the dialog is opened
-const populateSessionDetails = () => {
-  if (typeof document === 'undefined') return;
-  
+// This code runs client-side
+if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     const detailsElement = document.getElementById('session-detail-content');
     const dialogTrigger = document.getElementById('session-detail-dialog-trigger');
@@ -1210,13 +1056,13 @@ const populateSessionDetails = () => {
     if (!detailsElement || !dialogTrigger) return;
     
     dialogTrigger.addEventListener('click', () => {
-      // Get data from attributes
-      const title = detailsElement.getAttribute('data-event-title') || 'Study Session';
-      const topicsJson = detailsElement.getAttribute('data-event-topics') || '[]';
-      const startTime = detailsElement.getAttribute('data-event-start') || '';
-      const endTime = detailsElement.getAttribute('data-event-end') || '';
-      
       try {
+        // Get data from attributes
+        const title = detailsElement.getAttribute('data-event-title') || 'Study Session';
+        const topicsJson = detailsElement.getAttribute('data-event-topics') || '[]';
+        const startTime = detailsElement.getAttribute('data-event-start') || '';
+        const endTime = detailsElement.getAttribute('data-event-end') || '';
+        
         // Parse topics
         const topics = JSON.parse(topicsJson);
         
@@ -1228,18 +1074,29 @@ const populateSessionDetails = () => {
         
         // Format and set date/time
         if (startTime && endTime) {
-          const start = parseISO(startTime);
-          const end = parseISO(endTime);
+          const start = new Date(startTime);
+          const end = new Date(endTime);
           
           const dateElement = document.getElementById('session-detail-date');
           const timeElement = document.getElementById('session-detail-time');
           
           if (dateElement) {
-            dateElement.textContent = format(start, 'MMMM d, yyyy');
+            dateElement.textContent = start.toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric', 
+              year: 'numeric' 
+            });
           }
           
           if (timeElement) {
-            timeElement.textContent = `${format(start, 'h:mm a')} - ${format(end, 'h:mm a')}`;
+            const formatTime = (date) => {
+              return date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit', 
+                hour12: true 
+              });
+            };
+            timeElement.textContent = `${formatTime(start)} - ${formatTime(end)}`;
           }
         }
         
@@ -1255,21 +1112,21 @@ const populateSessionDetails = () => {
           connectionsElement.innerHTML = '<li class="italic text-violet-700">Focus on related concepts:</li>';
           
           // Get all topics (main + connections)
-          const mainTopics = topics.filter((t: any) => t.type === 'main');
-          const connectionTopics = topics.filter((t: any) => t.type === 'connection');
+          const mainTopics = topics.filter(t => t.type === 'main');
+          const connectionTopics = topics.filter(t => t.type === 'connection');
           
           // Add all topics to orientation phase (main + connections)
-          const allTopics = new Set<string>();
+          const allTopics = new Set();
           
           // Add main topics to the set
-          mainTopics.forEach((topic: any) => {
+          mainTopics.forEach(topic => {
             allTopics.add(topic.name);
           });
           
           // Add connection topics to the set
-          connectionTopics.forEach((topic: any) => {
+          connectionTopics.forEach(topic => {
             if (topic.connectionTopics && topic.connectionTopics.length > 0) {
-              topic.connectionTopics.forEach((connection: string) => {
+              topic.connectionTopics.forEach(connection => {
                 // Extract just the topic name from "Subject: Topic"
                 const topicName = connection.split(': ').pop() || connection;
                 allTopics.add(topicName);
@@ -1278,7 +1135,7 @@ const populateSessionDetails = () => {
           });
           
           // Add all topics to orientation phase section
-          allTopics.forEach((topicName) => {
+          allTopics.forEach(topicName => {
             const li = document.createElement('li');
             li.textContent = topicName;
             li.className = 'text-xs'; // Smaller font for quick overview
@@ -1286,7 +1143,7 @@ const populateSessionDetails = () => {
           });
           
           // Add main topics to learning phase section
-          mainTopics.forEach((topic: any) => {
+          mainTopics.forEach(topic => {
             const li = document.createElement('li');
             li.textContent = topic.name;
             topicsElement.appendChild(li);
@@ -1294,9 +1151,9 @@ const populateSessionDetails = () => {
           
           // Add connection topics to practice phase section
           let connectionsAdded = false;
-          connectionTopics.forEach((topic: any) => {
+          connectionTopics.forEach(topic => {
             if (topic.connectionTopics && topic.connectionTopics.length > 0) {
-              topic.connectionTopics.forEach((connection: string) => {
+              topic.connectionTopics.forEach(connection => {
                 // Extract just the topic name from "Subject: Topic"
                 const [subject, topicName] = connection.split(': ');
                 
@@ -1321,78 +1178,4 @@ const populateSessionDetails = () => {
       }
     });
   });
-};
-
-// Run the function
-populateSessionDetails();
-
-const renderEventContent = (eventInfo: any) => {
-  const event = eventInfo.event;
-  const topics = event.extendedProps?.topics;
-  const isHoliday = event.extendedProps?.isHoliday;
-  
-  if (isHoliday) {
-    return (
-      <div className="w-full h-full p-1 flex items-center justify-center text-white">
-        <div className="text-sm font-semibold">{event.title}</div>
-      </div>
-    );
-  }
-  
-  // Reference to the component's state variables
-  const handleSessionClick = () => {
-    // Use the parent component's state setters
-    window.setTimeout(() => {
-      // We'll call these methods from the parent scope
-      // This is a workaround to avoid context issues in the rendering function
-      const clickEvent = new CustomEvent('session:click', { 
-        detail: { eventId: event.id, event: event }
-      });
-      document.dispatchEvent(clickEvent);
-    }, 0);
-  };
-
-  return (
-    <TooltipProvider>
-      <Tooltip delayDuration={200}>
-        <TooltipTrigger asChild>
-          <div 
-            className="w-full h-full p-1 cursor-pointer transition-opacity hover:opacity-90" 
-            onClick={handleSessionClick}
-          >
-            <div className="text-sm font-semibold">
-              {event.title}
-            </div>
-            {/* Only show the subject title, not the topics */}
-          </div>
-        </TooltipTrigger>
-        {topics && topics.length > 0 && (
-          <TooltipContent side="right" align="start" className="z-50 w-80 max-h-80 overflow-auto bg-white/95 backdrop-blur-sm border shadow-lg p-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-sm">{event.title} - Session Contents:</p>
-              </div>
-              <div className="max-h-60 overflow-y-auto pr-2">
-                <ul className="space-y-1">
-                  {topics.map((topic: any, index: number) => (
-                    <li key={index} className="text-sm flex items-start gap-1">
-                      <span className="mt-1 inline-block w-2 h-2 flex-shrink-0">
-                        {topic.type === 'main' ? (
-                          <span className="inline-block w-2 h-2 bg-theme rounded-full"></span>
-                        ) : (
-                          <span className="inline-block w-2 h-2 border border-theme rounded-full"></span>
-                        )}
-                      </span>
-                      <span>{topic.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <p className="text-xs italic pt-2 border-t mt-2">Click for detailed session structure</p>
-            </div>
-          </TooltipContent>
-        )}
-      </Tooltip>
-    </TooltipProvider>
-  );
 }

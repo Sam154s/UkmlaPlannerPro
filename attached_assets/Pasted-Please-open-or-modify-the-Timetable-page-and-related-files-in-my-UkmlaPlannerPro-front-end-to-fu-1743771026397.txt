@@ -1,0 +1,37 @@
+Please open or modify the “Timetable” page (and related files) in my UkmlaPlannerPro front end to function more like Motion. Here is what I want:
+
+1. **AI Chat for Event Creation**  
+   - In the timetable view, add a chatbot interface (or button that opens a chat) where the user can type natural requests, e.g. “I have football 6–7pm on Wednesday 15th,” “Add a 1-hour gym session every day,” or “I’m working 8am–12pm on Monday.”  
+   - The AI should parse these times/dates/durations and automatically insert them into the user’s schedule (like normal events). If there’s a conflict, the AI can shift or reflow existing tasks to accommodate.
+
+2. **Break Scheduling**  
+   - Offer a user setting for break preferences. For example, “Every hour of revision requires a 5-minute break, plus 30 min break after 2–3 consecutive blocks.”  
+   - If the user chooses a break length or pattern, the timetable automatically adjusts all revision blocks and personal events so these breaks are enforced.  
+   - If break insertion pushes beyond the user’s daily end time, the system reflows tasks to the following day.
+
+3. **Meal / Sleep Logic**  
+   - By default, attempt to guess user mealtimes (e.g., breakfast, lunch, dinner). If not specified, the AI can place them at roughly typical times. If the user has strong preferences (e.g., “I eat lunch at 1pm for 30min”), the schedule updates accordingly.  
+   - Consider “sleep” blocked from midnight to 7am unless the user customises. (You can keep it simple or skip advanced logic for now.)
+
+4. **Placement Hours for Years 3–5**  
+   - Let users define “placement hours” each week (e.g., Monday–Friday 8am–12pm). The timetable blocks these out as non-negotiable. The AI can’t schedule revision or personal events during those hours.
+
+5. **Real-Time Reflow**  
+   - Whenever the user or AI adds a new event or changes a preference (like break length), automatically reflow the timetable with no “save” or “refresh” button. If there’s a major clash, the AI can highlight the conflict and propose alternatives.
+
+6. **Exam Countdown**  
+   - If the user sets an exam date, show a countdown (e.g., “14 days left”). Optionally emphasise revision tasks as the exam approaches, but do **not** change the block-based logic. Just let them see it.
+
+7. **Notifications & Reminders**  
+   - A basic setup where the user gets a reminder X minutes before an event or revision session starts. A simple local approach or web notifications is fine for now. They can set how many minutes in advance they want the reminder.
+
+8. **User Interface**  
+   - Keep the block-based approach for revision sessions, but show new personal events or meal breaks integrated in the same timeline. 
+   - Consider a quick “overview” where the user sees a single unified schedule for the day. The user should be able to see their revision blocks plus personal events in one calendar/timeline view.
+
+9. **Implementation Details**  
+   - Provide me the **updated Timetable page** (e.g., Timetable.tsx) that implements these features. If you need a separate context for the AI chat or an event parser, create or modify relevant files.  
+   - Show me how the code handles “placement hours,” meal times, and break insertion.  
+   - Summarise changes at the end, with no filler or placeholder data.
+
+Thank you!
