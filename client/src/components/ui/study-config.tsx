@@ -12,7 +12,7 @@ interface StudyConfigProps {
   onWeeklyHoursChange: (hours: number) => void;
   onYearGroupChange: (group: number) => void;
   onDaysPerWeekChange: (days: number) => void;
-  onGenerate: () => void;
+  onGenerate?: () => void;
 }
 
 export function StudyConfig({
@@ -98,16 +98,18 @@ export function StudyConfig({
         </div>
       </CardContent>
       
-      <CardFooter className="pt-2 pb-6">
-        <Button 
-          onClick={onGenerate}
-          disabled={!isGenerateEnabled}
-          className="w-full bg-theme hover:bg-theme/90 text-white"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Generate Timetable
-        </Button>
-      </CardFooter>
+      {onGenerate && (
+        <CardFooter className="pt-2 pb-6">
+          <Button 
+            onClick={onGenerate}
+            disabled={!isGenerateEnabled}
+            className="w-full bg-theme hover:bg-theme/90 text-white"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Generate Timetable
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

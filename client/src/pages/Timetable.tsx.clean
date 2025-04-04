@@ -4,7 +4,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timelinePlugin from '@fullcalendar/timeline';
-import { format } from 'date-fns';
+import { format, parseISO, addMinutes } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
@@ -13,6 +13,12 @@ import { BreakSettings, DEFAULT_USER_PREFERENCES, UserPreferences as LifestylePr
 import { ExamCountdown, ExamDate } from '@/components/ui/exam-countdown';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +29,23 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar as CalendarIcon, PlusCircle, X, Clock, Settings, AlarmClock, RefreshCw, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { notificationService } from '@/utils/notificationService';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
 import { UserEvent, UserPerformance } from '@/utils/spiralAlgorithm';
+import { cn } from '@/lib/utils';
 import '../styles/calendar.css';
 
 // Types
@@ -93,6 +111,11 @@ export default function Timetable() {
   const [calendarRef, setCalendarRef] = useState<any>(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  // State for holidays
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [newHolidayStartDate, setNewHolidayStartDate] = useState<Date | undefined>(undefined);
+  const [newHolidayEndDate, setNewHolidayEndDate] = useState<Date | undefined>(undefined);
+  
   // State for lifestyle preferences
   const [lifestylePreferences, setLifestylePreferences] = useState<LifestylePreferences>(DEFAULT_USER_PREFERENCES);
   
@@ -112,6 +135,14 @@ export default function Timetable() {
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   
+  // State for hover tooltip
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipContent, setTooltipContent] = useState<{
+    subject: string;
+    topics: any[];
+    position: {top: number; left: number};
+  } | null>(null);
+
   // Loaded flag to prevent multiple loads
   const preferencesLoaded = useRef(false);
 
@@ -360,6 +391,35 @@ export default function Timetable() {
     localStorage.setItem(STORAGE_KEYS.EXAM_DATES, JSON.stringify(examDates));
   }, [examDates]);
   
+  // Custom mouse event handlers for the event hover tooltip
+  const handleEventMouseEnter = (info: any) => {
+    const event = info.event;
+    if (event.extendedProps?.isHoliday) return;
+    
+    const topics = event.extendedProps?.topics || [];
+    if (!topics.length) return;
+    
+    // Get position from the DOM element
+    const rect = info.el.getBoundingClientRect();
+    
+    // Set tooltip content
+    setTooltipContent({
+      subject: event.title,
+      topics: topics,
+      position: {
+        top: rect.top + window.scrollY,
+        left: rect.right + window.scrollX + 10
+      }
+    });
+    
+    // Show tooltip
+    setTooltipVisible(true);
+  };
+  
+  const handleEventMouseLeave = () => {
+    setTooltipVisible(false);
+  };
+  
   // Calendar midnight refresh
   useEffect(() => {
     if (!calendarRef) return;
@@ -448,6 +508,69 @@ export default function Timetable() {
     }
   };
 
+  // Add a new holiday
+  const handleAddHoliday = () => {
+    if (!newHolidayName || !newHolidayStartDate) return;
+    
+    const endDate = newHolidayEndDate || newHolidayStartDate;
+    
+    // Create array of dates between start and end
+    const dates: Date[] = [];
+    const currentDate = new Date(newHolidayStartDate);
+    const lastDate = new Date(endDate);
+    
+    while (currentDate <= lastDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Create a holiday event for each day
+    const newHolidays = dates.map(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      return {
+        id: generateId(),
+        title: newHolidayName,
+        start: `${dateStr}T00:00:00`,
+        end: `${dateStr}T23:59:59`,
+        allDay: true,
+        backgroundColor: '#f43f5e',
+        borderColor: '#e11d48',
+        textColor: '#ffffff',
+        extendedProps: {
+          isHoliday: true
+        }
+      };
+    });
+    
+    setHolidayEvents(prev => [...prev, ...newHolidays]);
+    
+    // Convert to UserEvent format to block scheduling
+    const newUserEvents: UserEvent[] = dates.map(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      return {
+        name: newHolidayName,
+        date: dateStr,
+        startTime: '00:00',
+        endTime: '23:59',
+        recurringWeekly: false,
+        type: 'personal'
+      };
+    });
+    
+    setUserEvents(prev => [...prev, ...newUserEvents]);
+    
+    // Reset form
+    setNewHolidayName('');
+    setNewHolidayStartDate(undefined);
+    setNewHolidayEndDate(undefined);
+    
+    // Show confirmation
+    toast({
+      title: "Holiday added",
+      description: `${newHolidayName} has been added to your calendar`,
+    });
+  };
+
   // Get all events (study events + holidays + other user events) for the calendar
   const allEvents = [...studyEvents, ...holidayEvents];
 
@@ -469,7 +592,7 @@ export default function Timetable() {
 
   // Get color for a subject (using official UKMLA content map headings)
   const getSubjectColor = (subject: string) => {
-    const colors: {[key: string]: string} = {
+    const colors = {
       "Acute and emergency": '#8b5cf6',
       "Cancer": '#6366f1',
       "Cardiovascular": '#3b82f6',
@@ -533,7 +656,9 @@ export default function Timetable() {
     }
     
     return (
-      <div className="w-full h-full p-1 cursor-pointer transition-opacity hover:opacity-90">
+      <div 
+        className="w-full h-full p-1 cursor-pointer transition-opacity hover:opacity-90" 
+      >
         <div className="text-sm font-semibold">
           {event.title}
         </div>
@@ -732,11 +857,14 @@ export default function Timetable() {
                   ? 'timeGridDay' 
                   : 'timeGridDay,timeGridWeek,dayGridMonth,timelineWeek'
               }}
+              // Apply views with as any to avoid type issues with the views prop
               views={getAvailableViews() as any}
               events={allEvents}
               eventContent={renderEventContent}
               editable={true}
               eventDrop={handleEventDrop}
+              eventMouseEnter={handleEventMouseEnter}
+              eventMouseLeave={handleEventMouseLeave}
               eventClick={handleSessionClick}
               allDaySlot={true}
               slotMinTime="06:00:00"
@@ -754,6 +882,36 @@ export default function Timetable() {
               }}
             />
           </div>
+          
+          {/* Event tooltip */}
+          {tooltipVisible && tooltipContent && (
+            <div 
+              className="fixed z-50 bg-white rounded-lg shadow-lg border p-3 w-64"
+              style={{
+                top: tooltipContent.position.top,
+                left: tooltipContent.position.left,
+              }}
+            >
+              <div className="font-medium mb-2">{tooltipContent.subject}</div>
+              <div className="text-sm max-h-60 overflow-y-auto">
+                <p className="text-xs font-medium mb-1 text-slate-500">Topics:</p>
+                <ul className="pl-2 space-y-1">
+                  {tooltipContent.topics.map((topic, index) => (
+                    <li key={index} className="text-xs flex items-start gap-1">
+                      <span className="inline-block w-2 h-2 mt-1 flex-shrink-0">
+                        {topic.type === 'main' ? (
+                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                        ) : (
+                          <span className="inline-block w-2 h-2 border border-blue-500 rounded-full"></span>
+                        )}
+                      </span>
+                      <span>{topic.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
           
           {/* Session Detail Dialog */}
           <Dialog open={isSessionDetailOpen} onOpenChange={setIsSessionDetailOpen}>

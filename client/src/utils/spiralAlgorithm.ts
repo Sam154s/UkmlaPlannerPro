@@ -26,6 +26,8 @@ export interface UserEvent {
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
   recurringWeekly?: boolean; // Whether this event recurs weekly
+  recurringDays?: string[]; // Days of the week for recurring events
+  type?: 'personal' | 'placement' | 'meal' | 'sleep'; // Type of event
 }
 
 interface StudyBlock {

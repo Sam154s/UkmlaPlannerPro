@@ -16,25 +16,25 @@ import {
 import { useState } from "react";
 
 interface SelectSubjectsProps {
-  subjects: string[];
+  allSubjects: string[];
   selectedSubjects: string[];
-  onChange: (selected: string[]) => void;
+  onSelectedSubjectsChange: (selected: string[]) => void;
   maxSelections?: number;
 }
 
 export function SelectSubjects({
-  subjects,
+  allSubjects,
   selectedSubjects,
-  onChange,
+  onSelectedSubjectsChange,
   maxSelections = 5
 }: SelectSubjectsProps) {
   const [open, setOpen] = useState(false);
 
   const toggleSubject = (subject: string) => {
     if (selectedSubjects.includes(subject)) {
-      onChange(selectedSubjects.filter((s) => s !== subject));
+      onSelectedSubjectsChange(selectedSubjects.filter((s) => s !== subject));
     } else if (selectedSubjects.length < maxSelections) {
-      onChange([...selectedSubjects, subject]);
+      onSelectedSubjectsChange([...selectedSubjects, subject]);
     }
   };
 
@@ -58,7 +58,7 @@ export function SelectSubjects({
           <CommandInput placeholder="Search subjects..." />
           <CommandEmpty>No subject found.</CommandEmpty>
           <CommandGroup className="max-h-[250px] overflow-y-auto">
-            {subjects.map((subject) => (
+            {allSubjects.map((subject: string) => (
               <CommandItem
                 key={subject}
                 value={subject}
