@@ -187,8 +187,17 @@ export default function Heatmap() {
     
     const themeColor = getThemeColor();
     
-    // Alpha: More opaque for higher times revised
-    const alpha = Math.min(1, 0.2 + (times / maxTimesRevised) * 0.8);
+    // Define gradients based on number of revisions (0, 5, 10, 15+)
+    let alpha = 0;
+    if (times >= 15) {
+      alpha = 1.0; // Darkest - 15+ revisions
+    } else if (times >= 10) {
+      alpha = 0.75; // Medium - 10-14 revisions
+    } else if (times >= 5) {
+      alpha = 0.5; // Light - 5-9 revisions
+    } else if (times > 0) {
+      alpha = 0.25; // Lightest - 1-4 revisions
+    }
     
     return `rgba(${themeColor.r}, ${themeColor.g}, ${themeColor.b}, ${alpha})`;
   };
@@ -427,20 +436,24 @@ export default function Heatmap() {
             <span className="text-sm">Not Studied</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(1) }}></div>
-            <span className="text-sm">Studied Once</span>
-          </div>
-          <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(3) }}></div>
-            <span className="text-sm">Studied 3 Times</span>
+            <span className="text-sm">1-4 Revisions</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(5) }}></div>
-            <span className="text-sm">Studied 5+ Times</span>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(7) }}></div>
+            <span className="text-sm">5-9 Revisions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(12) }}></div>
+            <span className="text-sm">10-14 Revisions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(15) }}></div>
+            <span className="text-sm">15+ Revisions</span>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Color intensity increases with more revisions. Colors match your selected theme. Hover over cells for detailed information.
+          Color intensity increases with more revisions. The darkest color represents 15+ revisions, while lighter shades represent fewer revisions.
         </p>
       </div>
     </div>
