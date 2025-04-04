@@ -187,16 +187,18 @@ export default function Heatmap() {
     
     const themeColor = getThemeColor();
     
-    // Define gradients based on number of revisions (0, 5, 10, 15+)
-    let alpha = 0;
-    if (times >= 15) {
-      alpha = 1.0; // Darkest - 15+ revisions
-    } else if (times >= 10) {
-      alpha = 0.75; // Medium - 10-14 revisions
-    } else if (times >= 5) {
-      alpha = 0.5; // Light - 5-9 revisions
-    } else if (times > 0) {
-      alpha = 0.25; // Lightest - 1-4 revisions
+    // Calculate a continuous alpha value based on the number of revisions
+    // Start with a minimum alpha of 0.15 for any revision count > 0
+    // Scale up to 1.0 (fully opaque) for 15+ revisions
+    
+    // Minimum alpha for any studied condition
+    const minAlpha = 0.15;
+    
+    // Calculate alpha on a continuous scale from minAlpha to 1.0
+    // 15 revisions = alpha 1.0 (maximum)
+    let alpha = minAlpha;
+    if (times > 0) {
+      alpha = minAlpha + ((1.0 - minAlpha) * Math.min(times, 15) / 15);
     }
     
     return `rgba(${themeColor.r}, ${themeColor.g}, ${themeColor.b}, ${alpha})`;
@@ -436,16 +438,16 @@ export default function Heatmap() {
             <span className="text-sm">Not Studied</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(3) }}></div>
-            <span className="text-sm">1-4 Revisions</span>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(1) }}></div>
+            <span className="text-sm">1 Revision</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(7) }}></div>
-            <span className="text-sm">5-9 Revisions</span>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(5) }}></div>
+            <span className="text-sm">5 Revisions</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(12) }}></div>
-            <span className="text-sm">10-14 Revisions</span>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(10) }}></div>
+            <span className="text-sm">10 Revisions</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded" style={{ backgroundColor: getConditionRevisionColor(15) }}></div>
@@ -453,7 +455,7 @@ export default function Heatmap() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Color intensity increases with more revisions. The darkest color represents 15+ revisions, while lighter shades represent fewer revisions.
+          Color intensity increases continuously with each revision. The legend shows key points in the color scale, but every time a condition is revised, its color will darken slightly.
         </p>
       </div>
     </div>
