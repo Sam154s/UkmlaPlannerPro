@@ -112,6 +112,7 @@ export default function Timetable() {
   // State for session detail modal
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
   
   // Loaded flag to prevent multiple loads
   const preferencesLoaded = useRef(false);
@@ -595,8 +596,16 @@ export default function Timetable() {
     
     // Reflow the schedule if needed
     if (studyEvents.length > 0) {
-      handleAiReflow();
+      handleGenerate();
     }
+  };
+
+  // Handle lifestyle settings
+  const handleLifestyleSettings = () => {
+    toast({
+      title: "Lifestyle Settings", 
+      description: "Lifestyle settings functionality coming soon!",
+    });
   };
   
   // UI for the application
@@ -984,7 +993,6 @@ export default function Timetable() {
               )}
             </DialogContent>
           </Dialog>
-        </div>
 
         {/* Mobile Configuration Popup */}
         <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
@@ -1038,8 +1046,8 @@ export default function Timetable() {
 
         {/* AI Assistant in Corner */}
         <div className="fixed bottom-4 right-4 z-50">
-          <AiEventChat />
+          <AIEventChat />
         </div>
-    </div>
-  );
-}
+      </div>
+    );
+  }
