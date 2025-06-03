@@ -66,15 +66,38 @@ export default function Settings() {
     scheme.name.toLowerCase().includes('red')
   ) || colorSchemes[0]; // fallback to first scheme
 
+  // Store original theme when entering exam mode
+  const [originalTheme, setOriginalTheme] = useState(() => {
+    const saved = localStorage.getItem('original-theme');
+    return saved ? JSON.parse(saved) : {
+      scheme: colorSchemes[0], // Default to first scheme
+      darkMode: false
+    };
+  });
+
   // Handle exam mode toggle with site-wide theme switching
   const handleExamModeToggle = () => {
     const newExamMode = !isExamMode;
     setIsExamMode(newExamMode);
     
     if (newExamMode) {
+      // Store current theme before switching to exam mode
+      const currentTheme = {
+        scheme: currentScheme,
+        darkMode: isDarkMode
+      };
+      setOriginalTheme(currentTheme);
+      localStorage.setItem('original-theme', JSON.stringify(currentTheme));
+      
       // Entering exam mode - switch to coral theme and dark mode
       setColorScheme(coralScheme);
       if (!isDarkMode) {
+        toggleDarkMode();
+      }
+    } else {
+      // Exiting exam mode - restore original theme
+      setColorScheme(originalTheme.scheme);
+      if (isDarkMode !== originalTheme.darkMode) {
         toggleDarkMode();
       }
     }
@@ -86,7 +109,7 @@ export default function Settings() {
       title: newExamMode ? "Exam Mode Enabled" : "Exam Mode Disabled",
       description: newExamMode ? 
         "Site theme switched to coral with dark mode for intensive study" : 
-        "Exam mode disabled - you can now change themes manually",
+        "Restored to your original theme preferences",
     });
   };
 
