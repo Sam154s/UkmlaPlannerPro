@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar, Trophy } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar, Trophy, X } from "lucide-react";
 import { notificationService } from '@/utils/notificationService';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
@@ -671,143 +671,7 @@ export default function Timetable() {
         </div>
       )}
       
-      {/* Toolbar with controls */}
-      <div className="bg-white rounded-xl shadow-lg p-4 border border-theme/10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Study Preferences */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-medium">Study Configuration</h2>
-            <StudyConfig
-              weeklyHours={weeklyHours}
-              onWeeklyHoursChange={setWeeklyHours}
-              yearGroup={yearGroup}
-              onYearGroupChange={setYearGroup}
-              daysPerWeek={daysPerWeek}
-              onDaysPerWeekChange={setDaysPerWeek}
-              onGenerate={handleGenerate}
-            />
-          </div>
 
-          {/* Subject Selection */}
-          <div className="space-y-4 md:col-span-2">
-            <h2 className="text-lg font-medium">Subject Selection</h2>
-            <SelectSubjects
-              selectedSubjects={selectedSubjects}
-              onSelectedSubjectsChange={setSelectedSubjects}
-              allSubjects={masterSubjects.map(s => s.name)}
-            />
-            
-            {/* Show selected subjects as bubbles */}
-            <div className="flex flex-wrap gap-2 mt-3">
-              {selectedSubjects.length > 0 ? (
-                selectedSubjects.map(subject => (
-                  <div 
-                    key={subject}
-                    className="px-3 py-1 rounded-full text-sm bg-slate-100 border border-slate-200 flex items-center gap-1"
-                    style={{ backgroundColor: getSubjectColor(subject) + '33', borderColor: getSubjectColor(subject) + '66' }}
-                  >
-                    <span>{subject}</span>
-                    <button
-                      type="button"
-                      className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-slate-200"
-                      onClick={() => setSelectedSubjects(prev => prev.filter(s => s !== subject))}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="text-sm text-slate-500 italic">No subjects selected</div>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 items-center justify-end">
-          {/* AI Reflow Button */}
-          <Button 
-            variant="outline"
-            className="border-theme/30 hover:bg-theme/5 text-theme"
-            onClick={handleAiReflow}
-            disabled={studyEvents.length === 0}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Reflow with AI
-          </Button>
-          
-          {/* Lifestyle Settings Button */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="secondary" size="sm" className="flex items-center gap-2">
-                <Settings size={16} />
-                Lifestyle Settings
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Lifestyle & Break Settings</DialogTitle>
-                <DialogDescription>
-                  Configure your preferred break times, meals, sleep schedule, and placement hours
-                </DialogDescription>
-              </DialogHeader>
-              
-              <BreakSettings
-                preferences={lifestylePreferences}
-                onChange={setLifestylePreferences}
-              />
-              
-              <DialogFooter className="mt-6">
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button onClick={() => {
-                  localStorage.setItem('user-preferences', JSON.stringify(lifestylePreferences));
-                  toast({
-                    title: "Settings saved",
-                    description: "Your lifestyle preferences have been updated",
-                  });
-                }}>Save Changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          {/* Exam Countdown Button */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <AlarmClock size={16} />
-                Exam Countdown
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Exam Countdown</DialogTitle>
-                <DialogDescription>
-                  Track the time remaining until your important exams
-                </DialogDescription>
-              </DialogHeader>
-              
-              <ExamCountdown
-                examDates={examDates}
-                onUpdateExamDates={setExamDates}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-      
-      {/* Configuration Settings Button for Mobile */}
-      <div className="lg:hidden mb-4">
-        <Button 
-          onClick={() => setIsConfigOpen(true)}
-          variant="outline"
-          className="border-theme/30 hover:bg-theme/5 text-theme"
-        >
-          <Settings className="mr-2 h-4 w-4" />
-          Configuration Settings
-        </Button>
-      </div>
 
       {/* Action Buttons Row */}
       <div className="mb-4">
@@ -1015,9 +879,9 @@ export default function Timetable() {
             </DialogContent>
           </Dialog>
 
-        {/* Mobile Configuration Popup */}
+        {/* Configuration Settings Dialog */}
         <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Configuration Settings</DialogTitle>
             </DialogHeader>
@@ -1034,32 +898,50 @@ export default function Timetable() {
                   onGenerate={handleGenerate}
                 />
               </div>
+              
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Select Subjects</h3>
+                <h3 className="text-lg font-medium">Subject Selection</h3>
                 <SelectSubjects
                   allSubjects={masterSubjects.map(subject => subject.name)}
                   selectedSubjects={selectedSubjects}
                   onSelectedSubjectsChange={setSelectedSubjects}
                 />
+                
+                {/* Show selected subjects as bubbles */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {selectedSubjects.length > 0 ? (
+                    selectedSubjects.map(subject => (
+                      <div 
+                        key={subject}
+                        className="px-3 py-1 rounded-full text-sm bg-slate-100 border border-slate-200 flex items-center gap-1"
+                        style={{ backgroundColor: getSubjectColor(subject) + '33', borderColor: getSubjectColor(subject) + '66' }}
+                      >
+                        <span className="font-medium" style={{ color: getSubjectColor(subject) }}>
+                          {subject}
+                        </span>
+                        <button
+                          onClick={() => setSelectedSubjects(prev => prev.filter(s => s !== subject))}
+                          className="ml-1 text-slate-400 hover:text-slate-600 transition-colors text-lg leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-500">No subjects selected</span>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 items-center justify-end">
+              
+              <div className="flex justify-end">
                 <Button 
                   variant="outline"
                   className="border-theme/30 hover:bg-theme/5 text-theme"
-                  onClick={() => setIsAiPlanningOpen(true)}
+                  onClick={handleGenerate}
                 >
-                  <Zap className="mr-2 h-4 w-4" />
-                  AI Planning
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Generate Timetable
                 </Button>
-                <Button 
-                  variant="outline"
-                  className="border-theme/30 hover:bg-theme/5 text-theme"
-                  onClick={handleLifestyleSettings}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Lifestyle Settings
-                </Button>
-                <ExamCountdown examDates={examDates} onUpdateExamDates={setExamDates} />
               </div>
             </div>
           </DialogContent>
