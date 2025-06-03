@@ -44,6 +44,15 @@
   --input: 240 5.9% 90%;
   --ring: var(--gradient-from);
 
+  /* Theme color variables that can be changed dynamically */
+  --theme-color: #f43f5e;
+  --theme-accent: #ec4899;
+  
+  /* Coral theme for exam mode */
+  --coral-500: 249 115 22;
+  --coral-600: 234 88 12;
+  --coral-700: 194 65 12;
+
   /* Modern UI enhancements */
   --shadow-color: 0 0% 0%;
   --shadow-strength: 1%;
@@ -110,6 +119,23 @@
 
   .bg-theme {
     background-color: rgb(var(--gradient-from));
+  }
+
+  /* Exam mode specific styles */
+  .exam-mode {
+    transition: all 0.3s ease-in-out;
+  }
+
+  .exam-mode .bg-theme {
+    background-color: var(--theme-color);
+  }
+
+  .exam-mode .text-theme {
+    color: var(--theme-color);
+  }
+
+  .exam-mode .border-theme {
+    border-color: var(--theme-color);
   }
 
   /* Modern UI enhancements */

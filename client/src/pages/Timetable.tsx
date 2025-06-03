@@ -118,11 +118,17 @@ export default function Timetable() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isAiPlanningOpen, setIsAiPlanningOpen] = useState(false);
   const [isLifestyleSettingsOpen, setIsLifestyleSettingsOpen] = useState(false);
-  const [isExamMode, setIsExamMode] = useState(false);
-  const [examModeSettings, setExamModeSettings] = useState({
-    weeks: 4,
-    hoursPerDay: 4,
-    daysPerWeek: 5
+  const [isExamMode, setIsExamMode] = useState(() => {
+    const saved = localStorage.getItem('exam-mode-active');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [examModeSettings, setExamModeSettings] = useState(() => {
+    const saved = localStorage.getItem('exam-mode-settings');
+    return saved ? JSON.parse(saved) : {
+      weeks: 4,
+      hoursPerDay: 4,
+      daysPerWeek: 5
+    };
   });
   
   // Loaded flag to prevent multiple loads
@@ -637,16 +643,30 @@ export default function Timetable() {
       document.body.classList.remove('dark');
     }
     
+    // Persist exam mode state
+    localStorage.setItem('exam-mode-active', JSON.stringify(newExamMode));
+    
     toast({
       title: newExamMode ? "Exam Mode Enabled" : "Exam Mode Disabled", 
       description: newExamMode ? "Focusing on exam mode subjects only" : "Switched back to normal study mode",
     });
   };
+
+  // Restore theme on component mount
+  useEffect(() => {
+    if (isExamMode) {
+      const root = document.documentElement;
+      root.style.setProperty('--theme-color', '#f97316'); // coral
+      root.style.setProperty('--theme-accent', '#ea580c'); // darker coral
+      root.classList.add('dark');
+      document.body.classList.add('dark');
+    }
+  }, []); // Only run on mount
   
   // UI for the application
   return (
     <div className={`container mx-auto p-4 space-y-4 max-w-full overflow-y-auto transition-all duration-300 ${
-      isExamMode ? 'dark:bg-slate-900' : ''
+      isExamMode ? 'exam-mode dark:bg-slate-900' : ''
     }`}>
       {/* Exam Countdown Box - Only shows if there's an upcoming exam */}
       {examDates.length > 0 && examDates.some(exam => new Date(exam.date) > new Date()) && (
