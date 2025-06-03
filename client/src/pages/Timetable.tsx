@@ -821,9 +821,9 @@ export default function Timetable() {
           <div className="space-y-4 md:col-span-2">
             <h2 className="text-lg font-medium">Select Subjects</h2>
             <SelectSubjects
-              subjects={masterSubjects}
+              allSubjects={masterSubjects.map(subject => subject.name)}
               selectedSubjects={selectedSubjects}
-              onSelectionChange={setSelectedSubjects}
+              onSelectedSubjectsChange={setSelectedSubjects}
             />
           </div>
         </div>
@@ -851,7 +851,7 @@ export default function Timetable() {
           </Button>
           
           {/* Exam Countdown */}
-          <ExamCountdown />
+          <ExamCountdown examDates={examDates} onUpdateExamDates={setExamDates} />
         </div>
       </div>
 
@@ -1016,9 +1016,9 @@ export default function Timetable() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Select Subjects</h3>
                 <SelectSubjects
-                  subjects={masterSubjects}
+                  allSubjects={masterSubjects.map(subject => subject.name)}
                   selectedSubjects={selectedSubjects}
-                  onSelectionChange={setSelectedSubjects}
+                  onSelectedSubjectsChange={setSelectedSubjects}
                 />
               </div>
               <div className="flex flex-wrap gap-2 items-center justify-end">
@@ -1038,7 +1038,7 @@ export default function Timetable() {
                   <Calendar className="mr-2 h-4 w-4" />
                   Lifestyle Settings
                 </Button>
-                <ExamCountdown />
+                <ExamCountdown examDates={examDates} onUpdateExamDates={setExamDates} />
               </div>
             </div>
           </DialogContent>
@@ -1046,7 +1046,10 @@ export default function Timetable() {
 
         {/* AI Assistant in Corner */}
         <div className="fixed bottom-4 right-4 z-50">
-          <AIEventChat />
+          <AIEventChat 
+            onAddEvent={handleAddAiEvent}
+            onReflowSchedule={handleAiReflow}
+          />
         </div>
       </div>
     );
