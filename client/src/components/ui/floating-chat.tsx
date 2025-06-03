@@ -63,7 +63,12 @@ export function FloatingChat() {
   if (!isOpen) {
     return (
       <Button
-        className="fixed bottom-4 right-4 h-12 w-12 rounded-full p-0 z-50"
+        className="fixed bottom-4 right-4 h-12 w-12 rounded-full p-0 z-50 border-2 border-theme/30 bg-theme/10 hover:bg-theme/20 text-theme shadow-lg"
+        style={{
+          background: 'rgba(var(--gradient-from), 0.1)',
+          borderColor: 'rgba(var(--gradient-from), 0.3)',
+          color: 'rgb(var(--gradient-from))'
+        }}
         onClick={() => setIsOpen(true)}
       >
         <MessageCircle className="h-6 w-6" />
