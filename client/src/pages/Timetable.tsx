@@ -622,46 +622,10 @@ export default function Timetable() {
     setIsLifestyleSettingsOpen(true);
   };
 
-  // Handle exam mode
+  // Handle exam mode - redirect to settings
   const handleExamMode = () => {
-    const newExamMode = !isExamMode;
-    setIsExamMode(newExamMode);
-    
-    // Apply exam mode theme changes
-    const root = document.documentElement;
-    if (newExamMode) {
-      // Entering exam mode - coral theme and dark mode
-      root.style.setProperty('--theme-color', '#f97316'); // coral
-      root.style.setProperty('--theme-accent', '#ea580c'); // darker coral
-      root.classList.add('dark');
-      document.body.classList.add('dark');
-    } else {
-      // Exiting exam mode - restore original theme
-      root.style.setProperty('--theme-color', '#f43f5e'); // original pink
-      root.style.setProperty('--theme-accent', '#ec4899'); // original pink accent
-      root.classList.remove('dark');
-      document.body.classList.remove('dark');
-    }
-    
-    // Persist exam mode state
-    localStorage.setItem('exam-mode-active', JSON.stringify(newExamMode));
-    
-    toast({
-      title: newExamMode ? "Exam Mode Enabled" : "Exam Mode Disabled", 
-      description: newExamMode ? "Focusing on exam mode subjects only" : "Switched back to normal study mode",
-    });
+    window.location.href = '/settings';
   };
-
-  // Restore theme on component mount
-  useEffect(() => {
-    if (isExamMode) {
-      const root = document.documentElement;
-      root.style.setProperty('--theme-color', '#f97316'); // coral
-      root.style.setProperty('--theme-accent', '#ea580c'); // darker coral
-      root.classList.add('dark');
-      document.body.classList.add('dark');
-    }
-  }, []); // Only run on mount
   
   // UI for the application
   return (
@@ -762,7 +726,7 @@ export default function Timetable() {
               onClick={handleExamMode}
             >
               <Trophy className="mr-2 h-4 w-4" />
-              {isExamMode ? "Exit Exam Mode" : "Exam Mode"}
+              {isExamMode ? "Exam Mode Active" : "Exam Mode Settings"}
             </Button>
           </div>
           
@@ -981,106 +945,7 @@ export default function Timetable() {
                 </div>
               </div>
               
-              {/* Exam Mode Subject Selection */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Exam Mode Subjects</h3>
-                <p className="text-sm text-slate-600">
-                  Select which subjects should be included when exam mode is active. Only these subjects will be studied during exam periods.
-                </p>
-                <div className="space-y-3">
-                  {selectedSubjects.map(subject => {
-                    const subjectData = masterSubjects.find(s => s.name === subject);
-                    const hasExamModeTopics = subjectData?.topics.some(topic => topic.examMode?.includeInExamRevision) || false;
-                    
-                    return (
-                      <div key={subject} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <span className="font-medium">{subject}</span>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {hasExamModeTopics ? "Has exam mode topics configured" : "No exam mode topics set"}
-                          </p>
-                        </div>
-                        <Switch
-                          checked={hasExamModeTopics}
-                          onCheckedChange={(checked) => {
-                            // Update the subject's exam mode status
-                            if (subjectData) {
-                              subjectData.topics.forEach(topic => {
-                                if (!topic.examMode) {
-                                  topic.examMode = { isHighYield: false, includeInExamRevision: false };
-                                }
-                                topic.examMode.includeInExamRevision = checked;
-                              });
-                            }
-                            // Force re-render by updating state
-                            setSelectedSubjects([...selectedSubjects]);
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                  {selectedSubjects.length === 0 && (
-                    <p className="text-sm text-slate-500 italic">Select subjects first to configure exam mode</p>
-                  )}
-                </div>
-              </div>
-              
-              {/* Exam Mode Settings Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Exam Mode Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="exam-weeks">Number of weeks (1-8)</Label>
-                    <Input
-                      id="exam-weeks"
-                      type="number"
-                      min="1"
-                      max="8"
-                      value={examModeSettings.weeks}
-                      onChange={(e) => setExamModeSettings(prev => ({...prev, weeks: parseInt(e.target.value) || 4}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="exam-hours">Hours per day (minimum 4)</Label>
-                    <Input
-                      id="exam-hours"
-                      type="number"
-                      min="4"
-                      max="16"
-                      value={examModeSettings.hoursPerDay}
-                      onChange={(e) => setExamModeSettings(prev => ({...prev, hoursPerDay: parseInt(e.target.value) || 4}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="exam-days">Days per week (minimum 5)</Label>
-                    <Input
-                      id="exam-days"
-                      type="number"
-                      min="5"
-                      max="7"
-                      value={examModeSettings.daysPerWeek}
-                      onChange={(e) => setExamModeSettings(prev => ({...prev, daysPerWeek: parseInt(e.target.value) || 5}))}
-                    />
-                  </div>
-                </div>
-                <p className="text-sm text-slate-600 mt-2">
-                  Recommended: 4 hours, 5 days per week minimum for effective exam preparation
-                </p>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    localStorage.setItem('exam-mode-settings', JSON.stringify(examModeSettings));
-                    toast({
-                      title: "Exam settings saved",
-                      description: "Your exam mode configuration has been updated",
-                    });
-                  }}
-                >
-                  Save Exam Settings
-                </Button>
+              <div className="flex justify-end">
                 <Button 
                   variant="outline"
                   className="border-theme/30 hover:bg-theme/5 text-theme"
