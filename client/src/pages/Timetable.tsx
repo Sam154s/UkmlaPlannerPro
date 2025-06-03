@@ -113,6 +113,7 @@ export default function Timetable() {
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isAiPlanningOpen, setIsAiPlanningOpen] = useState(false);
   
   // Loaded flag to prevent multiple loads
   const preferencesLoaded = useRef(false);
@@ -830,14 +831,14 @@ export default function Timetable() {
         
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 items-center justify-end">
-          {/* AI Reflow Button */}
+          {/* AI Planning Button */}
           <Button 
             variant="outline"
             className="border-theme/30 hover:bg-theme/5 text-theme"
-            onClick={handleAiReflow}
+            onClick={() => setIsAiPlanningOpen(true)}
           >
             <Zap className="mr-2 h-4 w-4" />
-            Reflow with AI
+            AI Planning
           </Button>
           
           {/* Lifestyle Settings Button */}
@@ -1025,10 +1026,10 @@ export default function Timetable() {
                 <Button 
                   variant="outline"
                   className="border-theme/30 hover:bg-theme/5 text-theme"
-                  onClick={handleAiReflow}
+                  onClick={() => setIsAiPlanningOpen(true)}
                 >
                   <Zap className="mr-2 h-4 w-4" />
-                  Reflow with AI
+                  AI Planning
                 </Button>
                 <Button 
                   variant="outline"
@@ -1044,13 +1045,20 @@ export default function Timetable() {
           </DialogContent>
         </Dialog>
 
-        {/* AI Assistant in Corner */}
-        <div className="fixed bottom-4 right-4 z-50">
-          <AIEventChat 
-            onAddEvent={handleAddAiEvent}
-            onReflowSchedule={handleAiReflow}
-          />
-        </div>
+        {/* AI Planning Dialog */}
+        <Dialog open={isAiPlanningOpen} onOpenChange={setIsAiPlanningOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-white" style={{ backgroundColor: 'white' }}>
+            <DialogHeader>
+              <DialogTitle>AI Timetable Assistant</DialogTitle>
+            </DialogHeader>
+            <div className="bg-white" style={{ backgroundColor: 'white' }}>
+              <AIEventChat 
+                onAddEvent={handleAddAiEvent}
+                onReflowSchedule={handleAiReflow}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
