@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar, Trophy } from "lucide-react";
 import { notificationService } from '@/utils/notificationService';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
@@ -608,6 +608,14 @@ export default function Timetable() {
       description: "Lifestyle settings functionality coming soon!",
     });
   };
+
+  // Handle exam mode
+  const handleExamMode = () => {
+    toast({
+      title: "Exam Mode", 
+      description: "Exam mode functionality coming soon!",
+    });
+  };
   
   // UI for the application
   return (
@@ -801,58 +809,70 @@ export default function Timetable() {
         </Button>
       </div>
 
-      {/* Desktop Configuration Panel */}
-      <div className="hidden lg:block mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Study Preferences */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-medium">Study Configuration</h2>
-            <StudyConfig
-              weeklyHours={weeklyHours}
-              onWeeklyHoursChange={setWeeklyHours}
-              yearGroup={yearGroup}
-              onYearGroupChange={setYearGroup}
-              daysPerWeek={daysPerWeek}
-              onDaysPerWeekChange={setDaysPerWeek}
-              onGenerate={handleGenerate}
-            />
+      {/* Action Buttons Row */}
+      <div className="mb-4">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            {/* AI Planning Button */}
+            <Button 
+              variant="outline"
+              className="border-theme/30 hover:bg-theme/5 text-theme"
+              onClick={() => setIsAiPlanningOpen(true)}
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              AI Planning
+            </Button>
+            
+            {/* Configuration Settings Button */}
+            <Button 
+              variant="outline"
+              className="border-theme/30 hover:bg-theme/5 text-theme"
+              onClick={() => setIsConfigOpen(true)}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Configuration Settings
+            </Button>
+            
+            {/* Lifestyle Settings Button */}
+            <Button 
+              variant="outline"
+              className="border-theme/30 hover:bg-theme/5 text-theme"
+              onClick={handleLifestyleSettings}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Lifestyle Settings
+            </Button>
+            
+            {/* Exam Mode Button */}
+            <Button 
+              variant="outline"
+              className="border-theme/30 hover:bg-theme/5 text-theme"
+              onClick={handleExamMode}
+            >
+              <Trophy className="mr-2 h-4 w-4" />
+              Exam Mode
+            </Button>
           </div>
-
-          {/* Subject Selection */}
-          <div className="space-y-4 md:col-span-2">
-            <h2 className="text-lg font-medium">Select Subjects</h2>
-            <SelectSubjects
-              allSubjects={masterSubjects.map(subject => subject.name)}
-              selectedSubjects={selectedSubjects}
-              onSelectedSubjectsChange={setSelectedSubjects}
-            />
+          
+          {/* Next Exam Box */}
+          <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            {(() => {
+              const nextExam = examDates
+                .filter(exam => new Date(exam.date) > new Date())
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+              
+              if (nextExam) {
+                const daysUntil = Math.ceil((new Date(nextExam.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                return (
+                  <span className="text-slate-600">
+                    <span className="font-medium text-slate-800">{daysUntil}</span> days to next exam
+                  </span>
+                );
+              } else {
+                return <span className="text-slate-500">No exam scheduled</span>;
+              }
+            })()}
           </div>
-        </div>
-        
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 items-center justify-end">
-          {/* AI Planning Button */}
-          <Button 
-            variant="outline"
-            className="border-theme/30 hover:bg-theme/5 text-theme"
-            onClick={() => setIsAiPlanningOpen(true)}
-          >
-            <Zap className="mr-2 h-4 w-4" />
-            AI Planning
-          </Button>
-          
-          {/* Lifestyle Settings Button */}
-          <Button 
-            variant="outline"
-            className="border-theme/30 hover:bg-theme/5 text-theme"
-            onClick={handleLifestyleSettings}
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            Lifestyle Settings
-          </Button>
-          
-          {/* Exam Countdown */}
-          <ExamCountdown examDates={examDates} onUpdateExamDates={setExamDates} />
         </div>
       </div>
 
