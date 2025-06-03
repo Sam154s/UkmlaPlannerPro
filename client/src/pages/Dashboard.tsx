@@ -13,25 +13,29 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import { differenceInDays, format } from "date-fns";
+import { differenceInDays, format, startOfWeek, endOfWeek, isWithinInterval, parseISO, isToday, isTomorrow } from "date-fns";
 import {
   Clock,
   Calendar,
-  TrendingUp,
   Star,
   Brain,
-  Clock4,
-  AlertCircle,
-  BarChart3,
   AlarmClock,
 }  from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
-  // State for exams
-  const [examDates, setExamDates] = useState<ExamDate[]>([]);
+  const { toast } = useToast();
   
-  // Load exam dates from localStorage
+  // State for various data
+  const [examDates, setExamDates] = useState<ExamDate[]>([]);
+  const [studyEvents, setStudyEvents] = useState<any[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [studyStreak, setStudyStreak] = useState({ current: 0, longest: 0 });
+  const [aiTip, setAiTip] = useState<string>("");
+  
+  // Load data from localStorage
   useEffect(() => {
+    // Load exam dates
     const savedExamDates = localStorage.getItem('exam-dates');
     if (savedExamDates) {
       try {
@@ -40,6 +44,60 @@ export default function Dashboard() {
         console.error('Failed to parse saved exam dates', error);
       }
     }
+    
+    // Load study events/timetable
+    const savedStudyEvents = localStorage.getItem('study-events');
+    if (savedStudyEvents) {
+      try {
+        setStudyEvents(JSON.parse(savedStudyEvents));
+      } catch (error) {
+        console.error('Failed to parse saved study events', error);
+      }
+    }
+    
+    // Load selected subjects
+    const savedSubjects = localStorage.getItem('selected-subjects');
+    if (savedSubjects) {
+      try {
+        setSelectedSubjects(JSON.parse(savedSubjects));
+      } catch (error) {
+        console.error('Failed to parse saved subjects', error);
+      }
+    }
+    
+    // Load study streak
+    const savedStreak = localStorage.getItem('study-streak');
+    if (savedStreak) {
+      try {
+        setStudyStreak(JSON.parse(savedStreak));
+      } catch (error) {
+        console.error('Failed to parse saved streak', error);
+      }
+    }
+  }, []);
+  
+  // Generate AI study tip
+  const generateAITip = () => {
+    const tips = [
+      "Break study sessions into 25-minute focused intervals with 5-minute breaks for optimal retention.",
+      "Review yesterday's material for 10 minutes before starting new topics to strengthen memory.",
+      "Focus on understanding concepts rather than memorizing facts for long-term retention.",
+      "Use active recall by testing yourself without looking at notes to identify knowledge gaps.",
+      "Study the most challenging subjects when your energy levels are highest.",
+      "Connect new information to what you already know to create stronger memory associations.",
+      "Practice spaced repetition by reviewing material at increasing intervals.",
+      "Teach concepts to someone else or explain them aloud to deepen understanding.",
+      "Take regular breaks and stay hydrated to maintain concentration throughout study sessions.",
+      "Set specific, measurable goals for each study session to maintain focus and motivation."
+    ];
+    
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+    setAiTip(randomTip);
+  };
+  
+  // Generate tip on component mount
+  useEffect(() => {
+    generateAITip();
   }, []);
   
   // Get closest upcoming exam
@@ -50,30 +108,80 @@ export default function Dashboard() {
   // Calculate days until exam
   const daysUntil = closestExam ? differenceInDays(new Date(closestExam.date), new Date()) : null;
   
-  // Placeholder data
-  const studyProgress = {
-    hoursStudied: 6,
-    weeklyGoal: 10,
-    percentage: 60,
+  // Calculate hours studied this week from completed study sessions
+  const calculateWeeklyHours = () => {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday start
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    
+    // Get completed sessions from localStorage
+    const completedSessions = JSON.parse(localStorage.getItem('completed-sessions') || '[]');
+    
+    const weeklyHours = completedSessions
+      .filter((session: any) => {
+        const sessionDate = parseISO(session.date);
+        return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
+      })
+      .reduce((total: number, session: any) => total + (session.duration || 0), 0);
+    
+    return weeklyHours;
   };
 
-  const nextSessions = [
-    { subject: "Cardiovascular", time: "Today, 2:00 PM", duration: "2 hours" },
-    { subject: "Neurology", time: "Tomorrow, 10:00 AM", duration: "1.5 hours" },
-    { subject: "Respiratory", time: "Tomorrow, 2:00 PM", duration: "2 hours" },
-  ];
+  // Get next sessions for today and tomorrow from timetable
+  const getNextSessions = () => {
+    const todayEvents = studyEvents.filter(event => {
+      const eventDate = parseISO(event.start);
+      return isToday(eventDate);
+    });
+    
+    const tomorrowEvents = studyEvents.filter(event => {
+      const eventDate = parseISO(event.start);
+      return isTomorrow(eventDate);
+    });
+    
+    const sessions: any[] = [];
+    
+    // Add today's sessions
+    todayEvents.forEach(event => {
+      const eventDate = parseISO(event.start);
+      const endDate = parseISO(event.end);
+      const duration = Math.round((endDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 100)) / 10; // hours
+      
+      sessions.push({
+        subject: event.title,
+        time: `Today, ${format(eventDate, 'h:mm a')}`,
+        duration: `${duration} hours`,
+        topics: event.extendedProps?.topics || []
+      });
+    });
+    
+    // Add tomorrow's sessions
+    tomorrowEvents.forEach(event => {
+      const eventDate = parseISO(event.start);
+      const endDate = parseISO(event.end);
+      const duration = Math.round((endDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 100)) / 10; // hours
+      
+      sessions.push({
+        subject: event.title,
+        time: `Tomorrow, ${format(eventDate, 'h:mm a')}`,
+        duration: `${duration} hours`,
+        topics: event.extendedProps?.topics || []
+      });
+    });
+    
+    return sessions.slice(0, 3); // Limit to 3 sessions
+  };
 
-  const weeklyFocus = [
-    { subject: "Acute and Emergency", hours: 4 },
-    { subject: "Cancer", hours: 3 },
-    { subject: "Cardiovascular", hours: 3 },
-  ];
+  const hoursStudied = calculateWeeklyHours();
+  const weeklyGoal = parseInt(localStorage.getItem('weekly-hours') || '10');
+  const studyProgress = {
+    hoursStudied,
+    weeklyGoal,
+    percentage: weeklyGoal > 0 ? Math.min((hoursStudied / weeklyGoal) * 100, 100) : 0,
+  };
 
-  const favoriteSubjects = [
-    "Acute and Emergency",
-    "Cardiovascular",
-    "Neuroscience",
-  ];
+  const nextSessions = getNextSessions();
+  const favoriteSubjects = selectedSubjects;
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -87,10 +195,10 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Progress Card */}
+        {/* Hours Per Week Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Study Progress</CardTitle>
+            <CardTitle className="text-sm font-medium">Hours This Week</CardTitle>
             <Clock className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
@@ -101,6 +209,9 @@ export default function Dashboard() {
               value={studyProgress.percentage}
               className="mt-2"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              {studyProgress.hoursStudied === 0 ? "No sessions completed yet" : "From completed study sessions"}
+            </p>
           </CardContent>
         </Card>
 
@@ -113,53 +224,38 @@ export default function Dashboard() {
           <CardContent>
             <ScrollArea className="h-[120px]">
               <div className="space-y-2">
-                {nextSessions.map((session, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <div className="font-medium text-theme">{session.subject}</div>
-                    <div className="text-muted-foreground">{session.time}</div>
+                {nextSessions.length > 0 ? (
+                  nextSessions.map((session, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <div className="font-medium text-theme">{session.subject}</div>
+                      <div className="text-muted-foreground">{session.time}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Nothing scheduled
                   </div>
-                ))}
+                )}
               </div>
             </ScrollArea>
           </CardContent>
         </Card>
 
-        {/* Weekly Focus */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">This Week's Focus</CardTitle>
-            <TrendingUp className="h-4 w-4 text-theme" />
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[120px]">
-              <div className="space-y-2">
-                {weeklyFocus.map((focus, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <div className="font-medium text-theme">{focus.subject}</div>
-                    <div className="text-muted-foreground">{focus.hours} hours</div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Streak */}
+        {/* Study Streak */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
             <Star className="h-4 w-4 text-theme" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-theme">7 days</div>
+            <div className="text-2xl font-bold text-theme">
+              {studyStreak.current} {studyStreak.current === 1 ? 'day' : 'days'}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Keep up the great work!
+              Longest streak: {studyStreak.longest} {studyStreak.longest === 1 ? 'day' : 'days'}
             </p>
           </CardContent>
         </Card>
@@ -243,7 +339,34 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* AI Tip */}
+        {/* Favorite Subjects */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Favorite Subjects</CardTitle>
+            <Star className="h-4 w-4 text-theme" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {favoriteSubjects.length > 0 ? (
+                favoriteSubjects.map((subject, i) => (
+                  <div
+                    key={i}
+                    className="text-sm font-medium flex items-center space-x-2"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-theme" />
+                    <span className="text-theme">{subject}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No subjects selected
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Study Tip */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Tip</CardTitle>
@@ -251,54 +374,8 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-theme">
-              Focus on high-yield topics first. Consider reviewing Cardiovascular
-              system today based on your progress.
+              {aiTip || "Focus on high-yield topics and use active recall techniques for better retention."}
             </p>
-          </CardContent>
-        </Card>
-
-        {/* Favorite Subjects */}
-        <Card className="md:col-span-2 lg:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Favorite Subjects</CardTitle>
-            <Star className="h-4 w-4 text-theme" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {favoriteSubjects.map((subject, i) => (
-                <div
-                  key={i}
-                  className="text-sm font-medium flex items-center space-x-2"
-                >
-                  <div className="w-2 h-2 rounded-full bg-theme" />
-                  <span className="text-theme">{subject}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Time Breakdown */}
-        <Card className="md:col-span-2 lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Time Breakdown</CardTitle>
-            <BarChart3 className="h-4 w-4 text-theme" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {weeklyFocus.map((focus, i) => (
-                <div key={i} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="font-medium text-theme">{focus.subject}</div>
-                    <div className="text-muted-foreground">{focus.hours} hours</div>
-                  </div>
-                  <Progress
-                    value={focus.hours * 10}
-                    className="h-2"
-                  />
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>
