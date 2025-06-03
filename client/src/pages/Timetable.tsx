@@ -666,6 +666,7 @@ export default function Timetable() {
               onYearGroupChange={setYearGroup}
               daysPerWeek={daysPerWeek}
               onDaysPerWeekChange={setDaysPerWeek}
+              onGenerate={handleGenerate}
             />
           </div>
 
@@ -706,15 +707,6 @@ export default function Timetable() {
         
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 items-center justify-end">
-          {/* Generate Button */}
-          <Button 
-            onClick={handleGenerate}
-            disabled={weeklyHours === 0 || selectedSubjects.length === 0 || daysPerWeek === 0}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Generate
-          </Button>
-          
           {/* AI Reflow Button */}
           <Button 
             variant="outline"
@@ -796,19 +788,27 @@ export default function Timetable() {
         
         <TabsContent value="calendar" className="space-y-4 pt-4">
           {/* Full-Page Calendar */}
-          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden" style={{ height: 'calc(80vh - 200px)' }}>
+          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden" style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}>
             <FullCalendar
               ref={setCalendarRef}
               plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, timelinePlugin]}
-              initialView={windowWidth < 640 ? "timeGridDay" : "timeGridWeek"}
+              initialView="timeGridDay"
               headerToolbar={{
                 left: 'prev,next today',
                 center: 'title',
-                right: windowWidth < 640 
-                  ? 'timeGridDay' 
-                  : 'timeGridDay,timeGridWeek,dayGridMonth,timelineWeek'
+                right: 'timeGridDay,timeGridWeek,dayGridMonth'
               }}
-              views={getAvailableViews() as any}
+              views={{
+                timeGridDay: {
+                  buttonText: 'Day'
+                },
+                timeGridWeek: {
+                  buttonText: 'Week'
+                },
+                dayGridMonth: {
+                  buttonText: 'Month'
+                }
+              }}
               events={allEvents}
               eventContent={renderEventContent}
               editable={true}

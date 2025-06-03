@@ -244,3 +244,90 @@ iframe {
 .dark .event-hover-tooltip-content li {
   border-color: #374151;
 }
+
+/* Number input spinner arrows with better contrast */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Custom number input with visible arrows */
+.number-input-container {
+  position: relative;
+  display: inline-block;
+}
+
+.number-input-container input {
+  padding-right: 2rem;
+}
+
+.number-input-arrows {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 2rem;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e2e8f0;
+  background: white;
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.number-input-arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.number-input-arrow:hover {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.number-input-arrow:active {
+  background-color: #e2e8f0;
+}
+
+.number-input-arrow.up {
+  border-bottom: 1px solid #e2e8f0;
+  border-top-right-radius: 0.375rem;
+}
+
+.number-input-arrow.down {
+  border-bottom-right-radius: 0.375rem;
+}
+
+.dark .number-input-arrows {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .number-input-arrow {
+  color: #d1d5db;
+}
+
+.dark .number-input-arrow:hover {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+.dark .number-input-arrow:active {
+  background-color: #4b5563;
+}
