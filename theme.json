@@ -5,8 +5,8 @@
   "radius": 1.0,
   "defaultScheme": "Purple (Default)",
   "examMode": {
-    "primary": "#ef4444",
-    "accent": "#f97316",
-    "warning": "#eab308"
+    "primary": "#f97316",
+    "accent": "#ea580c",
+    "warning": "#dc2626"
   }
 }
