@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar } from "lucide-react";
 import { notificationService } from '@/utils/notificationService';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
@@ -779,17 +779,76 @@ export default function Timetable() {
         </div>
       </div>
       
-      {/* Tabbed interface for Calendar and AI Assistant */}
-      <Tabs defaultValue="calendar" className="w-full mb-4">
-        <TabsList>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
-        </TabsList>
+      {/* Configuration Settings Button for Mobile */}
+      <div className="lg:hidden mb-4">
+        <Button 
+          onClick={() => setIsConfigOpen(true)}
+          variant="outline"
+          className="border-theme/30 hover:bg-theme/5 text-theme"
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          Configuration Settings
+        </Button>
+      </div>
+
+      {/* Desktop Configuration Panel */}
+      <div className="hidden lg:block mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Study Preferences */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium">Study Configuration</h2>
+            <StudyConfig
+              weeklyHours={weeklyHours}
+              onWeeklyHoursChange={setWeeklyHours}
+              yearGroup={yearGroup}
+              onYearGroupChange={setYearGroup}
+              daysPerWeek={daysPerWeek}
+              onDaysPerWeekChange={setDaysPerWeek}
+              onGenerate={handleGenerate}
+            />
+          </div>
+
+          {/* Subject Selection */}
+          <div className="space-y-4 md:col-span-2">
+            <h2 className="text-lg font-medium">Select Subjects</h2>
+            <SelectSubjects
+              subjects={masterSubjects}
+              selectedSubjects={selectedSubjects}
+              onSelectionChange={setSelectedSubjects}
+            />
+          </div>
+        </div>
         
-        <TabsContent value="calendar" className="space-y-4 pt-4">
-          {/* Full-Page Calendar */}
-          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden" style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}>
-            <FullCalendar
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2 mt-4 items-center justify-end">
+          {/* AI Reflow Button */}
+          <Button 
+            variant="outline"
+            className="border-theme/30 hover:bg-theme/5 text-theme"
+            onClick={handleAiReflow}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Reflow with AI
+          </Button>
+          
+          {/* Lifestyle Settings Button */}
+          <Button 
+            variant="outline"
+            className="border-theme/30 hover:bg-theme/5 text-theme"
+            onClick={handleLifestyleSettings}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            Lifestyle Settings
+          </Button>
+          
+          {/* Exam Countdown */}
+          <ExamCountdown />
+        </div>
+      </div>
+
+      {/* Full-Page Calendar */}
+      <div className="bg-white rounded-xl shadow-lg border border-theme/10 overflow-hidden" style={{ height: 'calc(100vh - 180px)', minHeight: '600px' }}>
+        <FullCalendar
               ref={setCalendarRef}
               plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, timelinePlugin]}
               initialView="timeGridDay"
@@ -925,17 +984,62 @@ export default function Timetable() {
               )}
             </DialogContent>
           </Dialog>
-        </TabsContent>
-        
-        <TabsContent value="ai-assistant" className="pt-4">
-          <div className="flex-1 bg-white rounded-xl shadow-lg border border-theme/10 p-4" style={{ height: 'calc(80vh - 200px)' }}>
-            <AIEventChat 
-              onAddEvent={handleAddAiEvent}
-              onReflowSchedule={handleAiReflow}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+
+        {/* Mobile Configuration Popup */}
+        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Configuration Settings</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Study Configuration</h3>
+                <StudyConfig
+                  weeklyHours={weeklyHours}
+                  onWeeklyHoursChange={setWeeklyHours}
+                  yearGroup={yearGroup}
+                  onYearGroupChange={setYearGroup}
+                  daysPerWeek={daysPerWeek}
+                  onDaysPerWeekChange={setDaysPerWeek}
+                  onGenerate={handleGenerate}
+                />
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Select Subjects</h3>
+                <SelectSubjects
+                  subjects={masterSubjects}
+                  selectedSubjects={selectedSubjects}
+                  onSelectionChange={setSelectedSubjects}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 items-center justify-end">
+                <Button 
+                  variant="outline"
+                  className="border-theme/30 hover:bg-theme/5 text-theme"
+                  onClick={handleAiReflow}
+                >
+                  <Zap className="mr-2 h-4 w-4" />
+                  Reflow with AI
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="border-theme/30 hover:bg-theme/5 text-theme"
+                  onClick={handleLifestyleSettings}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Lifestyle Settings
+                </Button>
+                <ExamCountdown />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* AI Assistant in Corner */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <AiEventChat />
+        </div>
     </div>
   );
 }
