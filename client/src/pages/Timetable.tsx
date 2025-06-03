@@ -24,7 +24,10 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar, Trophy, X } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Settings, AlarmClock, RefreshCw, Sparkles, Zap, Calendar, Trophy, X, Clock, MapPin, Coffee, Moon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { notificationService } from '@/utils/notificationService';
 import masterSubjects from '@/data/masterSubjects';
 import { generateSpiralTimetable } from '@/utils/spiralAlgorithm';
@@ -114,6 +117,13 @@ export default function Timetable() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isAiPlanningOpen, setIsAiPlanningOpen] = useState(false);
+  const [isLifestyleSettingsOpen, setIsLifestyleSettingsOpen] = useState(false);
+  const [isExamMode, setIsExamMode] = useState(false);
+  const [examModeSettings, setExamModeSettings] = useState({
+    weeks: 4,
+    hoursPerDay: 4,
+    daysPerWeek: 5
+  });
   
   // Loaded flag to prevent multiple loads
   const preferencesLoaded = useRef(false);
@@ -603,17 +613,15 @@ export default function Timetable() {
 
   // Handle lifestyle settings
   const handleLifestyleSettings = () => {
-    toast({
-      title: "Lifestyle Settings", 
-      description: "Lifestyle settings functionality coming soon!",
-    });
+    setIsLifestyleSettingsOpen(true);
   };
 
   // Handle exam mode
   const handleExamMode = () => {
+    setIsExamMode(!isExamMode);
     toast({
-      title: "Exam Mode", 
-      description: "Exam mode functionality coming soon!",
+      title: isExamMode ? "Exam Mode Disabled" : "Exam Mode Enabled", 
+      description: isExamMode ? "Switched back to normal study mode" : "Focusing on exam mode subjects only",
     });
   };
   
@@ -709,12 +717,12 @@ export default function Timetable() {
             
             {/* Exam Mode Button */}
             <Button 
-              variant="outline"
-              className="border-theme/30 hover:bg-theme/5 text-theme"
+              variant={isExamMode ? "default" : "outline"}
+              className={isExamMode ? "bg-theme text-white hover:bg-theme/90" : "border-theme/30 hover:bg-theme/5 text-theme"}
               onClick={handleExamMode}
             >
               <Trophy className="mr-2 h-4 w-4" />
-              Exam Mode
+              {isExamMode ? "Exit Exam Mode" : "Exam Mode"}
             </Button>
           </div>
           
@@ -933,6 +941,50 @@ export default function Timetable() {
                 </div>
               </div>
               
+              {/* Exam Mode Subject Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Exam Mode Subjects</h3>
+                <p className="text-sm text-slate-600">
+                  Select which subjects should be included when exam mode is active. Only these subjects will be studied during exam periods.
+                </p>
+                <div className="space-y-3">
+                  {selectedSubjects.map(subject => {
+                    const subjectData = masterSubjects.find(s => s.name === subject);
+                    const hasExamModeTopics = subjectData?.topics.some(topic => topic.examMode?.includeInExamRevision) || false;
+                    
+                    return (
+                      <div key={subject} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <span className="font-medium">{subject}</span>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {hasExamModeTopics ? "Has exam mode topics configured" : "No exam mode topics set"}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={hasExamModeTopics}
+                          onCheckedChange={(checked) => {
+                            // Update the subject's exam mode status
+                            if (subjectData) {
+                              subjectData.topics.forEach(topic => {
+                                if (!topic.examMode) {
+                                  topic.examMode = { isHighYield: false, includeInExamRevision: false };
+                                }
+                                topic.examMode.includeInExamRevision = checked;
+                              });
+                            }
+                            // Force re-render by updating state
+                            setSelectedSubjects([...selectedSubjects]);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                  {selectedSubjects.length === 0 && (
+                    <p className="text-sm text-slate-500 italic">Select subjects first to configure exam mode</p>
+                  )}
+                </div>
+              </div>
+              
               <div className="flex justify-end">
                 <Button 
                   variant="outline"
@@ -958,6 +1010,101 @@ export default function Timetable() {
                 onAddEvent={handleAddAiEvent}
                 onReflowSchedule={handleAiReflow}
               />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Lifestyle Settings Dialog */}
+        <Dialog open={isLifestyleSettingsOpen} onOpenChange={setIsLifestyleSettingsOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Lifestyle & Break Settings</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <BreakSettings
+                preferences={lifestylePreferences}
+                onChange={setLifestylePreferences}
+              />
+              
+              {/* Exam Mode Settings Section */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-4">Exam Mode Configuration</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="exam-weeks">Number of weeks (1-8)</Label>
+                    <Input
+                      id="exam-weeks"
+                      type="number"
+                      min="1"
+                      max="8"
+                      value={examModeSettings.weeks}
+                      onChange={(e) => setExamModeSettings(prev => ({...prev, weeks: parseInt(e.target.value) || 4}))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exam-hours">Hours per day (minimum 4)</Label>
+                    <Input
+                      id="exam-hours"
+                      type="number"
+                      min="4"
+                      max="16"
+                      value={examModeSettings.hoursPerDay}
+                      onChange={(e) => setExamModeSettings(prev => ({...prev, hoursPerDay: parseInt(e.target.value) || 4}))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exam-days">Days per week (minimum 5)</Label>
+                    <Input
+                      id="exam-days"
+                      type="number"
+                      min="5"
+                      max="7"
+                      value={examModeSettings.daysPerWeek}
+                      onChange={(e) => setExamModeSettings(prev => ({...prev, daysPerWeek: parseInt(e.target.value) || 5}))}
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600 mt-2">
+                  Recommended: 4 hours, 5 days per week minimum for effective exam preparation
+                </p>
+                
+                {/* Exam Mode Subjects */}
+                <div className="mt-6">
+                  <h4 className="font-medium mb-3">Exam Mode Subjects</h4>
+                  <p className="text-sm text-slate-600 mb-3">
+                    Select subjects with exam mode enabled in the Configuration Settings to focus on during exam periods.
+                  </p>
+                  <div className="space-y-2">
+                    {masterSubjects.map(subject => {
+                      const hasExamModeTopics = subject.topics.some(topic => topic.examMode?.includeInExamRevision);
+                      return (
+                        <div key={subject.name} className="flex items-center justify-between p-2 border rounded">
+                          <span className={hasExamModeTopics ? "font-medium" : "text-slate-500"}>
+                            {subject.name}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {hasExamModeTopics ? "Exam mode enabled" : "No exam topics selected"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button onClick={() => {
+                  localStorage.setItem('user-preferences', JSON.stringify(lifestylePreferences));
+                  localStorage.setItem('exam-mode-settings', JSON.stringify(examModeSettings));
+                  toast({
+                    title: "Settings saved",
+                    description: "Your lifestyle and exam mode preferences have been updated",
+                  });
+                  setIsLifestyleSettingsOpen(false);
+                }}>
+                  Save Changes
+                </Button>
+              </DialogFooter>
             </div>
           </DialogContent>
         </Dialog>
