@@ -363,8 +363,8 @@ input[type="number"] {
   width: 1.75rem !important;
   height: 1.75rem !important;
   background: white !important;
-  border: 3px solid #3b82f6 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border: 4px solid #1e293b !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
   position: relative;
 }
 
@@ -374,17 +374,25 @@ input[type="number"] {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  background: #3b82f6;
+  width: 10px;
+  height: 10px;
+  background: #1e293b;
   border-radius: 50%;
 }
 
 .slider-enhanced [data-radix-slider-thumb]:hover {
-  border-color: #2563eb !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
 }
 
 .slider-enhanced [data-radix-slider-thumb]:hover:after {
-  background: #2563eb;
+  background: #0f172a;
+}
+
+.slider-enhanced [data-radix-slider-track] {
+  background: #e2e8f0 !important;
+}
+
+.slider-enhanced [data-radix-slider-range] {
+  background: #3b82f6 !important;
 }
