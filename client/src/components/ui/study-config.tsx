@@ -87,8 +87,6 @@ export function StudyConfig({
   onDaysPerWeekChange,
   onGenerate,
 }: StudyConfigProps) {
-  // Calculate if generate button should be enabled
-  const isGenerateEnabled = weeklyHours > 0 && yearGroup > 0 && daysPerWeek > 0;
   
   return (
     <Card className="shadow-sm bg-white rounded-lg">
@@ -275,19 +273,6 @@ export function StudyConfig({
           </div>
         </div>
       </CardContent>
-      
-      {onGenerate && (
-        <CardFooter className="pt-2 pb-6">
-          <Button 
-            onClick={onGenerate}
-            disabled={!isGenerateEnabled}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Generate Timetable
-          </Button>
-        </CardFooter>
-      )}
     </Card>
   );
 }

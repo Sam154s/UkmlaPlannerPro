@@ -180,6 +180,43 @@ export default function Timetable() {
     localStorage.setItem(STORAGE_KEYS.STUDY_EVENTS, JSON.stringify(studyEvents));
   }, [studyEvents]);
 
+  // Auto-generate timetable when settings change
+  useEffect(() => {
+    if (!preferencesLoaded.current) return;
+    if (selectedSubjects.length === 0) return;
+    
+    // Automatically generate timetable when key settings change
+    const generateTimetable = () => {
+      const blocks = generateSpiralTimetable({
+        weeklyStudyHours: weeklyHours,
+        yearGroup,
+        daysPerWeek,
+        favouriteSubjects: selectedSubjects,
+        subjectsData: masterSubjects,
+        userEvents,
+        userPerformance,
+        revisionCount: revisionCount
+      });
+
+      const calendarEvents = blocks.map(block => ({
+        id: generateId(),
+        title: block.subject,
+        start: `${block.date}T${block.startTime}`,
+        end: `${block.date}T${block.endTime}`,
+        backgroundColor: getSubjectColor(block.subject),
+        borderColor: block.isInterjection ? '#ffffff' : getSubjectColor(block.subject),
+        classNames: block.isInterjection ? ['interjection-event'] : undefined,
+        extendedProps: {
+          topics: block.topics
+        }
+      }));
+
+      setStudyEvents(calendarEvents);
+    };
+
+    generateTimetable();
+  }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects, userEvents]);
+
   // Load saved preferences on first mount
   useEffect(() => {
     if (preferencesLoaded.current) return;
@@ -340,8 +377,10 @@ export default function Timetable() {
 
     // Save to localStorage for offline functionality
     localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferencesToSave));
+    localStorage.setItem('weekly-hours', weeklyHours.toString());
+    localStorage.setItem('selected-subjects', JSON.stringify(selectedSubjects));
     
-    // Optional: Save to backend API
+    // Save to backend API
     try {
       import('../lib/api').then(({ api }) => {
         api.timetable.save({ 
@@ -945,16 +984,7 @@ export default function Timetable() {
                 </div>
               </div>
               
-              <div className="flex justify-end">
-                <Button 
-                  variant="outline"
-                  className="border-theme/30 hover:bg-theme/5 text-theme"
-                  onClick={handleGenerate}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Generate Timetable
-                </Button>
-              </div>
+
             </div>
           </DialogContent>
         </Dialog>
