@@ -459,54 +459,54 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   
   let subjectIndex = 0;
   
-  // Generate schedule for 4 weeks
-  for (let week = 0; week < 4; week++) {
-    // For each week, create study days based on daysPerWeek
-    for (let dayInWeek = 0; dayInWeek < daysPerWeek; dayInWeek++) {
-      // Calculate the actual date for this study day
-      const currentDate = new Date(startDate);
-      
-      // For 5 days per week: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5
-      // For 7 days per week: Monday=1, Tuesday=2, ..., Sunday=0
-      let targetDayOfWeek;
-      if (daysPerWeek <= 5) {
-        // Weekdays only: Monday (1) through Friday (5)
-        targetDayOfWeek = dayInWeek + 1;
-      } else {
-        // All days: Monday (1) through Sunday (0)
-        targetDayOfWeek = dayInWeek === 6 ? 0 : dayInWeek + 1;
+  // Simple approach: create study days sequentially
+  const totalStudyDays = 4 * daysPerWeek; // 4 weeks worth of study days
+  let currentDate = new Date(startDate);
+  
+  for (let studyDayIndex = 0; studyDayIndex < totalStudyDays; studyDayIndex++) {
+    // For weekdays only (daysPerWeek <= 5), skip weekends
+    if (daysPerWeek <= 5) {
+      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+        currentDate.setDate(currentDate.getDate() + 1);
       }
-      
-      // Find the target day in the current week
-      const daysToAdd = (week * 7) + ((targetDayOfWeek - currentDate.getDay() + 7) % 7);
-      currentDate.setDate(startDate.getDate() + daysToAdd);
-      
-      const dateStr = currentDate.toISOString().split('T')[0];
-      
-      // Create exactly ONE study block for this day
-      const startTime = '09:00'; // Always start at 9 AM
-      const endTime = '11:00';   // Always 2-hour blocks
-      
-      // Assign one subject per day (rotating through subjects)
-      const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
-      
-      const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
-        name: topic.name,
-        type: 'main' as const
-      }));
-      
-      blocks.push({
-        subject: currentSubject.name,
-        topics: sessionTopics,
-        hours: BLOCK_DURATION_HOURS,
-        date: dateStr,
-        startTime,
-        endTime,
-        passNumber: 1,
-        isInterjection: false
-      });
-      
-      subjectIndex++;
+    }
+    
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    // Create exactly ONE study block for this day
+    const startTime = '09:00';
+    const endTime = '11:00';
+    
+    // Assign one subject per day (rotating through subjects)
+    const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
+    
+    const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
+      name: topic.name,
+      type: 'main' as const
+    }));
+    
+    blocks.push({
+      subject: currentSubject.name,
+      topics: sessionTopics,
+      hours: BLOCK_DURATION_HOURS,
+      date: dateStr,
+      startTime,
+      endTime,
+      passNumber: 1,
+      isInterjection: false
+    });
+    
+    subjectIndex++;
+    
+    // Move to next day, but respect the weekly schedule
+    currentDate.setDate(currentDate.getDate() + 1);
+    
+    // If we've completed a week's worth of study days, skip to next week
+    if ((studyDayIndex + 1) % daysPerWeek === 0 && daysPerWeek < 7) {
+      // Skip to Monday of next week
+      while (currentDate.getDay() !== 1) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
   }
   
