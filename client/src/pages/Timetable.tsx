@@ -198,7 +198,15 @@ export default function Timetable() {
         revisionCount: revisionCount
       });
 
-      const calendarEvents = blocks.map(block => ({
+      // Remove any duplicate time slots to prevent overlapping
+      const uniqueBlocks = blocks.filter((block, index, arr) => {
+        return !arr.slice(0, index).some(prevBlock => 
+          prevBlock.date === block.date && 
+          prevBlock.startTime === block.startTime
+        );
+      });
+
+      const calendarEvents = uniqueBlocks.map(block => ({
         id: generateId(),
         title: block.subject,
         start: `${block.date}T${block.startTime}`,
@@ -393,8 +401,16 @@ export default function Timetable() {
       revisionCount: revisionCount
     });
 
+    // Remove any duplicate time slots to prevent overlapping
+    const uniqueBlocks = blocks.filter((block, index, arr) => {
+      return !arr.slice(0, index).some(prevBlock => 
+        prevBlock.date === block.date && 
+        prevBlock.startTime === block.startTime
+      );
+    });
+
     // Convert blocks to calendar events
-    const calendarEvents = blocks.map(block => ({
+    const calendarEvents = uniqueBlocks.map(block => ({
       id: generateId(),
       title: block.subject,
       start: `${block.date}T${block.startTime}`,
@@ -815,6 +831,13 @@ export default function Timetable() {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
+              }}
+              eventOverlap={false}
+              slotEventOverlap={false}
+              selectOverlap={false}
+              eventConstraint={{
+                start: '06:00',
+                end: '23:00'
               }}
             />
           </div>
