@@ -443,243 +443,85 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   
   const blocks: StudyBlock[] = [];
 
-  // Start from today
-  const startDate = new Date();
-  let currentDate = new Date(startDate);
-
-  // Calculate blocks per week based on weekly hours
+  // Calculate exact hours per day to match configuration
   const hoursPerDay = weeklyStudyHours / daysPerWeek;
-
-  // Get available weekdays based on daysPerWeek
-  const availableDays = Array.from({ length: 7 }, (_, i) => i + 1) // 1 = Monday, 7 = Sunday
-    .slice(0, daysPerWeek);
-
-  // Calculate and sort subjects by priority with performance adjustment
-  const subjectPriorities: SubjectWithPriority[] = subjectsData.map(subject => {
-    const baseBlocks = BASE_BLOCK_COUNTS[subject.name] || 10;
-    const adjustedBlocks = calculateBlocksForYear(baseBlocks, yearGroup);
-    const isFavorite = favouriteSubjects.includes(subject.name);
-    const performanceMultiplier = getPerformanceMultiplier(subject.name, userPerformance);
-
-    // Apply favorite boost and performance multiplier
-    const totalBoost = isFavorite ? FAVORITE_SUBJECT_PRIORITY_BOOST : 1;
-    
-    return {
-      subject: subject.name,
-      topics: subject.topics,
-      totalBlocks: Math.ceil(adjustedBlocks * totalBoost * performanceMultiplier),
-      isFavorite,
-      performanceMultiplier
-    };
-  }).sort((a, b) => {
-    // Sort by performance issues first, then favorites, then block count
-    if (a.performanceMultiplier !== b.performanceMultiplier) {
-      return b.performanceMultiplier - a.performanceMultiplier;
-    }
-    if (a.isFavorite !== b.isFavorite) {
-      return a.isFavorite ? -1 : 1;
-    }
-    return b.totalBlocks - a.totalBlocks;
-  });
-
-  // Get all subjects for processing
-  let subjectsToProcess = [...subjectPriorities];
+  const BLOCK_DURATION_HOURS = 2; // Each block is 2 hours
+  const blocksPerDay = Math.floor(hoursPerDay / BLOCK_DURATION_HOURS);
   
-  // For first revision cycle (cycle 1), go through subjects linearly
-  if (revisionCount === 0) {
-    // Move favorite subjects to equal positions throughout the list
-    if (favouriteSubjects.length > 0) {
-      const favoriteSubjects = subjectsToProcess.filter(s => s.isFavorite);
-      const nonFavoriteSubjects = subjectsToProcess.filter(s => !s.isFavorite);
-      subjectsToProcess = [];
-      
-      // Calculate spacing for favorite subjects
-      const spacing = Math.max(1, Math.floor(nonFavoriteSubjects.length / (favoriteSubjects.length + 1)));
-      
-      // Interleave favorite subjects with equal spacing
-      let favoriteIndex = 0;
-      for (let i = 0; i < nonFavoriteSubjects.length; i++) {
-        subjectsToProcess.push(nonFavoriteSubjects[i]);
-        
-        // Insert a favorite subject at regular intervals
-        if (favoriteIndex < favoriteSubjects.length && (i + 1) % spacing === 0) {
-          subjectsToProcess.push(favoriteSubjects[favoriteIndex]);
-          favoriteIndex++;
-        }
-      }
-      
-      // Add any remaining favorite subjects
-      while (favoriteIndex < favoriteSubjects.length) {
-        subjectsToProcess.push(favoriteSubjects[favoriteIndex]);
-        favoriteIndex++;
-      }
-    }
+  if (blocksPerDay === 0) {
+    return blocks; // Not enough hours for any blocks
   }
-  
-  // Multiple passes through all subjects
-  for (let pass = 1; pass <= passCoverage; pass++) {
-    for (const subjectData of subjectsToProcess) {
-      // For each pass, allocate a percentage of the total blocks
-      const blocksForThisPass = Math.ceil(subjectData.totalBlocks / passCoverage);
-      let remainingBlocks = blocksForThisPass;
-      let dailyHoursUsed = 0;
-      let blockCount = 0; // Count blocks for interjection timing
-      
-      // Sort topics by performance and group by condition groups
-      const sortedTopics = getTopicsByPerformance(subjectData, userPerformance, subjectsData);
 
-      // Process blocks for this subject in this pass
-      while (remainingBlocks > 0) {
-        // Interject underperforming subject periodically
-        if (blockCount > 0 && blockCount % INTERJECTION_INTERVAL === 0) {
-          const underperformingSubject = getUnderperformingSubject(
-            subjectPriorities, 
-            subjectData.subject,
-            userPerformance
-          );
-          
-          if (underperformingSubject) {
-            const underperformingTopics = getTopicsByPerformance(underperformingSubject, userPerformance, subjectsData);
-            
-            // Find next available time slot
-            const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
-              currentDate,
-              DAILY_START_TIME,
-              1, // Just 1 hour for interjection
-              hoursPerDay,
-              dailyHoursUsed,
-              availableDays,
-              userEvents
-            );
-            
-            currentDate = newDate;
-            dailyHoursUsed = newDailyHoursUsed;
-            
-            // Create topics list for interjection - limited to available topics
-            const sessionTopics = [];
-            const availableTopicCount = Math.min(TOPICS_PER_SESSION, underperformingTopics.length);
-            
-            for (let i = 0; i < availableTopicCount; i++) {
-              sessionTopics.push({
-                name: underperformingTopics[i].name,
-                type: 'main' as const
-              });
-            }
-            
-            // Add connection topics if we have any main topics
-            if (sessionTopics.length > 0) {
-              const mainTopic = underperformingTopics[0];
-              const excludeTopics = sessionTopics.map(t => `${underperformingSubject.subject}: ${t.name}`);
-              const connections = findRelatedTopics(
-                underperformingSubject.subject,
-                mainTopic.name,
-                subjectsData,
-                excludeTopics
-              );
-              
-              sessionTopics.push({
-                name: mainTopic.name,
-                type: 'connection' as const,
-                connectionTopics: connections
-              });
-              
-              // Add the interjection block
-              blocks.push({
-                subject: underperformingSubject.subject,
-                topics: sessionTopics,
-                hours: 1,
-                date: slot.date,
-                startTime: slot.startTime,
-                endTime: slot.endTime,
-                passNumber: pass,
-                isInterjection: true
-              });
-            }
-          }
-        }
-        
-        // Find next available time slot for the main subject
-        const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
-          currentDate,
-          DAILY_START_TIME,
-          2, // Prefer 2 hours for main blocks
-          hoursPerDay,
-          dailyHoursUsed,
-          availableDays,
-          userEvents
-        );
-        
-        currentDate = newDate;
-        dailyHoursUsed = newDailyHoursUsed;
-        
-        // Calculate topics for this block based on the progress through this pass
-        const passProgress = (blocksForThisPass - remainingBlocks) / blocksForThisPass;
-        const topicStartIndex = Math.floor(passProgress * sortedTopics.length);
-        const sessionTopics = [];
-        
-        // Add main topics - limited to the number of available topics
-        const availableTopicCount = Math.min(TOPICS_PER_SESSION, sortedTopics.length);
-        
-        for (let i = 0; i < availableTopicCount; i++) {
-          // Don't wrap around if we don't have enough topics
-          const topicIndex = topicStartIndex + i;
-          if (topicIndex >= sortedTopics.length) break;
-          
-          const topic = sortedTopics[topicIndex];
-          sessionTopics.push({
-            name: topic.name,
-            type: 'main' as const
-          });
-        }
-        
-        // Add connection topics if we have any main topics
-        if (sessionTopics.length > 0) {
-          const mainTopic = sortedTopics[topicStartIndex < sortedTopics.length ? topicStartIndex : 0];
-          const excludeTopics = sessionTopics.map(t => `${subjectData.subject}: ${t.name}`);
-          const connections = findRelatedTopics(
-            subjectData.subject,
-            mainTopic.name,
-            subjectsData,
-            excludeTopics
-          );
-          
-          sessionTopics.push({
-            name: mainTopic.name,
-            type: 'connection' as const,
-            connectionTopics: connections
-          });
-        }
-        
-        // Add the main block to schedule
-        blocks.push({
-          subject: subjectData.subject,
-          topics: sessionTopics,
-          hours: slot.hours,
-          date: slot.date,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          passNumber: pass
-        });
-        
-        remainingBlocks--;
-        blockCount++;
-      }
-    }
-    
-    // Add a brief break between passes if we're not on the last pass
-    if (pass < passCoverage) {
+  // Get available weekdays (0=Sunday, 1=Monday, ..., 6=Saturday)
+  const availableDays = Array.from({ length: daysPerWeek }, (_, i) => (i + 1) % 7);
+  
+  // Start from today
+  let currentDate = new Date();
+  
+  // Filter selected subjects from available subjects data
+  const selectedSubjectsData = subjectsData.filter(subject => 
+    favouriteSubjects.includes(subject.name)
+  );
+  
+  if (selectedSubjectsData.length === 0) {
+    return blocks; // No subjects selected
+  }
+
+  // Generate blocks in a spiral pattern for the next 4 weeks
+  const totalWeeks = 4;
+  const totalDays = totalWeeks * daysPerWeek;
+  let subjectIndex = 0;
+  
+  // Create a cycling list of subjects
+  const subjectCycle = [...selectedSubjectsData];
+  
+  // Generate blocks day by day
+  for (let dayIndex = 0; dayIndex < totalDays; dayIndex++) {
+    // Find the next available study day
+    while (!availableDays.includes(currentDate.getDay())) {
       currentDate.setDate(currentDate.getDate() + 1);
-      // Reset daily hours at the start of a new pass
-      // Note: This variable is declared inside the for loop for each subject
     }
+    
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    // Generate blocks for this day
+    for (let blockIndex = 0; blockIndex < blocksPerDay; blockIndex++) {
+      const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS); // Start at 9 AM
+      const endHour = startHour + BLOCK_DURATION_HOURS;
+      
+      const startTime = `${String(startHour).padStart(2, '0')}:00`;
+      const endTime = `${String(endHour).padStart(2, '0')}:00`;
+      
+      // Get the current subject in rotation
+      const currentSubject = subjectCycle[subjectIndex % subjectCycle.length];
+      
+      // Select topics for this block
+      const availableTopics = currentSubject.topics.slice(0, 3); // Limit to 3 topics per block
+      const sessionTopics = availableTopics.map(topic => ({
+        name: topic.name,
+        type: 'main' as const
+      }));
+      
+      // Create the study block
+      blocks.push({
+        subject: currentSubject.name,
+        topics: sessionTopics,
+        hours: BLOCK_DURATION_HOURS,
+        date: dateStr,
+        startTime,
+        endTime,
+        passNumber: 1,
+        isInterjection: false
+      });
+      
+      // Move to next subject
+      subjectIndex++;
+    }
+    
+    // Move to next day
+    currentDate.setDate(currentDate.getDate() + 1);
   }
-
-  // Sort the blocks by date and time to ensure chronological order
-  return blocks.sort((a, b) => {
-    const dateComparison = a.date.localeCompare(b.date);
-    if (dateComparison !== 0) return dateComparison;
-    return a.startTime.localeCompare(b.startTime);
-  });
+  return blocks;
 }
 
 // Helper to add hours to a time string

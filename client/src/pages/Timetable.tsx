@@ -465,46 +465,60 @@ export default function Timetable() {
     };
   };
 
-  // Consistent color mapping for subjects that doesn't change
+  // Aesthetic pastel color palette for subjects
   const SUBJECT_COLORS: {[key: string]: string} = {
-    "Acute and emergency": '#8b5cf6',
-    "Cancer": '#6366f1', 
-    "Cardiovascular": '#3b82f6',
-    "Child health": '#06b6d4',
-    "Dermatology": '#0ea5e9',
-    "Digital health": '#0284c7',
-    "Ear, nose and throat": '#0369a1',
-    "Endocrinology": '#0891b2',
-    "Ethics and law": '#14b8a6',
-    "Evidence-based practice": '#10b981',
-    "Gastroenterology": '#059669',
-    "Genetics and genomics": '#16a34a',
-    "Global and population health": '#22c55e',
-    "Haematology": '#84cc16',
-    "Health promotion and illness prevention": '#a3e635',
-    "Immunology": '#ca8a04',
-    "Infectious disease": '#d97706',
-    "Insights from humanities": '#ea580c',
-    "Mental health": '#ef4444',
-    "Metabolic health": '#f97316',
-    "Musculoskeletal": '#f59e0b',
-    "Neurology": '#eab308',
-    "Obstetrics and gynaecology": '#fb7185',
-    "Ophthalmology": '#ec4899',
-    "Palliative and end of life care": '#d946ef',
-    "Pharmacology and therapeutics": '#a855f7',
-    "Prescribing": '#9333ea',
-    "Professional knowledge": '#7c3aed',
-    "Public health": '#6d28d9',
-    "Renal and urological": '#4c1d95',
-    "Respiratory": '#4338ca',
-    "Surgery": '#1e40af',
-    "Values and behaviours": '#1d4ed8'
+    "Acute and emergency": '#f472b6',
+    "Cancer": '#c084fc', 
+    "Cardiovascular": '#60a5fa',
+    "Child health": '#34d399',
+    "Dermatology": '#fbbf24',
+    "Digital health": '#a78bfa',
+    "Ear, nose and throat": '#fb7185',
+    "Endocrinology": '#38bdf8',
+    "Ethics and law": '#4ade80',
+    "Evidence-based practice": '#fde047',
+    "Gastroenterology": '#fb923c',
+    "Genetics and genomics": '#a3e635',
+    "Global and population health": '#22d3ee',
+    "Haematology": '#f87171',
+    "Health promotion and illness prevention": '#84cc16',
+    "Immunology": '#facc15',
+    "Infectious disease": '#ef4444',
+    "Insights from humanities": '#818cf8',
+    "Mental health": '#f472b6',
+    "Metabolic health": '#fbbf24',
+    "Musculoskeletal": '#fb7185',
+    "Neurology": '#a78bfa',
+    "Obstetrics and gynaecology": '#f472b6',
+    "Ophthalmology": '#38bdf8',
+    "Palliative and end of life care": '#c084fc',
+    "Pharmacology and therapeutics": '#818cf8',
+    "Prescribing": '#a78bfa',
+    "Professional knowledge": '#60a5fa',
+    "Public health": '#4ade80',
+    "Renal and urological": '#22d3ee',
+    "Respiratory": '#60a5fa',
+    "Surgery": '#ef4444',
+    "Values and behaviours": '#34d399'
   };
 
-  // Get consistent color for a subject
+  // Get consistent color for a subject with darker border
   const getSubjectColor = (subject: string) => {
-    return SUBJECT_COLORS[subject] || '#64748b'; // Default gray for unknown subjects
+    return SUBJECT_COLORS[subject] || '#a1a1aa'; // Default light gray for unknown subjects
+  };
+
+  // Get darker border color for subject
+  const getSubjectBorderColor = (subject: string) => {
+    const baseColor = SUBJECT_COLORS[subject];
+    if (!baseColor) return '#71717a';
+    
+    // Convert hex to RGB and darken by 20%
+    const hex = baseColor.replace('#', '');
+    const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 51);
+    const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 51);
+    const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 51);
+    
+    return `rgb(${r}, ${g}, ${b})`;
   };
 
   // Handle AI-powered schedule reflow
