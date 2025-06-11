@@ -444,10 +444,6 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const blocks: StudyBlock[] = [];
   const BLOCK_DURATION_HOURS = 2;
   
-  // Calculate blocks per day based on configuration
-  const hoursPerDay = weeklyStudyHours / daysPerWeek;
-  const blocksPerDay = Math.max(1, Math.floor(hoursPerDay / BLOCK_DURATION_HOURS));
-  
   // Filter selected subjects
   const selectedSubjectsData = subjectsData.filter(subject => 
     favouriteSubjects.includes(subject.name)
@@ -457,77 +453,60 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     return blocks;
   }
 
-  // Create a time slot registry to prevent overlaps
-  const timeSlotRegistry = new Set<string>();
-  
-  // Generate schedule for 4 weeks
+  // Generate exactly one study session per day, spread across weeks
   const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0); // Start at beginning of today
+  startDate.setHours(0, 0, 0, 0);
   
   let subjectIndex = 0;
-  let dayCounter = 0;
   
-  // Generate blocks for specified number of days per week over 4 weeks
+  // Generate schedule for 4 weeks
   for (let week = 0; week < 4; week++) {
-    let daysThisWeek = 0;
-    let currentDate = new Date(startDate);
-    currentDate.setDate(startDate.getDate() + (week * 7));
-    
-    // Find weekdays for this week
-    while (daysThisWeek < daysPerWeek && currentDate.getDay() !== 0) { // Don't go past Sunday
-      // Skip weekends if daysPerWeek is 5 or less
-      if (daysPerWeek <= 5 && (currentDate.getDay() === 0 || currentDate.getDay() === 6)) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        continue;
+    // For each week, create study days based on daysPerWeek
+    for (let dayInWeek = 0; dayInWeek < daysPerWeek; dayInWeek++) {
+      // Calculate the actual date for this study day
+      const currentDate = new Date(startDate);
+      
+      // For 5 days per week: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5
+      // For 7 days per week: Monday=1, Tuesday=2, ..., Sunday=0
+      let targetDayOfWeek;
+      if (daysPerWeek <= 5) {
+        // Weekdays only: Monday (1) through Friday (5)
+        targetDayOfWeek = dayInWeek + 1;
+      } else {
+        // All days: Monday (1) through Sunday (0)
+        targetDayOfWeek = dayInWeek === 6 ? 0 : dayInWeek + 1;
       }
+      
+      // Find the target day in the current week
+      const daysToAdd = (week * 7) + ((targetDayOfWeek - currentDate.getDay() + 7) % 7);
+      currentDate.setDate(startDate.getDate() + daysToAdd);
       
       const dateStr = currentDate.toISOString().split('T')[0];
       
-      // Create blocks for this day with guaranteed unique time slots
-      for (let blockIndex = 0; blockIndex < blocksPerDay; blockIndex++) {
-        const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS);
-        const endHour = startHour + BLOCK_DURATION_HOURS;
-        
-        if (endHour > 21) break; // Don't schedule past 9 PM
-        
-        const startTime = `${String(startHour).padStart(2, '0')}:00`;
-        const endTime = `${String(endHour).padStart(2, '0')}:00`;
-        
-        // Create unique time slot identifier
-        const timeSlotKey = `${dateStr}-${startTime}-${endTime}`;
-        
-        // Skip if this time slot is already taken
-        if (timeSlotRegistry.has(timeSlotKey)) {
-          continue;
-        }
-        
-        // Register this time slot
-        timeSlotRegistry.add(timeSlotKey);
-        
-        // Assign one subject per block
-        const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
-        
-        const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
-          name: topic.name,
-          type: 'main' as const
-        }));
-        
-        blocks.push({
-          subject: currentSubject.name,
-          topics: sessionTopics,
-          hours: BLOCK_DURATION_HOURS,
-          date: dateStr,
-          startTime,
-          endTime,
-          passNumber: 1,
-          isInterjection: false
-        });
-        
-        subjectIndex++;
-      }
+      // Create exactly ONE study block for this day
+      const startTime = '09:00'; // Always start at 9 AM
+      const endTime = '11:00';   // Always 2-hour blocks
       
-      daysThisWeek++;
-      currentDate.setDate(currentDate.getDate() + 1);
+      // Assign one subject per day (rotating through subjects)
+      const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
+      
+      const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
+        name: topic.name,
+        type: 'main' as const
+      }));
+      
+      blocks.push({
+        subject: currentSubject.name,
+        topics: sessionTopics,
+        hours: BLOCK_DURATION_HOURS,
+        date: dateStr,
+        startTime,
+        endTime,
+        passNumber: 1,
+        isInterjection: false
+      });
+      
+      subjectIndex++;
     }
   }
   
