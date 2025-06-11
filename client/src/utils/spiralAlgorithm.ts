@@ -310,10 +310,10 @@ function timeToMinutes(time: string): number {
   return hours * 60 + minutes;
 }
 
-// Find the next available time slot ensuring sequential scheduling (no overlaps)
+// Find the next available time slot that doesn't overlap with user events
 function findNextAvailableSlot(
   date: Date,
-  currentTime: string,
+  startTime: string,
   hours: number,
   hoursPerDay: number,
   dailyHoursUsed: number,
@@ -321,18 +321,15 @@ function findNextAvailableSlot(
   userEvents?: UserEvent[]
 ): { slot: TimeSlot, newDate: Date, newDailyHoursUsed: number } {
   let currentDate = new Date(date);
-  let requestedHours = hours;
+  let currDailyHoursUsed = dailyHoursUsed;
+  let requestedHours = hours; // Store the originally requested hours
   
-  // Calculate the actual start time based on current time position (sequential scheduling)
-  const currentTimeMinutes = timeToMinutes(currentTime);
-  const endOfDayMinutes = timeToMinutes(DAILY_END_TIME);
-  
-  // Check if we can fit the block in the remaining time today
-  if (currentTimeMinutes + (hours * 60) <= endOfDayMinutes) {
+  // Try to find a slot today
+  if (currDailyHoursUsed < hoursPerDay) {
     const potentialSlot: TimeSlot = {
       date: currentDate.toISOString().split('T')[0],
-      startTime: currentTime,
-      endTime: minutesToTime(currentTimeMinutes + (hours * 60)),
+      startTime: addHours(startTime, currDailyHoursUsed),
+      endTime: addHours(startTime, currDailyHoursUsed + hours),
       hours
     };
     
@@ -340,77 +337,48 @@ function findNextAvailableSlot(
       return {
         slot: potentialSlot,
         newDate: currentDate,
-        newDailyHoursUsed: dailyHoursUsed + hours
+        newDailyHoursUsed: currDailyHoursUsed + hours
       };
     }
     
-    // If slot overlaps with user event, find the next available time after the event
-    let nextStartMinutes = currentTimeMinutes;
+    // If slot overlaps, try to find another slot later today
+    const startTimeMinutes = timeToMinutes(potentialSlot.startTime);
+    const endTimeMinutes = timeToMinutes(DAILY_END_TIME);
+    let nextStartMinutes = startTimeMinutes;
     
-    // Find all conflicting events for today
-    const conflictingEvents = userEvents?.filter(event => {
-      // Check if event is on the same day
-      if (event.recurringWeekly) {
-        const slotDate = new Date(potentialSlot.date);
-        const eventDate = new Date(event.date);
-        return slotDate.getDay() === eventDate.getDay();
-      } else {
-        return event.date === potentialSlot.date;
-      }
-    }) || [];
-    
-    // Sort events by start time
-    conflictingEvents.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
-    
-    // Try to find a gap between events or after the last event
-    for (const event of conflictingEvents) {
-      const eventStartMinutes = timeToMinutes(event.startTime);
-      const eventEndMinutes = timeToMinutes(event.endTime);
+    // Try 1-minute increments for more precise scheduling
+    while (nextStartMinutes + hours * 60 <= endTimeMinutes) {
+      // Try 1-minute increments
+      nextStartMinutes += 1;
       
-      // If we can fit before this event
-      if (nextStartMinutes + (hours * 60) <= eventStartMinutes) {
-        const validSlot: TimeSlot = {
-          date: currentDate.toISOString().split('T')[0],
-          startTime: minutesToTime(nextStartMinutes),
-          endTime: minutesToTime(nextStartMinutes + (hours * 60)),
-          hours
-        };
-        
-        const newHoursUsed = (timeToMinutes(validSlot.endTime) - timeToMinutes(DAILY_START_TIME)) / 60;
-        return {
-          slot: validSlot,
-          newDate: currentDate,
-          newDailyHoursUsed: Math.min(newHoursUsed, hoursPerDay)
-        };
-      }
+      const nextStartTime = minutesToTime(nextStartMinutes);
+      const nextEndTime = addHours(nextStartTime, hours);
       
-      // Move past this event
-      nextStartMinutes = Math.max(nextStartMinutes, eventEndMinutes);
-    }
-    
-    // Try to fit after all events
-    if (nextStartMinutes + (hours * 60) <= endOfDayMinutes) {
-      const finalSlot: TimeSlot = {
+      const nextSlot: TimeSlot = {
         date: currentDate.toISOString().split('T')[0],
-        startTime: minutesToTime(nextStartMinutes),
-        endTime: minutesToTime(nextStartMinutes + (hours * 60)),
+        startTime: nextStartTime,
+        endTime: nextEndTime,
         hours
       };
       
-      const newHoursUsed = (timeToMinutes(finalSlot.endTime) - timeToMinutes(DAILY_START_TIME)) / 60;
-      return {
-        slot: finalSlot,
-        newDate: currentDate,
-        newDailyHoursUsed: Math.min(newHoursUsed, hoursPerDay)
-      };
+      if (!overlapsWithUserEvent(nextSlot, userEvents)) {
+        // Calculate new daily hours used based on the end time
+        const newHoursUsed = (timeToMinutes(nextEndTime) - timeToMinutes(startTime)) / 60;
+        return {
+          slot: nextSlot,
+          newDate: currentDate,
+          newDailyHoursUsed: newHoursUsed > hoursPerDay ? hoursPerDay : newHoursUsed
+        };
+      }
     }
     
-    // If 2-hour block doesn't fit, try 1 hour
+    // If we couldn't find a slot with the requested hours, 
+    // and this is a main block (2 hours), try with 1 hour instead
     if (hours === 2) {
       return findNextAvailableSlot(
         currentDate,
-        currentTime,
-        1,
+        startTime,
+        1, // Fallback to 1 hour
         hoursPerDay,
         dailyHoursUsed,
         availableDays,
@@ -419,7 +387,7 @@ function findNextAvailableSlot(
     }
   }
   
-  // Move to the next available day
+  // If we couldn't find a slot today, try the next day
   do {
     currentDate.setDate(currentDate.getDate() + 1);
   } while (!availableDays.includes(currentDate.getDay() || 7));
@@ -478,7 +446,6 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   // Start from today
   const startDate = new Date();
   let currentDate = new Date(startDate);
-  let currentTime = DAILY_START_TIME; // Track current time position for sequential scheduling
 
   // Calculate blocks per week based on weekly hours
   const hoursPerDay = weeklyStudyHours / daysPerWeek;
@@ -555,6 +522,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
       // For each pass, allocate a percentage of the total blocks
       const blocksForThisPass = Math.ceil(subjectData.totalBlocks / passCoverage);
       let remainingBlocks = blocksForThisPass;
+      let dailyHoursUsed = 0;
       let blockCount = 0; // Count blocks for interjection timing
       
       // Sort topics by performance and group by condition groups
@@ -573,25 +541,19 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
           if (underperformingSubject) {
             const underperformingTopics = getTopicsByPerformance(underperformingSubject, userPerformance, subjectsData);
             
-            // Find next available time slot using current time position
-            const currentDailyHoursUsed = (timeToMinutes(currentTime) - timeToMinutes(DAILY_START_TIME)) / 60;
+            // Find next available time slot
             const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
               currentDate,
-              currentTime,
+              DAILY_START_TIME,
               1, // Just 1 hour for interjection
               hoursPerDay,
-              currentDailyHoursUsed,
+              dailyHoursUsed,
               availableDays,
               userEvents
             );
             
-            // Update current position, resetting time if we moved to a new day
-            if (newDate.toDateString() !== currentDate.toDateString()) {
-              currentTime = slot.endTime;
-            } else {
-              currentTime = slot.endTime;
-            }
             currentDate = newDate;
+            dailyHoursUsed = newDailyHoursUsed;
             
             // Create topics list for interjection - limited to available topics
             const sessionTopics = [];
@@ -636,25 +598,19 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
           }
         }
         
-        // Find next available time slot for the main subject using current time position
-        const currentDailyHoursUsed = (timeToMinutes(currentTime) - timeToMinutes(DAILY_START_TIME)) / 60;
+        // Find next available time slot for the main subject
         const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
           currentDate,
-          currentTime,
+          DAILY_START_TIME,
           2, // Prefer 2 hours for main blocks
           hoursPerDay,
-          currentDailyHoursUsed,
+          dailyHoursUsed,
           availableDays,
           userEvents
         );
         
-        // Update current position, resetting time if we moved to a new day
-        if (newDate.toDateString() !== currentDate.toDateString()) {
-          currentTime = slot.endTime;
-        } else {
-          currentTime = slot.endTime;
-        }
         currentDate = newDate;
+        dailyHoursUsed = newDailyHoursUsed;
         
         // Calculate topics for this block based on the progress through this pass
         const passProgress = (blocksForThisPass - remainingBlocks) / blocksForThisPass;
@@ -713,7 +669,8 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     // Add a brief break between passes if we're not on the last pass
     if (pass < passCoverage) {
       currentDate.setDate(currentDate.getDate() + 1);
-      currentTime = DAILY_START_TIME; // Reset time position for new day
+      // Reset daily hours at the start of a new pass
+      // Note: This variable is declared inside the for loop for each subject
     }
   }
 
