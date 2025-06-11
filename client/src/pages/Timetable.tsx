@@ -835,10 +835,14 @@ export default function Timetable() {
               eventOverlap={false}
               slotEventOverlap={false}
               selectOverlap={false}
+              eventMaxStack={1}
+              dayMaxEvents={false}
+              dayMaxEventRows={false}
               eventConstraint={{
                 start: '06:00',
                 end: '23:00'
               }}
+              eventClassNames="single-subject-event"
             />
           </div>
           
