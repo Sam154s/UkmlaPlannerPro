@@ -104,15 +104,16 @@ export function StudyConfig({
               step={1}
               value={[weeklyHours]}
               onValueChange={(value) => onWeeklyHoursChange(value[0])}
-              className="flex-1"
-              // Custom darker styling for the slider
+              className="flex-1 slider-enhanced"
+              // Enhanced styling for larger, more visible thumb
               style={{
                 "--track-background": "#e2e8f0",
                 "--range-background": "#3b82f6", 
-                "--thumb-background": "#3b82f6",
-                "--thumb-border": "2px solid white",
-                "--thumb-width": "1.25rem",
-                "--thumb-height": "1.25rem"
+                "--thumb-background": "#ffffff",
+                "--thumb-border": "3px solid #3b82f6",
+                "--thumb-width": "1.75rem",
+                "--thumb-height": "1.75rem",
+                "--thumb-shadow": "0 2px 8px rgba(0, 0, 0, 0.15)"
               } as React.CSSProperties}
             />
             <NumberInput

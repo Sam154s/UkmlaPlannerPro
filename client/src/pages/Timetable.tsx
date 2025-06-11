@@ -306,54 +306,7 @@ export default function Timetable() {
       }
     }
 
-    // Then try to load from backend API
-    const loadBackendData = async () => {
-      try {
-        const apiModule = await import('../lib/api');
-        const { api } = apiModule;
-        
-        // Load timetable data
-        api.timetable.get()
-          .then(data => {
-            if (data) {
-              // Update preferences if available
-              if (data.preferences) {
-                setWeeklyHours(data.preferences.weeklyHours);
-                setYearGroup(data.preferences.yearGroup);
-                setDaysPerWeek(data.preferences.daysPerWeek);
-                setSelectedSubjects(data.preferences.selectedSubjects);
-                localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(data.preferences));
-              }
-              
-              // Update study events if available
-              if (data.studyEvents && data.studyEvents.length > 0) {
-                setStudyEvents(data.studyEvents);
-              }
-              
-              // Update holiday events if available
-              if (data.holidayEvents && data.holidayEvents.length > 0) {
-                setHolidayEvents(data.holidayEvents);
-                localStorage.setItem(STORAGE_KEYS.HOLIDAYS, JSON.stringify(data.holidayEvents));
-              }
-            }
-          })
-          .catch(err => console.error('Error loading timetable data:', err));
-        
-        // Load user performance data
-        api.performance.get()
-          .then(data => {
-            if (data) {
-              setUserPerformance(data);
-              localStorage.setItem(STORAGE_KEYS.USER_PERFORMANCE, JSON.stringify(data));
-            }
-          })
-          .catch(err => console.error('Error loading user performance data:', err));
-      } catch (error) {
-        console.error('Error importing API module:', error);
-      }
-    };
-    
-    loadBackendData();
+
     preferencesLoaded.current = true;
 
     // Generate timetable with saved preferences if subjects are selected
@@ -379,19 +332,6 @@ export default function Timetable() {
     localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferencesToSave));
     localStorage.setItem('weekly-hours', weeklyHours.toString());
     localStorage.setItem('selected-subjects', JSON.stringify(selectedSubjects));
-    
-    // Save to backend API
-    try {
-      import('../lib/api').then(({ api }) => {
-        api.timetable.save({ 
-          preferences: preferencesToSave,
-          studyEvents,
-          holidayEvents 
-        }).catch(err => console.error('Error saving timetable to API:', err));
-      });
-    } catch (error) {
-      console.error('Error importing API module:', error);
-    }
   }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects, studyEvents, holidayEvents]);
 
   // Save holidays when they change
@@ -525,45 +465,46 @@ export default function Timetable() {
     };
   };
 
-  // Get color for a subject (using official UKMLA content map headings)
+  // Consistent color mapping for subjects that doesn't change
+  const SUBJECT_COLORS: {[key: string]: string} = {
+    "Acute and emergency": '#8b5cf6',
+    "Cancer": '#6366f1', 
+    "Cardiovascular": '#3b82f6',
+    "Child health": '#06b6d4',
+    "Dermatology": '#0ea5e9',
+    "Digital health": '#0284c7',
+    "Ear, nose and throat": '#0369a1',
+    "Endocrinology": '#0891b2',
+    "Ethics and law": '#14b8a6',
+    "Evidence-based practice": '#10b981',
+    "Gastroenterology": '#059669',
+    "Genetics and genomics": '#16a34a',
+    "Global and population health": '#22c55e',
+    "Haematology": '#84cc16',
+    "Health promotion and illness prevention": '#a3e635',
+    "Immunology": '#ca8a04',
+    "Infectious disease": '#d97706',
+    "Insights from humanities": '#ea580c',
+    "Mental health": '#ef4444',
+    "Metabolic health": '#f97316',
+    "Musculoskeletal": '#f59e0b',
+    "Neurology": '#eab308',
+    "Obstetrics and gynaecology": '#fb7185',
+    "Ophthalmology": '#ec4899',
+    "Palliative and end of life care": '#d946ef',
+    "Pharmacology and therapeutics": '#a855f7',
+    "Prescribing": '#9333ea',
+    "Professional knowledge": '#7c3aed',
+    "Public health": '#6d28d9',
+    "Renal and urological": '#4c1d95',
+    "Respiratory": '#4338ca',
+    "Surgery": '#1e40af',
+    "Values and behaviours": '#1d4ed8'
+  };
+
+  // Get consistent color for a subject
   const getSubjectColor = (subject: string) => {
-    const colors: {[key: string]: string} = {
-      "Acute and emergency": '#8b5cf6',
-      "Cancer": '#6366f1',
-      "Cardiovascular": '#3b82f6',
-      "Child health": '#06b6d4',
-      "Dermatology": '#0ea5e9',
-      "Digital health": '#0284c7',
-      "Ear, nose and throat": '#0369a1',
-      "Endocrinology": '#0891b2',
-      "Ethics and law": '#14b8a6',
-      "Evidence-based practice": '#10b981',
-      "Gastroenterology": '#059669',
-      "Genetics and genomics": '#16a34a',
-      "Global and population health": '#22c55e',
-      "Haematology": '#84cc16',
-      "Health promotion and illness prevention": '#a3e635',
-      "Immunology": '#ca8a04',
-      "Infectious disease": '#d97706',
-      "Insights from humanities": '#ea580c',
-      "Mental health": '#ef4444',
-      "Metabolic health": '#f97316',
-      "Musculoskeletal": '#f59e0b',
-      "Neurology": '#eab308',
-      "Obstetrics and gynaecology": '#fb7185',
-      "Ophthalmology": '#ec4899',
-      "Palliative and end of life care": '#d946ef',
-      "Pharmacology and therapeutics": '#a855f7',
-      "Prescribing": '#9333ea',
-      "Professional knowledge": '#7c3aed',
-      "Public health": '#6d28d9',
-      "Renal and urological": '#4c1d95',
-      "Respiratory": '#4338ca',
-      "Surgery": '#1e40af',
-      "Values and behaviours": '#1d4ed8'
-    };
-    
-    return colors[subject] || `hsl(${Math.floor(Math.random() * 360)}, 70%, 65%)`;
+    return SUBJECT_COLORS[subject] || '#64748b'; // Default gray for unknown subjects
   };
 
   // Handle AI-powered schedule reflow

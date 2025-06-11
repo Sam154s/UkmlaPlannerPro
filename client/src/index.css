@@ -357,3 +357,34 @@ input[type="number"] {
 .dark .number-input-arrow:active {
   background-color: #4b5563;
 }
+
+/* Enhanced slider styling for weekly hours */
+.slider-enhanced [data-radix-slider-thumb] {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  background: white !important;
+  border: 3px solid #3b82f6 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  position: relative;
+}
+
+.slider-enhanced [data-radix-slider-thumb]:after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+}
+
+.slider-enhanced [data-radix-slider-thumb]:hover {
+  border-color: #2563eb !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.slider-enhanced [data-radix-slider-thumb]:hover:after {
+  background: #2563eb;
+}
