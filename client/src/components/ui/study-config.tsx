@@ -110,10 +110,10 @@ export function StudyConfig({
                 "--track-background": "#e2e8f0",
                 "--range-background": "#3b82f6", 
                 "--thumb-background": "#ffffff",
-                "--thumb-border": "3px solid #3b82f6",
-                "--thumb-width": "1.75rem",
-                "--thumb-height": "1.75rem",
-                "--thumb-shadow": "0 2px 8px rgba(0, 0, 0, 0.15)"
+                "--thumb-border": "4px solid #3b82f6",
+                "--thumb-width": "2.25rem",
+                "--thumb-height": "2.25rem",
+                "--thumb-shadow": "0 4px 12px rgba(0, 0, 0, 0.2)"
               } as React.CSSProperties}
             />
             <NumberInput
@@ -200,33 +200,6 @@ export function StudyConfig({
           <div className="flex justify-between items-center">
             <Label htmlFor="days-per-week" className="font-medium text-slate-800">Study Days Per Week</Label>
             <span className="text-sm font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">{daysPerWeek} days</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Slider
-              id="days-per-week"
-              min={1}
-              max={7}
-              step={1}
-              value={[daysPerWeek]}
-              onValueChange={(value) => onDaysPerWeekChange(value[0])}
-              className="flex-1"
-              // Custom darker styling for the slider
-              style={{
-                "--track-background": "#e2e8f0",
-                "--range-background": "#8b5cf6", 
-                "--thumb-background": "#8b5cf6",
-                "--thumb-border": "2px solid white",
-                "--thumb-width": "1.25rem",
-                "--thumb-height": "1.25rem"
-              } as React.CSSProperties}
-            />
-            <NumberInput
-              value={daysPerWeek}
-              onChange={onDaysPerWeekChange}
-              min={1}
-              max={7}
-              className="w-20"
-            />
           </div>
           <div className="grid grid-cols-7 gap-0.5 text-xs text-slate-500 text-center mt-1">
             <button 

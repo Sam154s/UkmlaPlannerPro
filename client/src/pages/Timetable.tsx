@@ -204,7 +204,8 @@ export default function Timetable() {
         start: `${block.date}T${block.startTime}`,
         end: `${block.date}T${block.endTime}`,
         backgroundColor: getSubjectColor(block.subject),
-        borderColor: block.isInterjection ? '#ffffff' : getSubjectColor(block.subject),
+        borderColor: getSubjectBorderColor(block.subject),
+        textColor: '#1f2937',
         classNames: block.isInterjection ? ['interjection-event'] : undefined,
         extendedProps: {
           topics: block.topics
@@ -399,7 +400,8 @@ export default function Timetable() {
       start: `${block.date}T${block.startTime}`,
       end: `${block.date}T${block.endTime}`,
       backgroundColor: getSubjectColor(block.subject),
-      borderColor: block.isInterjection ? '#ffffff' : getSubjectColor(block.subject),
+      borderColor: getSubjectBorderColor(block.subject),
+      textColor: '#1f2937',
       classNames: block.isInterjection ? ['interjection-event'] : undefined,
       extendedProps: {
         topics: block.topics
@@ -893,7 +895,6 @@ export default function Timetable() {
             </DialogHeader>
             <div className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Study Configuration</h3>
                 <StudyConfig
                   weeklyHours={weeklyHours}
                   onWeeklyHoursChange={setWeeklyHours}
