@@ -349,6 +349,25 @@ input[type="number"] {
   right: 0 !important;
 }
 
+/* Hide the +more indicator that shows overlapping events */
+.fc-more-link,
+.fc-daygrid-more-link,
+.fc-timegrid-more-link {
+  display: none !important;
+}
+
+/* Hide any event count indicators */
+.fc-event-main-frame .fc-event-title-container::after,
+.fc-event-title::after {
+  display: none !important;
+}
+
+/* Ensure clean event display */
+.single-subject-event .fc-event-main {
+  padding: 8px 12px;
+  font-weight: 500;
+}
+
 .number-input-arrow {
   flex: 1;
   display: flex;

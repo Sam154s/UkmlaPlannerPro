@@ -198,27 +198,27 @@ export default function Timetable() {
         revisionCount: revisionCount
       });
 
-      // Remove any duplicate time slots to prevent overlapping
-      const uniqueBlocks = blocks.filter((block, index, arr) => {
-        return !arr.slice(0, index).some(prevBlock => 
-          prevBlock.date === block.date && 
-          prevBlock.startTime === block.startTime
-        );
-      });
-
-      const calendarEvents = uniqueBlocks.map(block => ({
-        id: generateId(),
+      // Create calendar events with unique IDs
+      const calendarEvents = blocks.map((block, index) => ({
+        id: `event-${index}-${block.date}-${block.startTime}`,
         title: block.subject,
         start: `${block.date}T${block.startTime}`,
         end: `${block.date}T${block.endTime}`,
         backgroundColor: getSubjectColor(block.subject),
         borderColor: getSubjectBorderColor(block.subject),
         textColor: '#374151',
-        classNames: block.isInterjection ? ['interjection-event'] : undefined,
+        classNames: ['single-subject-event'],
         extendedProps: {
           topics: block.topics
         }
       }));
+
+      // Debug log to verify no overlapping events
+      console.log('Generated events:', calendarEvents.map(e => ({
+        title: e.title,
+        start: e.start,
+        end: e.end
+      })));
 
       setStudyEvents(calendarEvents);
     };
@@ -401,24 +401,16 @@ export default function Timetable() {
       revisionCount: revisionCount
     });
 
-    // Remove any duplicate time slots to prevent overlapping
-    const uniqueBlocks = blocks.filter((block, index, arr) => {
-      return !arr.slice(0, index).some(prevBlock => 
-        prevBlock.date === block.date && 
-        prevBlock.startTime === block.startTime
-      );
-    });
-
-    // Convert blocks to calendar events
-    const calendarEvents = uniqueBlocks.map(block => ({
-      id: generateId(),
+    // Convert blocks to calendar events with unique IDs
+    const calendarEvents = blocks.map((block, index) => ({
+      id: `regen-event-${index}-${block.date}-${block.startTime}`,
       title: block.subject,
       start: `${block.date}T${block.startTime}`,
       end: `${block.date}T${block.endTime}`,
       backgroundColor: getSubjectColor(block.subject),
       borderColor: getSubjectBorderColor(block.subject),
       textColor: '#374151',
-      classNames: block.isInterjection ? ['interjection-event'] : undefined,
+      classNames: ['single-subject-event'],
       extendedProps: {
         topics: block.topics
       }

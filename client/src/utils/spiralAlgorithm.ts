@@ -457,62 +457,77 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     return blocks;
   }
 
+  // Create a time slot registry to prevent overlaps
+  const timeSlotRegistry = new Set<string>();
+  
   // Generate schedule for 4 weeks
   const startDate = new Date();
-  let currentDate = new Date(startDate);
+  startDate.setHours(0, 0, 0, 0); // Start at beginning of today
   
-  // Generate study days for the specified number of days per week
-  const studyDays = [];
+  let subjectIndex = 0;
+  let dayCounter = 0;
+  
+  // Generate blocks for specified number of days per week over 4 weeks
   for (let week = 0; week < 4; week++) {
-    for (let day = 0; day < daysPerWeek; day++) {
-      // Monday = 1, Tuesday = 2, etc.
-      const dayOfWeek = (day + 1) % 7;
-      
-      // Find the next occurrence of this day
-      while (currentDate.getDay() !== dayOfWeek) {
+    let daysThisWeek = 0;
+    let currentDate = new Date(startDate);
+    currentDate.setDate(startDate.getDate() + (week * 7));
+    
+    // Find weekdays for this week
+    while (daysThisWeek < daysPerWeek && currentDate.getDay() !== 0) { // Don't go past Sunday
+      // Skip weekends if daysPerWeek is 5 or less
+      if (daysPerWeek <= 5 && (currentDate.getDay() === 0 || currentDate.getDay() === 6)) {
         currentDate.setDate(currentDate.getDate() + 1);
+        continue;
       }
       
-      studyDays.push(new Date(currentDate));
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      // Create blocks for this day with guaranteed unique time slots
+      for (let blockIndex = 0; blockIndex < blocksPerDay; blockIndex++) {
+        const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS);
+        const endHour = startHour + BLOCK_DURATION_HOURS;
+        
+        if (endHour > 21) break; // Don't schedule past 9 PM
+        
+        const startTime = `${String(startHour).padStart(2, '0')}:00`;
+        const endTime = `${String(endHour).padStart(2, '0')}:00`;
+        
+        // Create unique time slot identifier
+        const timeSlotKey = `${dateStr}-${startTime}-${endTime}`;
+        
+        // Skip if this time slot is already taken
+        if (timeSlotRegistry.has(timeSlotKey)) {
+          continue;
+        }
+        
+        // Register this time slot
+        timeSlotRegistry.add(timeSlotKey);
+        
+        // Assign one subject per block
+        const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
+        
+        const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
+          name: topic.name,
+          type: 'main' as const
+        }));
+        
+        blocks.push({
+          subject: currentSubject.name,
+          topics: sessionTopics,
+          hours: BLOCK_DURATION_HOURS,
+          date: dateStr,
+          startTime,
+          endTime,
+          passNumber: 1,
+          isInterjection: false
+        });
+        
+        subjectIndex++;
+      }
+      
+      daysThisWeek++;
       currentDate.setDate(currentDate.getDate() + 1);
-    }
-  }
-  
-  // Generate blocks for each study day
-  let subjectIndex = 0;
-  for (const studyDay of studyDays) {
-    const dateStr = studyDay.toISOString().split('T')[0];
-    
-    // Create blocks for this day
-    for (let blockIndex = 0; blockIndex < blocksPerDay; blockIndex++) {
-      const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS);
-      const endHour = startHour + BLOCK_DURATION_HOURS;
-      
-      if (endHour > 21) break; // Don't schedule past 9 PM
-      
-      const startTime = `${String(startHour).padStart(2, '0')}:00`;
-      const endTime = `${String(endHour).padStart(2, '0')}:00`;
-      
-      // Assign one subject per block
-      const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
-      
-      const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
-        name: topic.name,
-        type: 'main' as const
-      }));
-      
-      blocks.push({
-        subject: currentSubject.name,
-        topics: sessionTopics,
-        hours: BLOCK_DURATION_HOURS,
-        date: dateStr,
-        startTime,
-        endTime,
-        passNumber: 1,
-        isInterjection: false
-      });
-      
-      subjectIndex++;
     }
   }
   
