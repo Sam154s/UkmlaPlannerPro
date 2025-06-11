@@ -467,7 +467,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     return blocks; // No subjects selected
   }
 
-  // Generate blocks in a spiral pattern for the next 4 weeks
+  // Generate proper non-overlapping blocks for the next 4 weeks
   const totalWeeks = 4;
   const totalDays = totalWeeks * daysPerWeek;
   let subjectIndex = 0;
@@ -475,7 +475,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   // Create a cycling list of subjects
   const subjectCycle = [...selectedSubjectsData];
   
-  // Generate blocks day by day
+  // Generate blocks day by day, ensuring no overlaps
   for (let dayIndex = 0; dayIndex < totalDays; dayIndex++) {
     // Find the next available study day
     while (!availableDays.includes(currentDate.getDay())) {
@@ -484,25 +484,28 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     
     const dateStr = currentDate.toISOString().split('T')[0];
     
-    // Generate blocks for this day
+    // Generate blocks for this day with proper spacing
     for (let blockIndex = 0; blockIndex < blocksPerDay; blockIndex++) {
-      const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS); // Start at 9 AM
+      const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS); // Start at 9 AM, no overlap
       const endHour = startHour + BLOCK_DURATION_HOURS;
+      
+      // Ensure we don't go past reasonable study hours (21:00)
+      if (endHour > 21) break;
       
       const startTime = `${String(startHour).padStart(2, '0')}:00`;
       const endTime = `${String(endHour).padStart(2, '0')}:00`;
       
-      // Get the current subject in rotation
+      // Get the current subject in rotation (one subject per block)
       const currentSubject = subjectCycle[subjectIndex % subjectCycle.length];
       
       // Select topics for this block
-      const availableTopics = currentSubject.topics.slice(0, 3); // Limit to 3 topics per block
+      const availableTopics = currentSubject.topics.slice(0, 3);
       const sessionTopics = availableTopics.map(topic => ({
         name: topic.name,
         type: 'main' as const
       }));
       
-      // Create the study block
+      // Create the study block with only one subject
       blocks.push({
         subject: currentSubject.name,
         topics: sessionTopics,
@@ -514,7 +517,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
         isInterjection: false
       });
       
-      // Move to next subject
+      // Move to next subject for next block
       subjectIndex++;
     }
     
