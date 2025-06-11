@@ -322,6 +322,33 @@ input[type="number"] {
   transform: scale(1.05) !important;
 }
 
+/* Force FullCalendar events to not overlap visually */
+.fc-event {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.fc-event-main {
+  width: 100% !important;
+}
+
+.fc-timegrid-event {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.fc-timegrid-event-harness {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
 .number-input-arrow {
   flex: 1;
   display: flex;

@@ -442,70 +442,65 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   } = config;
   
   const blocks: StudyBlock[] = [];
-
-  // Calculate exact hours per day to match configuration
+  const BLOCK_DURATION_HOURS = 2;
+  
+  // Calculate blocks per day based on configuration
   const hoursPerDay = weeklyStudyHours / daysPerWeek;
-  const BLOCK_DURATION_HOURS = 2; // Each block is 2 hours
-  const blocksPerDay = Math.floor(hoursPerDay / BLOCK_DURATION_HOURS);
+  const blocksPerDay = Math.max(1, Math.floor(hoursPerDay / BLOCK_DURATION_HOURS));
   
-  if (blocksPerDay === 0) {
-    return blocks; // Not enough hours for any blocks
-  }
-
-  // Get available weekdays (0=Sunday, 1=Monday, ..., 6=Saturday)
-  const availableDays = Array.from({ length: daysPerWeek }, (_, i) => (i + 1) % 7);
-  
-  // Start from today
-  let currentDate = new Date();
-  
-  // Filter selected subjects from available subjects data
+  // Filter selected subjects
   const selectedSubjectsData = subjectsData.filter(subject => 
     favouriteSubjects.includes(subject.name)
   );
   
   if (selectedSubjectsData.length === 0) {
-    return blocks; // No subjects selected
+    return blocks;
   }
 
-  // Generate proper non-overlapping blocks for the next 4 weeks
-  const totalWeeks = 4;
-  const totalDays = totalWeeks * daysPerWeek;
-  let subjectIndex = 0;
+  // Generate schedule for 4 weeks
+  const startDate = new Date();
+  let currentDate = new Date(startDate);
   
-  // Create a cycling list of subjects
-  const subjectCycle = [...selectedSubjectsData];
-  
-  // Generate blocks day by day, ensuring no overlaps
-  for (let dayIndex = 0; dayIndex < totalDays; dayIndex++) {
-    // Find the next available study day
-    while (!availableDays.includes(currentDate.getDay())) {
+  // Generate study days for the specified number of days per week
+  const studyDays = [];
+  for (let week = 0; week < 4; week++) {
+    for (let day = 0; day < daysPerWeek; day++) {
+      // Monday = 1, Tuesday = 2, etc.
+      const dayOfWeek = (day + 1) % 7;
+      
+      // Find the next occurrence of this day
+      while (currentDate.getDay() !== dayOfWeek) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      studyDays.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
+  }
+  
+  // Generate blocks for each study day
+  let subjectIndex = 0;
+  for (const studyDay of studyDays) {
+    const dateStr = studyDay.toISOString().split('T')[0];
     
-    const dateStr = currentDate.toISOString().split('T')[0];
-    
-    // Generate blocks for this day with proper spacing
+    // Create blocks for this day
     for (let blockIndex = 0; blockIndex < blocksPerDay; blockIndex++) {
-      const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS); // Start at 9 AM, no overlap
+      const startHour = 9 + (blockIndex * BLOCK_DURATION_HOURS);
       const endHour = startHour + BLOCK_DURATION_HOURS;
       
-      // Ensure we don't go past reasonable study hours (21:00)
-      if (endHour > 21) break;
+      if (endHour > 21) break; // Don't schedule past 9 PM
       
       const startTime = `${String(startHour).padStart(2, '0')}:00`;
       const endTime = `${String(endHour).padStart(2, '0')}:00`;
       
-      // Get the current subject in rotation (one subject per block)
-      const currentSubject = subjectCycle[subjectIndex % subjectCycle.length];
+      // Assign one subject per block
+      const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
       
-      // Select topics for this block
-      const availableTopics = currentSubject.topics.slice(0, 3);
-      const sessionTopics = availableTopics.map(topic => ({
+      const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
         name: topic.name,
         type: 'main' as const
       }));
       
-      // Create the study block with only one subject
       blocks.push({
         subject: currentSubject.name,
         topics: sessionTopics,
@@ -517,13 +512,10 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
         isInterjection: false
       });
       
-      // Move to next subject for next block
       subjectIndex++;
     }
-    
-    // Move to next day
-    currentDate.setDate(currentDate.getDate() + 1);
   }
+  
   return blocks;
 }
 
