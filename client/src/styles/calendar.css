@@ -219,9 +219,9 @@
 
 /* Holiday styling */
 .fc-event[data-fc-event][style*="background-color: rgb(244, 63, 94)"] {
-  background-color: rgba(244, 63, 94, 0.15) !important;
+  background-color: rgb(244, 63, 94) !important;
   border-left: 4px solid #f43f5e !important;
-  color: #9f1239 !important;
+  color: white !important;
   font-weight: 500;
 }
 

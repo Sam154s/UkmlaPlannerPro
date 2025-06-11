@@ -585,8 +585,13 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
               userEvents
             );
             
+            // Update current position, resetting time if we moved to a new day
+            if (newDate.toDateString() !== currentDate.toDateString()) {
+              currentTime = slot.endTime;
+            } else {
+              currentTime = slot.endTime;
+            }
             currentDate = newDate;
-            currentTime = slot.endTime; // Update current time position for sequential scheduling
             
             // Create topics list for interjection - limited to available topics
             const sessionTopics = [];
@@ -631,19 +636,25 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
           }
         }
         
-        // Find next available time slot for the main subject
+        // Find next available time slot for the main subject using current time position
+        const currentDailyHoursUsed = (timeToMinutes(currentTime) - timeToMinutes(DAILY_START_TIME)) / 60;
         const { slot, newDate, newDailyHoursUsed } = findNextAvailableSlot(
           currentDate,
-          DAILY_START_TIME,
+          currentTime,
           2, // Prefer 2 hours for main blocks
           hoursPerDay,
-          dailyHoursUsed,
+          currentDailyHoursUsed,
           availableDays,
           userEvents
         );
         
+        // Update current position, resetting time if we moved to a new day
+        if (newDate.toDateString() !== currentDate.toDateString()) {
+          currentTime = slot.endTime;
+        } else {
+          currentTime = slot.endTime;
+        }
         currentDate = newDate;
-        dailyHoursUsed = newDailyHoursUsed;
         
         // Calculate topics for this block based on the progress through this pass
         const passProgress = (blocksForThisPass - remainingBlocks) / blocksForThisPass;
@@ -702,8 +713,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     // Add a brief break between passes if we're not on the last pass
     if (pass < passCoverage) {
       currentDate.setDate(currentDate.getDate() + 1);
-      // Reset daily hours at the start of a new pass
-      // Note: This variable is declared inside the for loop for each subject
+      currentTime = DAILY_START_TIME; // Reset time position for new day
     }
   }
 
