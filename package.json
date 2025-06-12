@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@datastructures-js/priority-queue": "^6.3.3",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
@@ -79,6 +80,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.0",
+    "vitest": "^3.2.3",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.23.8",

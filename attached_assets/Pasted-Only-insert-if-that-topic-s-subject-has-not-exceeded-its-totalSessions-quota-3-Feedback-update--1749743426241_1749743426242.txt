@@ -1,0 +1,53 @@
+Only insert if that topic’s subject has not exceeded its totalSessions quota.
+3. **Feedback update** (not in this PR)  
+After each real session the API will call a util that does  
+`difficultyFactor += 0.1·(rating-5)` then clamps to 0.5-2.0.
+
+### File work-plan
+1. **Create `src/algorithms/selector.ts`**
+* Pure generator exported as `buildSessionStream(config: SelectorConfig): SessionStub[]`
+* SelectorConfig = { subjectsData, baseBlockCounts, passCoverage, favouriteSubjects, leastFavouriteSubjects, userPerformance, k }
+* Returns an **array** of `{ subject, topic, pass, isReview }` in order.
+2. **Create `src/algorithms/timeslotter.ts`**
+* Function `placeSessions(stream, calendarCfg): StudyBlock[]`
+* calendarCfg = { startDate, daysPerWeek, dailyStudyHours, userEvents }
+* Use existing helpers `findNextAvailableSlot`, `overlapsWithUserEvent`, date-fns for time maths.
+3. **Replace `generateSpiralTimetable`**
+* New file `src/algorithms/index.ts` exports
+  ```ts
+  import { buildSessionStream } from './selector';
+  import { placeSessions }    from './timeslotter';
+  export function generateSpiralTimetable(fullCfg: SpiralConfig): StudyBlock[] {
+    const stream = buildSessionStream(fullCfg);
+    return placeSessions(stream, fullCfg);
+  }
+  ```
+* Remove obsolete code from the old file.
+4. **Install tiny deps**
+* `npm install date-fns @datastructures-js/priority-queue`
+5. **Unit tests**
+* Create `tests/selector.test.ts` – ensures each subject appears exactly its quota.
+* Create `tests/spiral.test.ts`   – ensures every 10th emitted element has `isReview=true`.
+* Use vitest (already in dev deps or add it).
+6. **Type definitions**
+* Add `src/types/session.ts` containing shared TS interfaces (`SessionStub`, `StudyBlock`, etc.).
+7. **Run `npm run test`** – all green.
+
+### Coding conventions
+* ES2022 modules, TS strict mode.
+* No any’s in new code.
+* Pure functions get JSDoc.
+* All date logic via date-fns (`addMinutes`, `formatISO`, etc.).
+* Keep helper constants (`POOR_PERFORMANCE_THRESHOLD` etc.) in `src/constants.ts`.
+
+### Deliverables in this PR
+- [ ] src/algorithms/selector.ts
+- [ ] src/algorithms/timeslotter.ts
+- [ ] src/algorithms/index.ts (new generateSpiralTimetable)
+- [ ] src/types/session.ts
+- [ ] tests/selector.test.ts
+- [ ] tests/spiral.test.ts
+- [ ] Updated package.json (deps + “test” script)
+- [ ] **No other files modified**
+
+When you’re ready show the diff for review, then apply.
