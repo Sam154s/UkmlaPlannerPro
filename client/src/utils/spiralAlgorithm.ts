@@ -453,66 +453,71 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     return blocks;
   }
 
-  // Generate exactly one study session per day, spread across 4 complete weeks
+  // Generate study sessions for a full month starting from today
   const startDate = new Date();
   startDate.setHours(0, 0, 0, 0);
   
   let subjectIndex = 0;
+  let currentDate = new Date(startDate);
   
-  // Generate study schedule by iterating through each day of 4 weeks
-  for (let week = 0; week < 4; week++) {
-    // Get the Monday of each week as the base
-    const weekStartDate = new Date(startDate);
-    weekStartDate.setDate(startDate.getDate() + (week * 7));
+  // Generate 30 days worth of study sessions
+  const totalDays = 30;
+  let studyDaysGenerated = 0;
+  
+  for (let dayOffset = 0; dayOffset < totalDays * 2 && studyDaysGenerated < totalDays; dayOffset++) {
+    const studyDate = new Date(startDate);
+    studyDate.setDate(startDate.getDate() + dayOffset);
     
-    // Find the Monday of this week
-    const mondayOffset = (1 - weekStartDate.getDay() + 7) % 7;
-    weekStartDate.setDate(weekStartDate.getDate() + mondayOffset);
+    // Check if this is a valid study day based on daysPerWeek setting
+    const dayOfWeek = studyDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
     
-    // Generate study days for this week
-    for (let dayIndex = 0; dayIndex < daysPerWeek; dayIndex++) {
-      const studyDate = new Date(weekStartDate);
-      
-      if (daysPerWeek <= 5) {
-        // Weekdays only: Monday to Friday
-        studyDate.setDate(weekStartDate.getDate() + dayIndex);
-      } else {
-        // All 7 days including weekends
-        studyDate.setDate(weekStartDate.getDate() + dayIndex);
-      }
-      
-      // Skip if it's a weekend and we only want weekdays
-      if (daysPerWeek <= 5 && (studyDate.getDay() === 0 || studyDate.getDay() === 6)) {
-        continue;
-      }
-      
-      const dateStr = studyDate.toISOString().split('T')[0];
-      
-      // Create exactly ONE study block for this day
-      const startTime = '09:00';
-      const endTime = '11:00';
-      
-      // Assign one subject per day (rotating through subjects)
-      const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
-      
-      const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
-        name: topic.name,
-        type: 'main' as const
-      }));
-      
-      blocks.push({
-        subject: currentSubject.name,
-        topics: sessionTopics,
-        hours: BLOCK_DURATION_HOURS,
-        date: dateStr,
-        startTime,
-        endTime,
-        passNumber: 1,
-        isInterjection: false
-      });
-      
-      subjectIndex++;
+    let isValidStudyDay = false;
+    if (daysPerWeek === 7) {
+      // All days are study days
+      isValidStudyDay = true;
+    } else if (daysPerWeek === 6) {
+      // Monday to Saturday (skip Sunday)
+      isValidStudyDay = dayOfWeek !== 0;
+    } else if (daysPerWeek === 5) {
+      // Monday to Friday (skip weekends)
+      isValidStudyDay = dayOfWeek >= 1 && dayOfWeek <= 5;
+    } else {
+      // For other values, use first N days of week starting from Monday
+      const mondayBasedDay = (dayOfWeek + 6) % 7; // Convert to Monday=0, Tuesday=1, etc.
+      isValidStudyDay = mondayBasedDay < daysPerWeek;
     }
+    
+    if (!isValidStudyDay) {
+      continue;
+    }
+    
+    const dateStr = studyDate.toISOString().split('T')[0];
+    
+    // Create exactly ONE study block for this day
+    const startTime = '09:00';
+    const endTime = '11:00';
+    
+    // Assign one subject per day (rotating through subjects)
+    const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
+    
+    const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
+      name: topic.name,
+      type: 'main' as const
+    }));
+    
+    blocks.push({
+      subject: currentSubject.name,
+      topics: sessionTopics,
+      hours: BLOCK_DURATION_HOURS,
+      date: dateStr,
+      startTime,
+      endTime,
+      passNumber: 1,
+      isInterjection: false
+    });
+    
+    subjectIndex++;
+    studyDaysGenerated++;
   }
   
   return blocks;

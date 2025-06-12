@@ -368,11 +368,12 @@ input[type="number"] {
   font-weight: 500;
 }
 
-/* Force month view events to display properly */
+/* Force month view events to display exactly like day/week views */
 .fc-daygrid-event {
   margin-bottom: 1px !important;
   display: block !important;
   visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .fc-daygrid-event .fc-event-main {
@@ -384,33 +385,35 @@ input[type="number"] {
 
 .fc-daygrid-event .fc-event-title {
   overflow: visible !important;
-  white-space: normal !important;
-  text-overflow: clip !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
   display: block !important;
 }
 
-/* Ensure month view shows all events */
+/* Ensure month view shows all events with same colors */
 .fc-daygrid-day-events {
   margin-bottom: 0 !important;
   display: block !important;
 }
 
 .fc-daygrid-day-frame {
-  min-height: 80px !important;
+  min-height: 60px !important;
 }
 
-/* Force timed events to show in month view */
-.fc-daygrid-event.fc-event-start.fc-event-end {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-/* Override any hidden state for study events */
-.single-subject-event {
+/* Match day/week view styling exactly */
+.fc-daygrid-event.single-subject-event {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  border-radius: 4px !important;
+  margin: 1px 0 !important;
+}
+
+/* Preserve event colors from day/week views */
+.fc-daygrid-event.single-subject-event .fc-event-main {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  color: inherit !important;
 }
 
 .number-input-arrow {
