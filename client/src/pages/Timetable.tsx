@@ -198,7 +198,7 @@ export default function Timetable() {
         revisionCount: revisionCount
       });
 
-      // Create calendar events with unique IDs
+      // Create calendar events with unique IDs and force display in all views
       const calendarEvents = blocks.map((block, index) => ({
         id: `event-${index}-${block.date}-${block.startTime}`,
         title: block.subject,
@@ -208,8 +208,11 @@ export default function Timetable() {
         borderColor: getSubjectBorderColor(block.subject),
         textColor: '#374151',
         classNames: ['single-subject-event'],
+        display: 'block', // Force display in all views including month
+        allDay: false, // Explicitly set as timed event
         extendedProps: {
-          topics: block.topics
+          topics: block.topics,
+          isStudyEvent: true
         }
       }));
 
@@ -394,7 +397,7 @@ export default function Timetable() {
       revisionCount: revisionCount
     });
 
-    // Convert blocks to calendar events with unique IDs
+    // Convert blocks to calendar events with unique IDs and force display in all views
     const calendarEvents = blocks.map((block, index) => ({
       id: `regen-event-${index}-${block.date}-${block.startTime}`,
       title: block.subject,
@@ -404,8 +407,11 @@ export default function Timetable() {
       borderColor: getSubjectBorderColor(block.subject),
       textColor: '#374151',
       classNames: ['single-subject-event'],
+      display: 'block', // Force display in all views including month
+      allDay: false, // Explicitly set as timed event
       extendedProps: {
-        topics: block.topics
+        topics: block.topics,
+        isStudyEvent: true
       }
     }));
 
@@ -451,6 +457,10 @@ export default function Timetable() {
 
   // Get all events (study events + holidays + other user events) for the calendar
   const allEvents = [...studyEvents, ...holidayEvents];
+  
+  // Debug logging for month view issue
+  console.log('All events for calendar:', allEvents.length, 'total events');
+  console.log('Study events:', studyEvents.length, 'Holiday events:', holidayEvents.length);
 
   // Get available calendar views based on screen size
   const getAvailableViews = () => {
