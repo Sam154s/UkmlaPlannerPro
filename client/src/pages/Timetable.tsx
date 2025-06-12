@@ -802,9 +802,11 @@ export default function Timetable() {
                 },
                 dayGridMonth: {
                   buttonText: 'Month',
-                  dayMaxEvents: false,
-                  dayMaxEventRows: false,
-                  moreLinkClick: 'popover'
+                  dayMaxEvents: 10,
+                  dayMaxEventRows: 10,
+                  moreLinkClick: 'popover',
+                  displayEventTime: true,
+                  displayEventEnd: false
                 }
               }}
               events={allEvents}
