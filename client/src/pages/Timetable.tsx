@@ -213,13 +213,6 @@ export default function Timetable() {
         }
       }));
 
-      // Debug log to verify no overlapping events
-      console.log('Generated events:', calendarEvents.map(e => ({
-        title: e.title,
-        start: e.start,
-        end: e.end
-      })));
-
       setStudyEvents(calendarEvents);
     };
 
@@ -802,7 +795,10 @@ export default function Timetable() {
                   buttonText: 'Week'
                 },
                 dayGridMonth: {
-                  buttonText: 'Month'
+                  buttonText: 'Month',
+                  dayMaxEvents: false,
+                  dayMaxEventRows: false,
+                  moreLinkClick: 'popover'
                 }
               }}
               events={allEvents}
@@ -835,6 +831,14 @@ export default function Timetable() {
                 end: '23:00'
               }}
               eventClassNames="single-subject-event"
+              displayEventTime={true}
+              displayEventEnd={false}
+              eventTimeFormat={{
+                hour: 'numeric',
+                minute: '2-digit',
+                omitZeroMinute: false,
+                hour12: true
+              }}
             />
           </div>
           

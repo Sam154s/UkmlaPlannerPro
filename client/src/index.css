@@ -368,6 +368,32 @@ input[type="number"] {
   font-weight: 500;
 }
 
+/* Force month view events to display properly */
+.fc-daygrid-event {
+  margin-bottom: 1px !important;
+}
+
+.fc-daygrid-event .fc-event-main {
+  padding: 2px 4px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+.fc-daygrid-event .fc-event-title {
+  overflow: visible !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+}
+
+/* Ensure month view shows all events */
+.fc-daygrid-day-events {
+  margin-bottom: 0 !important;
+}
+
+.fc-daygrid-day-frame {
+  min-height: 80px !important;
+}
+
 .number-input-arrow {
   flex: 1;
   display: flex;
