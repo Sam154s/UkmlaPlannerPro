@@ -1,5 +1,5 @@
 import { SubjectsData } from '../data/masterSubjects';
-import { BASE_BLOCK_COUNTS, calculateBlocksForYear, HOURS_PER_BLOCK } from '../data/studyBlockCounts';
+import { generateSpiralTimetable as newGenerateSpiralTimetable } from '../algorithms/index';
 
 interface SpiralConfig {
   weeklyStudyHours: number;
@@ -427,120 +427,10 @@ function minutesToTime(minutes: number): string {
   return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
-// Main function to generate spiral timetable
+// Main function to generate spiral timetable using the refactored algorithm
 export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
-  const { 
-    weeklyStudyHours, 
-    yearGroup, 
-    daysPerWeek, 
-    favouriteSubjects, 
-    subjectsData,
-    userPerformance,
-    userEvents,
-    passCoverage = DEFAULT_PASS_COVERAGE,
-    revisionCount = 0 
-  } = config;
-  
-  const blocks: StudyBlock[] = [];
-  const BLOCK_DURATION_HOURS = 2;
-  
-  // Filter selected subjects
-  const selectedSubjectsData = subjectsData.filter(subject => 
-    favouriteSubjects.includes(subject.name)
-  );
-  
-  if (selectedSubjectsData.length === 0) {
-    return blocks;
-  }
-
-  // Calculate session duration based on hours per week and days per week
-  const hoursPerSession = weeklyStudyHours / daysPerWeek;
-  const sessionDurationHours = Math.max(1, Math.round(hoursPerSession)); // Minimum 1 hour per session
-  
-  // Start from today and generate sessions by incrementing through valid study days
-  const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0);
-  
-  let subjectIndex = 0;
-  let currentDate = new Date(startDate);
-  
-  // Generate 8 weeks worth of study sessions (56 total sessions if studying 7 days/week)
-  const totalSessionsToGenerate = 8 * daysPerWeek;
-  
-  for (let sessionCount = 0; sessionCount < totalSessionsToGenerate; sessionCount++) {
-    // Find the next valid study day
-    while (true) {
-      const dayOfWeek = currentDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-      
-      let isValidStudyDay = false;
-      
-      if (daysPerWeek === 7) {
-        // Study every day
-        isValidStudyDay = true;
-      } else if (daysPerWeek === 6) {
-        // Monday to Saturday (skip Sunday)
-        isValidStudyDay = dayOfWeek !== 0;
-      } else if (daysPerWeek === 5) {
-        // Monday to Friday (weekdays only)
-        isValidStudyDay = dayOfWeek >= 1 && dayOfWeek <= 5;
-      } else if (daysPerWeek === 4) {
-        // Monday to Thursday
-        isValidStudyDay = dayOfWeek >= 1 && dayOfWeek <= 4;
-      } else if (daysPerWeek === 3) {
-        // Monday, Wednesday, Friday
-        isValidStudyDay = dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5;
-      } else if (daysPerWeek === 2) {
-        // Tuesday, Thursday
-        isValidStudyDay = dayOfWeek === 2 || dayOfWeek === 4;
-      } else if (daysPerWeek === 1) {
-        // Wednesday only
-        isValidStudyDay = dayOfWeek === 3;
-      }
-      
-      if (isValidStudyDay) {
-        break; // Found a valid study day
-      }
-      
-      // Move to next day if this isn't a study day
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    const dateStr = currentDate.toISOString().split('T')[0];
-    
-    // Create exactly ONE study session for this day
-    const startTime = '09:00';
-    const endHour = 9 + sessionDurationHours;
-    const endTime = `${endHour.toString().padStart(2, '0')}:00`;
-    
-    // Rotate through subjects using spiral algorithm priority
-    const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
-    
-    // Select topics based on difficulty ratings and importance
-    const sessionTopics = currentSubject.topics
-      .slice(0, Math.min(3, Math.ceil(sessionDurationHours)))
-      .map(topic => ({
-        name: topic.name,
-        type: 'main' as const
-      }));
-    
-    blocks.push({
-      subject: currentSubject.name,
-      topics: sessionTopics,
-      hours: sessionDurationHours,
-      date: dateStr,
-      startTime,
-      endTime,
-      passNumber: Math.floor(subjectIndex / selectedSubjectsData.length) + 1,
-      isInterjection: false
-    });
-    
-    subjectIndex++;
-    
-    // Move to the next day for the next session
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return blocks;
+  // Use the new canonical spiral algorithm implementation
+  return newGenerateSpiralTimetable(config);
 }
 
 // Helper to add hours to a time string

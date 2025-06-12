@@ -141,7 +141,8 @@ function generateReviewSession(
   );
 
   // Find topics that have been covered multiple times
-  for (const [topicKey, frequency] of topicHistory.entries()) {
+  for (const topicEntry of Array.from(topicHistory.entries())) {
+    const [topicKey, frequency] = topicEntry;
     if (frequency > 1) {
       const [subject, topic] = topicKey.split(':');
       const currentCount = subjectSessionCounts.get(subject) || 0;
@@ -157,6 +158,8 @@ function generateReviewSession(
   if (reviewCandidates.isEmpty()) return null;
 
   const selected = reviewCandidates.dequeue();
+  
+  if (!selected) return null;
   
   // Update counters for review session
   const currentCount = subjectSessionCounts.get(selected.subject) || 0;
