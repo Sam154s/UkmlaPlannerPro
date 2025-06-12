@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionStream } from '../client/src/algorithms/selector';
-import { SelectorConfig } from '../client/src/types/session';
+import { buildSessionStream } from './algorithms/selector';
+import { SelectorConfig } from './types/session';
 
 describe('Session Selector', () => {
   const mockSubjectsData = [

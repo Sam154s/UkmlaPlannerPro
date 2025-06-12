@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionStream } from '../client/src/algorithms/selector';
-import { placeSessions } from '../client/src/algorithms/timeslotter';
-import { SelectorConfig, CalendarConfig } from '../client/src/types/session';
+import { buildSessionStream } from './algorithms/selector';
+import { placeSessions } from './algorithms/timeslotter';
+import { SelectorConfig, CalendarConfig } from './types/session';
 
 describe('Spiral Algorithm Integration', () => {
   const mockSubjectsData = [
