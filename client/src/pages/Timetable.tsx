@@ -457,10 +457,6 @@ export default function Timetable() {
 
   // Get all events (study events + holidays + other user events) for the calendar
   const allEvents = [...studyEvents, ...holidayEvents];
-  
-  // Debug logging for month view issue
-  console.log('All events for calendar:', allEvents.length, 'total events');
-  console.log('Study events:', studyEvents.length, 'Holiday events:', holidayEvents.length);
 
   // Get available calendar views based on screen size
   const getAvailableViews = () => {
