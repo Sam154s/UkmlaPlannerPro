@@ -453,71 +453,91 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     return blocks;
   }
 
-  // Generate study sessions for a full month starting from today
+  // Calculate session duration based on hours per week and days per week
+  const hoursPerSession = weeklyStudyHours / daysPerWeek;
+  const sessionDurationHours = Math.max(1, Math.round(hoursPerSession)); // Minimum 1 hour per session
+  
+  // Start from today and generate sessions by incrementing through valid study days
   const startDate = new Date();
   startDate.setHours(0, 0, 0, 0);
   
   let subjectIndex = 0;
   let currentDate = new Date(startDate);
   
-  // Generate 30 days worth of study sessions
-  const totalDays = 30;
-  let studyDaysGenerated = 0;
+  // Generate 8 weeks worth of study sessions (56 total sessions if studying 7 days/week)
+  const totalSessionsToGenerate = 8 * daysPerWeek;
   
-  for (let dayOffset = 0; dayOffset < totalDays * 2 && studyDaysGenerated < totalDays; dayOffset++) {
-    const studyDate = new Date(startDate);
-    studyDate.setDate(startDate.getDate() + dayOffset);
-    
-    // Check if this is a valid study day based on daysPerWeek setting
-    const dayOfWeek = studyDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-    
-    let isValidStudyDay = false;
-    if (daysPerWeek === 7) {
-      // All days are study days
-      isValidStudyDay = true;
-    } else if (daysPerWeek === 6) {
-      // Monday to Saturday (skip Sunday)
-      isValidStudyDay = dayOfWeek !== 0;
-    } else if (daysPerWeek === 5) {
-      // Monday to Friday (skip weekends)
-      isValidStudyDay = dayOfWeek >= 1 && dayOfWeek <= 5;
-    } else {
-      // For other values, use first N days of week starting from Monday
-      const mondayBasedDay = (dayOfWeek + 6) % 7; // Convert to Monday=0, Tuesday=1, etc.
-      isValidStudyDay = mondayBasedDay < daysPerWeek;
+  for (let sessionCount = 0; sessionCount < totalSessionsToGenerate; sessionCount++) {
+    // Find the next valid study day
+    while (true) {
+      const dayOfWeek = currentDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+      
+      let isValidStudyDay = false;
+      
+      if (daysPerWeek === 7) {
+        // Study every day
+        isValidStudyDay = true;
+      } else if (daysPerWeek === 6) {
+        // Monday to Saturday (skip Sunday)
+        isValidStudyDay = dayOfWeek !== 0;
+      } else if (daysPerWeek === 5) {
+        // Monday to Friday (weekdays only)
+        isValidStudyDay = dayOfWeek >= 1 && dayOfWeek <= 5;
+      } else if (daysPerWeek === 4) {
+        // Monday to Thursday
+        isValidStudyDay = dayOfWeek >= 1 && dayOfWeek <= 4;
+      } else if (daysPerWeek === 3) {
+        // Monday, Wednesday, Friday
+        isValidStudyDay = dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5;
+      } else if (daysPerWeek === 2) {
+        // Tuesday, Thursday
+        isValidStudyDay = dayOfWeek === 2 || dayOfWeek === 4;
+      } else if (daysPerWeek === 1) {
+        // Wednesday only
+        isValidStudyDay = dayOfWeek === 3;
+      }
+      
+      if (isValidStudyDay) {
+        break; // Found a valid study day
+      }
+      
+      // Move to next day if this isn't a study day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    if (!isValidStudyDay) {
-      continue;
-    }
+    const dateStr = currentDate.toISOString().split('T')[0];
     
-    const dateStr = studyDate.toISOString().split('T')[0];
-    
-    // Create exactly ONE study block for this day
+    // Create exactly ONE study session for this day
     const startTime = '09:00';
-    const endTime = '11:00';
+    const endHour = 9 + sessionDurationHours;
+    const endTime = `${endHour.toString().padStart(2, '0')}:00`;
     
-    // Assign one subject per day (rotating through subjects)
+    // Rotate through subjects using spiral algorithm priority
     const currentSubject = selectedSubjectsData[subjectIndex % selectedSubjectsData.length];
     
-    const sessionTopics = currentSubject.topics.slice(0, 3).map(topic => ({
-      name: topic.name,
-      type: 'main' as const
-    }));
+    // Select topics based on difficulty ratings and importance
+    const sessionTopics = currentSubject.topics
+      .slice(0, Math.min(3, Math.ceil(sessionDurationHours)))
+      .map(topic => ({
+        name: topic.name,
+        type: 'main' as const
+      }));
     
     blocks.push({
       subject: currentSubject.name,
       topics: sessionTopics,
-      hours: BLOCK_DURATION_HOURS,
+      hours: sessionDurationHours,
       date: dateStr,
       startTime,
       endTime,
-      passNumber: 1,
+      passNumber: Math.floor(subjectIndex / selectedSubjectsData.length) + 1,
       isInterjection: false
     });
     
     subjectIndex++;
-    studyDaysGenerated++;
+    
+    // Move to the next day for the next session
+    currentDate.setDate(currentDate.getDate() + 1);
   }
   
   return blocks;
