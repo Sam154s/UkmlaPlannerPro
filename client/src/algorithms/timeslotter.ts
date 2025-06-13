@@ -1,14 +1,6 @@
 import { SessionStub } from './selector';
 import { StudyBlock, UserEvent } from '../types/spiral';
-import { 
-  TimeSlot, 
-  findNextAvailableSlot, 
-  timeToMinutes, 
-  minutesToTime, 
-  addHours,
-  overlapsWithUserEvent 
-} from './timeslotterHelpers';
-import { DAILY_START_TIME, DAILY_END_TIME } from '../constants';
+import { TimeSlot, findNextAvailableSlot } from './timeslotterHelpers';
 
 export interface CalendarConfig {
   startDate: Date;
@@ -39,7 +31,7 @@ export function placeSessions(
     }
 
     let hoursUsedToday = 0;
-    const maxSessionsPerDay = Math.floor(dailyStudyHours / 2); // 2-hour blocks
+    const maxSessionsPerDay = Math.floor(dailyStudyHours / 2) || 1; // 2-hour blocks, at least 1 session
     let sessionsAddedToday = 0;
 
     // Try to fit multiple sessions on this day
@@ -86,9 +78,9 @@ function isValidStudyDay(date: Date, daysPerWeek: number): boolean {
     case 6: return dayOfWeek !== 0; // Monday-Saturday
     case 5: return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday-Friday
     case 4: return dayOfWeek >= 1 && dayOfWeek <= 4; // Monday-Thursday
-    case 3: return dayOfWeek >= 1 && dayOfWeek <= 3; // Monday-Wednesday
-    case 2: return dayOfWeek >= 1 && dayOfWeek <= 2; // Monday-Tuesday
-    case 1: return dayOfWeek === 1; // Monday only
+    case 3: return dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5; // Mon Wed Fri
+    case 2: return dayOfWeek === 2 || dayOfWeek === 4; // Tue Thu
+    case 1: return dayOfWeek === 3; // Wed
     default: return dayOfWeek >= 1 && dayOfWeek <= 5; // Default to weekdays
   }
 }

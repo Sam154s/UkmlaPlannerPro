@@ -53,7 +53,17 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
   let currentSubjectIndex = 0;
   let sessionsEmitted = 0;
   
-  while (sessionsEmitted < 500) { // Safety limit
+  while (true) {
+    // Check if all subjects have reached their quotas
+    const allQuotasReached = subjectOrder.every(subject => {
+      const quota = (baseBlockCounts[subject] || 5) * 5 * passCoverage;
+      return subjectSessionCounts[subject] >= quota;
+    });
+    
+    if (allQuotasReached) {
+      break;
+    }
+    
     // Update gaps for all topics
     for (const key in topicGaps) {
       topicGaps[key]++;
@@ -108,6 +118,11 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
           const topic = topics[topicIndex];
           
           if (topic) {
+            // Calculate difficulty factor based on user performance
+            const perfKey = `${currentSubject}:${topic.name}`;
+            const rawScore = userPerformance?.topics?.[perfKey] ?? 0.7; // default 0.7
+            const difficultyFactor = Math.min(2, Math.max(0.5, 1 + (1 - rawScore)));
+            
             const session: SessionStub = {
               subject: currentSubject,
               topic: topic.name,
@@ -126,7 +141,6 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
             // Add to review heap if this is a repeat topic
             if (session.pass > 1) {
               const gap = topicGaps[topicKey] || 1;
-              const difficultyFactor = 1.0; // Start at 1.0, updated externally
               
               let prefMultiplier = 1.0;
               if (favouriteSubjects.includes(currentSubject)) {
