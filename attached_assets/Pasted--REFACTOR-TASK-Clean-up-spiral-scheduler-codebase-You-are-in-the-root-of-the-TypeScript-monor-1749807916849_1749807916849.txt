@@ -1,0 +1,142 @@
+# ⚙️  REFACTOR TASK · Clean-up spiral-scheduler codebase
+You are in the root of the TypeScript monorepo for **UKMLA Revision Planner**.  
+The canonical spiral generator already resides in `src/algorithms/generate.ts`.  
+We must remove dead code, move helpers, centralise types/constants, and create a clean API façade.
+
+────────────────────────────────────────────────────────
+TARGET STRUCTURE
+────────────────────────────────────────────────────────
+src/
+├─ algorithms/
+│   ├─ selector.ts               # (exists)
+│   ├─ selectorHelpers.ts        # NEW – performance helpers
+│   ├─ timeslotter.ts            # (exists)
+│   ├─ timeslotterHelpers.ts     # NEW – date/event helpers
+│   ├─ generate.ts               # canonical spiral
+│   └─ index.ts                  # barrel exports
+├─ types/
+│   └─ spiral.ts                 # NEW – shared interfaces
+├─ constants.ts                  # NEW – shared constants
+└─ api/
+    └─ spiral.ts                 # NEW – thin façade re-export
+
+────────────────────────────────────────────────────────
+STEP-BY-STEP ACTION LIST
+────────────────────────────────────────────────────────
+
+1. **Delete body of `src/algorithms/generateSpiralTimetable.ts`**  
+   Replace with:  
+   ```ts
+   export { generateSpiralTimetable } from './generate';
+(If nothing imports this file, you may delete it entirely.)
+
+Create src/types/spiral.ts
+
+ts
+Copy
+Edit
+export interface SpiralConfig {
+  weeklyStudyHours: number;
+  yearGroup: number;
+  daysPerWeek: number;
+  favouriteSubjects: string[];
+  subjectsData: import('../data/masterSubjects').SubjectsData;
+  userPerformance?: UserPerformance;
+  passCoverage?: number;
+  userEvents?: UserEvent[];
+  revisionCount?: number;
+}
+export interface UserPerformance {
+  subjects?: Record<string, number>; // 0–1
+  topics?:   Record<string, number>; // "Subject: Topic"
+}
+export interface UserEvent {
+  name: string;
+  date: string;        // ISO yyyy-mm-dd
+  startTime: string;   // "HH:MM"
+  endTime: string;
+  recurringWeekly?: boolean;
+  recurringDays?: string[];
+  type?: 'personal' | 'placement' | 'meal' | 'sleep';
+}
+export interface StudyBlock {
+  subject: string;
+  topics: { name: string; type: 'main' | 'connection'; connectionTopics?: string[] }[];
+  hours: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  passNumber?: number;
+  isInterjection?: boolean;
+}
+Create src/constants.ts
+
+ts
+Copy
+Edit
+export const DAILY_START_TIME                 = '17:00';
+export const DAILY_END_TIME                   = '22:00';
+export const FAVORITE_SUBJECT_PRIORITY_BOOST  = 1.5;
+export const LOW_PERFORMANCE_BOOST            = 1.3;
+export const DEFAULT_PASS_COVERAGE            = 3;
+export const INTERJECTION_INTERVAL            = 4;
+export const POOR_PERFORMANCE_THRESHOLD       = 0.4;
+Move helpers
+• Create src/algorithms/selectorHelpers.ts and move / export
+getPerformanceMultiplier, getTopicsByPerformance, findRelatedTopics
+from the old wrapper file, then delete originals.
+• Create src/algorithms/timeslotterHelpers.ts and move / export
+timeToMinutes, minutesToTime, overlapsWithUserEvent, findNextAvailableSlot, then delete originals.
+
+Update imports
+• In selector.ts import from ./selectorHelpers & @/constants.
+• In timeslotter.ts import from ./timeslotterHelpers & @/constants.
+• Everywhere else:
+
+ts
+Copy
+Edit
+import { SpiralConfig, StudyBlock, UserEvent } from '@/types/spiral';
+import { DAILY_START_TIME } from '@/constants';
+Create barrel src/algorithms/index.ts
+
+ts
+Copy
+Edit
+export { buildSessionStream }     from './selector';
+export { placeSessions }          from './timeslotter';
+export { generateSpiralTimetable } from './generate';
+export * from './selectorHelpers';
+export * from './timeslotterHelpers';
+Create façade src/api/spiral.ts
+
+ts
+Copy
+Edit
+export { generateSpiralTimetable } from '@/algorithms';
+export type {
+  SpiralConfig,
+  StudyBlock,
+  UserPerformance,
+  UserEvent
+} from '@/types/spiral';
+Run QA
+
+bash
+Copy
+Edit
+npm run lint   # expect zero unused / dead-code warnings
+npm run test   # vitest suites pass
+────────────────────────────────────────────────────────
+CONSTRAINTS
+────────────────────────────────────────────────────────
+
+Do NOT change logic in src/algorithms/generate.ts.
+
+No any in new code; keep TS strict.
+
+Maintain existing path aliases (@/) if configured.
+
+Show full diff per file; wait for my approval before applying.
+
+Auto-run lint + tests after applying changes.

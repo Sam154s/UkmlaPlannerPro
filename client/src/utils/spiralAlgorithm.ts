@@ -1,5 +1,4 @@
-import { SubjectsData } from '../data/masterSubjects';
-import { generateSpiralTimetable as newGenerateSpiralTimetable } from '../algorithms/index';
+export { generateSpiralTimetable } from '../algorithms/generate';
 
 interface SpiralConfig {
   weeklyStudyHours: number;

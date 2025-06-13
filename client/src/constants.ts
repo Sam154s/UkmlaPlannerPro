@@ -1,8 +1,7 @@
-export const POOR_PERFORMANCE_THRESHOLD = 0.4;
+export const DAILY_START_TIME = '17:00';
+export const DAILY_END_TIME = '22:00';
 export const FAVORITE_SUBJECT_PRIORITY_BOOST = 1.5;
 export const LOW_PERFORMANCE_BOOST = 1.3;
 export const DEFAULT_PASS_COVERAGE = 3;
-export const REVIEW_INJECTION_INTERVAL = 10;
-export const DAILY_START_TIME = "09:00";
-export const DAILY_END_TIME = "17:00";
-export const MIN_SESSION_HOURS = 1;
+export const INTERJECTION_INTERVAL = 4;
+export const POOR_PERFORMANCE_THRESHOLD = 0.4;
