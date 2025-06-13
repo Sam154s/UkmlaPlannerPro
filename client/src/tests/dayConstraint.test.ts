@@ -140,13 +140,13 @@ describe('Study Day Constraints', () => {
     }
 
     // Daily cap should be 5 hours (10 hours / 2 days)
-    const dailyHours: Record<string, number> = {};
+    const dailyMinutes: Record<string, number> = {};
     for (const block of studyBlocks) {
-      dailyHours[block.date] = (dailyHours[block.date] || 0) + block.hours;
+      dailyMinutes[block.date] = (dailyMinutes[block.date] || 0) + block.minutes;
     }
 
-    for (const hours of Object.values(dailyHours)) {
-      expect(hours).toBeLessThanOrEqual(5.5); // 5h + tolerance
+    for (const minutes of Object.values(dailyMinutes)) {
+      expect(minutes).toBeLessThanOrEqual(5.5 * 60); // 5.5h = 330 minutes
     }
   });
 });

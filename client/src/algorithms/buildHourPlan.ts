@@ -26,12 +26,12 @@ export function buildHourPlan(config: HourPlanConfig): ConditionAllocation[] {
   const { subjectsData, blocksTable, yearMultiplier, userPerformance } = config;
   const plan: ConditionAllocation[] = [];
 
-  subjectsData.forEach(subject => {
+  subjectsData.forEach((subject: any) => {
     const baseBlocks = blocksTable[subject.name] || 4;
     const totalMinutes = baseBlocks * 150 * yearMultiplier;
 
     // Calculate condition weights
-    const weights = subject.topics.map(topic => {
+    const weights = subject.topics.map((topic: any) => {
       const difficulty = topic.ratings.difficulty;
       const clinical = topic.ratings.clinicalImportance;
       const exam = topic.ratings.examRelevance;
@@ -51,10 +51,10 @@ export function buildHourPlan(config: HourPlanConfig): ConditionAllocation[] {
     });
 
     // Calculate total adjusted weight for this subject
-    const totalAdjustedWeight = weights.reduce((sum, weight) => sum + weight.adjustedWeight, 0);
+    const totalAdjustedWeight = weights.reduce((sum: number, weight: any) => sum + weight.adjustedWeight, 0);
 
     // Allocate minutes to each condition
-    weights.forEach(weight => {
+    weights.forEach((weight: any) => {
       const minutes = Math.round(totalMinutes * weight.adjustedWeight / totalAdjustedWeight);
       
       if (minutes > 0) { // Only include conditions with allocated time
