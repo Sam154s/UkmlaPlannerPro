@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildHourPlan } from '../algorithms/selector';
 import { SpiralConfig } from '../types/spiral';
-import { masterSubjects } from '../data/masterSubjects';
+import masterSubjects from '../data/masterSubjects';
 
 describe('Favourite Subject Bias', () => {
   it('should give favourite subjects 1.5x boost in review calculations', () => {

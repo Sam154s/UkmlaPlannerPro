@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildHourPlan } from '../algorithms/selector';
 import { SpiralConfig } from '../types/spiral';
-import { masterSubjects } from '../data/masterSubjects';
+import masterSubjects from '../data/masterSubjects';
 
 describe('Hour Quota System', () => {
   it('should allocate subject hours according to blocks × 2.5 × yearMultiplier', () => {
