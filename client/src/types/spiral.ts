@@ -3,6 +3,7 @@ export interface SpiralConfig {
   yearGroup: number;
   daysPerWeek: number;
   favouriteSubjects: string[];
+  leastFavouriteSubjects?: string[];
   subjectsData: import('../data/masterSubjects').SubjectsData;
   userPerformance?: UserPerformance;
   passCoverage?: number;

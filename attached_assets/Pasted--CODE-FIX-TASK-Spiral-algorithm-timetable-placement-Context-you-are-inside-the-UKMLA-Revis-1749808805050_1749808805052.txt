@@ -1,0 +1,115 @@
+# 🛠  CODE FIX TASK · Spiral algorithm & timetable placement
+Context: you are inside the UKMLA-Revision-Planner TypeScript repo.  
+Files pasted by the user:
+
+• src/algorithms/generate.ts  
+• src/algorithms/selector.ts  
+• src/algorithms/selectorHelpers.ts  
+• src/algorithms/timeslotter.ts  
+• src/algorithms/timeslotterHelpers.ts  
+• src/api/spiral.ts (thin re-export)  
+• src/algorithms/index.ts (barrel)
+
+Key problems (must fix):
+
+1. **Selector gaps**
+   - Uses a hard-coded `subjectOrder` unrelated to `subjectsData`.
+   - Ignores `leastFavouriteSubjects`, `difficultyFactor`, and gap-based decay.
+   - Review weight should be  
+     ```
+     reviewWeight = (1 / gap) × difficultyFactor × prefMultiplier
+     ```
+     where  
+     `difficultyFactor` starts 1.0, updated externally;  
+     `prefMultiplier` = 1.5 for favourite, 0.6 for least-fav, else 1.
+   - Must never exceed `totalSessions = baseBlocks × 5 × passCoverage`.
+
+2. **Calendar / timeslotter**
+   - Only schedules **one** session per day; must allow `Math.floor(dailyStudyHours / 2)` sessions (2 h blocks) and spill remainder.
+   - Duplicated helpers (`timeToMinutes`, `overlapsWithUserEvent`, etc.) exist both in timeslotter.ts and timeslotterHelpers.ts – keep only the helper file, import from it.
+   - `findNextAvailableSlot` inside timeslotter.ts ignores recurring events and always starts 09:00. Re-use the richer helper in timeslotterHelpers.ts and honour DAILY_START_TIME / DAILY_END_TIME constants.
+
+3. **generate.ts**
+   - Filters to `favouriteSubjects` only; should pass entire `subjectsData` but weight favourites via `prefMultiplier`.
+   - Pass `leastFavouriteSubjects` from incoming config (add field to SpiralConfig).
+
+4. **Types & constants are already centralised – leave untouched.**
+
+────────────────────────────────────────────────────────
+CHANGE LIST
+────────────────────────────────────────────────────────
+
+### A. selector.ts
+1. Remove hard-coded `subjectOrder`; iterate subjects in the order they appear in `subjectsData` (which is already sorted).
+2. Build a **max-heap** where priority = `reviewWeight` (formula above).  
+   The heap stores an object `{ subject, topic, gap, diffFactor, prefMult }`.
+3. Each iteration:
+if sessionsEmitted >0 && sessionsEmitted % k === 0
+pop highest-priority topic whose subject quota not exceeded
+push as review session (isReview = true)
+else
+emit next Level-0 topic for current subject
+
+markdown
+Copy
+Edit
+4. Update `gap` counter for every topic each loop.
+5. Respect quotas (`subjectSessionCounts < subjectQuota`).
+
+### B. selectorHelpers.ts
+* No change needed except export `calculateTopicImportance` if selector now calls it.
+
+### C. timeslotter.ts
+1. Import helpers from `./timeslotterHelpers` (delete local duplicates).
+2. Replace single-session loop with:
+while sessionIdx < stream.length {
+while hoursUsedToday + 2 <= dailyStudyHours && sessionIdx < stream.length {
+slot = findNextAvailableSlot(..., userEvents)
+if (!slot) break // day full
+push block
+hoursUsedToday += slot.hours
+sessionIdx++
+}
+currentDate = addDays(currentDate, 1)
+hoursUsedToday = 0
+}
+
+markdown
+Copy
+Edit
+3. `findNextAvailableSlot` signature: `(date, dailyStudyHours, userEvents)` now delegates to helper’s version (start at DAILY_START_TIME, then search).
+
+### D. generate.ts
+1. Remove `selectedSubjectsData` filter – send full list.  
+2. Extend `SelectorConfig` to include `leastFavouriteSubjects` (pass through from SpiralConfig).  
+3. Compute `dailyStudyHours = weeklyStudyHours / daysPerWeek` **as float**, pass to timeslotter.
+
+### E. Update interfaces
+* `types/spiral.ts` – add `leastFavouriteSubjects?: string[]` to `SpiralConfig`.
+
+### F. Remove duplicates
+* Delete in-file implementations of `timeToMinutes`, `overlapsWithUserEvent`, `addHoursToTime` from timeslotter.ts.
+
+### G. Tests
+* Add/adjust vitest:
+- **selector.test.ts** – confirm favourites appear ≥1.4× frequency of neutrals, least-fav ≤0.7×.
+- **quota.test.ts** – total sessions per subject equal quota.
+- **calendar.test.ts** – no overlaps with a dummy recurring event.
+
+────────────────────────────────────────────────────────
+CONSTRAINTS
+────────────────────────────────────────────────────────
+* Keep existing path aliases (`@/`).
+* No `any` in new code.
+* Do not modify `src/algorithms/generate.ts` business logic beyond the changes specified.
+* Show a complete diff for every file before applying.
+* After applying run:
+npm run lint
+npm run test
+
+mathematica
+Copy
+Edit
+All must pass.
+
+Apply these changes then stop.

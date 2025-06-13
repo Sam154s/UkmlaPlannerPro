@@ -18,174 +18,157 @@ export interface SelectorConfig {
   k: number; // Review injection interval
 }
 
+interface ReviewCandidate {
+  subject: string;
+  topic: string;
+  gap: number;
+  difficultyFactor: number;
+  prefMultiplier: number;
+  reviewWeight: number;
+}
+
 /**
  * Pure generator that creates an ordered session stream following the spiral algorithm.
  * 
  * Algorithm:
- * 1. Level-0 coverage: For each subject in fixed order, emit sessions sorted by composite score
- * 2. Review injection: Every k sessions, insert a review session from highest-performing topics
- * 3. Respect quotas: Never exceed totalSessions per subject
+ * 1. Level-0 coverage: For each subject in subjectsData order, emit sessions sorted by composite score
+ * 2. Review injection: Every k sessions, insert highest-priority review session 
+ * 3. Respect quotas: Never exceed totalSessions = baseBlocks × 5 × passCoverage per subject
+ * 4. Review weight = (1 / gap) × difficultyFactor × prefMultiplier
  */
 export function buildSessionStream(config: SelectorConfig): SessionStub[] {
-  const {
-    subjectsData,
-    baseBlockCounts,
-    passCoverage,
-    favouriteSubjects,
-    userPerformance = {},
-    k = 10
-  } = config;
-
+  const { subjectsData, baseBlockCounts, passCoverage, favouriteSubjects, leastFavouriteSubjects = [], userPerformance, k } = config;
+  
   const sessions: SessionStub[] = [];
-  const subjectQuotas = new Map<string, number>();
-  const subjectSessionCounts = new Map<string, number>();
-  const topicHistory = new Map<string, number>(); // Track how many times each topic was covered
-
-  // Calculate total sessions per subject
-  subjectsData.forEach(subject => {
-    const baseBlocks = baseBlockCounts[subject.name] || 10;
-    const totalSessions = baseBlocks * 5 * passCoverage;
-    subjectQuotas.set(subject.name, totalSessions);
-    subjectSessionCounts.set(subject.name, 0);
-  });
-
-  // Fixed order list for level-0 coverage
-  const subjectOrder = [
-    'Acute and emergency',
-    'Cardiovascular',
-    'Cancer',
-    'Dermatology',
-    'Endocrine',
-    'Gastrointestinal',
-    'Genitourinary',
-    'Haematology',
-    'Immunology',
-    'Infectious diseases',
-    'Musculoskeletal',
-    'Neurological',
-    'Obstetrics and gynaecology',
-    'Ophthalmology',
-    'Otolaryngology',
-    'Paediatrics',
-    'Psychiatry',
-    'Renal',
-    'Respiratory',
-    'Sexual health'
-  ];
-
-  // Create ordered subject list with data
-  const orderedSubjects = subjectOrder
-    .map(name => subjectsData.find(s => s.name === name))
-    .filter(Boolean);
-
-  let sessionCount = 0;
-  let currentPass = 1;
-
-  // Main spiral generation loop
-  while (true) {
-    let addedSessionThisPass = false;
-
-    // Level-0 coverage for each subject in order
-    for (const subject of orderedSubjects) {
-      const currentCount = subjectSessionCounts.get(subject.name) || 0;
-      const quota = subjectQuotas.get(subject.name) || 0;
-
-      if (currentCount >= quota) continue;
-
-      // Calculate composite scores and sort topics
-      const topicsWithScores = subject.topics.map((topic: any) => {
-        const compositeScore = 
-          0.4 * topic.ratings.difficulty +
-          0.3 * topic.ratings.clinicalImportance +
-          0.3 * topic.ratings.examRelevance;
+  const subjectSessionCounts: { [key: string]: number } = {};
+  const reviewHeap = new PriorityQueue<ReviewCandidate>((a, b) => b.reviewWeight - a.reviewWeight);
+  const topicGaps: { [key: string]: number } = {}; // "subject:topic" -> gap since last study
+  
+  // Initialize session counts and quotas from subjectsData order
+  const subjectOrder = subjectsData.map(s => s.name);
+  for (const subject of subjectOrder) {
+    subjectSessionCounts[subject] = 0;
+  }
+  
+  let currentSubjectIndex = 0;
+  let sessionsEmitted = 0;
+  
+  while (sessionsEmitted < 500) { // Safety limit
+    // Update gaps for all topics
+    for (const key in topicGaps) {
+      topicGaps[key]++;
+    }
+    
+    // Check if we should inject a review session
+    if (sessionsEmitted > 0 && sessionsEmitted % k === 0) {
+      while (!reviewHeap.isEmpty()) {
+        const candidate = reviewHeap.dequeue();
+        if (!candidate) break;
         
-        return { topic, compositeScore };
-      });
-
-      // Sort by composite score (descending)
-      topicsWithScores.sort((a: any, b: any) => b.compositeScore - a.compositeScore);
-
-      // Find next topic to cover in this pass
-      const topicIndex = currentCount % topicsWithScores.length;
-      const selectedTopic = topicsWithScores[topicIndex].topic;
-
-      // Check if we need to inject a review session
-      if (sessionCount > 0 && sessionCount % k === 0) {
-        const reviewSession = generateReviewSession(topicHistory, subjectsData, subjectQuotas, subjectSessionCounts);
-        if (reviewSession) {
+        const subjectQuota = (baseBlockCounts[candidate.subject] || 5) * 5 * passCoverage;
+        
+        if (subjectSessionCounts[candidate.subject] < subjectQuota) {
+          const reviewSession: SessionStub = {
+            subject: candidate.subject,
+            topic: candidate.topic,
+            pass: Math.floor(subjectSessionCounts[candidate.subject] / getSubjectTopicCount(subjectsData, candidate.subject)) + 1,
+            isReview: true
+          };
+          
           sessions.push(reviewSession);
-          sessionCount++;
+          subjectSessionCounts[candidate.subject]++;
+          sessionsEmitted++;
+          
+          // Reset gap for this topic
+          topicGaps[`${candidate.subject}:${candidate.topic}`] = 0;
+          break;
         }
       }
-
-      // Add main session
-      sessions.push({
-        subject: subject.name,
-        topic: selectedTopic.name,
-        pass: currentPass,
-        isReview: false
-      });
-
-      // Update counters
-      subjectSessionCounts.set(subject.name, currentCount + 1);
-      topicHistory.set(`${subject.name}:${selectedTopic.name}`, 
-        (topicHistory.get(`${subject.name}:${selectedTopic.name}`) || 0) + 1);
-      sessionCount++;
-      addedSessionThisPass = true;
+      
+      if (sessions.length === sessionsEmitted - 1) continue; // Review was added, continue to next iteration
     }
-
-    // If no sessions were added this pass, we're done
-    if (!addedSessionThisPass) break;
-    currentPass++;
+    
+    // Get current subject from subjectsData order
+    let attempts = 0;
+    while (attempts < subjectOrder.length) {
+      const currentSubject = subjectOrder[currentSubjectIndex];
+      const subjectQuota = (baseBlockCounts[currentSubject] || 5) * 5 * passCoverage;
+      
+      // Check if current subject has reached its quota
+      if (subjectSessionCounts[currentSubject] < subjectQuota) {
+        // Find subject data
+        const subjectData = subjectsData.find(s => s.name === currentSubject);
+        if (subjectData) {
+          // Get next topic for this subject, sorted by composite score
+          const topics = subjectData.topics.slice().sort((a: any, b: any) => {
+            const scoreA = 0.4 * a.ratings.difficulty + 0.3 * a.ratings.clinicalImportance + 0.3 * a.ratings.examRelevance;
+            const scoreB = 0.4 * b.ratings.difficulty + 0.3 * b.ratings.clinicalImportance + 0.3 * b.ratings.examRelevance;
+            return scoreB - scoreA;
+          });
+          
+          const topicIndex = subjectSessionCounts[currentSubject] % topics.length;
+          const topic = topics[topicIndex];
+          
+          if (topic) {
+            const session: SessionStub = {
+              subject: currentSubject,
+              topic: topic.name,
+              pass: Math.floor(subjectSessionCounts[currentSubject] / topics.length) + 1,
+              isReview: false
+            };
+            
+            sessions.push(session);
+            subjectSessionCounts[currentSubject]++;
+            sessionsEmitted++;
+            
+            // Initialize or reset gap for this topic
+            const topicKey = `${currentSubject}:${topic.name}`;
+            topicGaps[topicKey] = 0;
+            
+            // Add to review heap if this is a repeat topic
+            if (session.pass > 1) {
+              const gap = topicGaps[topicKey] || 1;
+              const difficultyFactor = 1.0; // Start at 1.0, updated externally
+              
+              let prefMultiplier = 1.0;
+              if (favouriteSubjects.includes(currentSubject)) {
+                prefMultiplier = 1.5;
+              } else if (leastFavouriteSubjects.includes(currentSubject)) {
+                prefMultiplier = 0.6;
+              }
+              
+              const reviewWeight = (1 / Math.max(gap, 1)) * difficultyFactor * prefMultiplier;
+              
+              reviewHeap.enqueue({
+                subject: currentSubject,
+                topic: topic.name,
+                gap,
+                difficultyFactor,
+                prefMultiplier,
+                reviewWeight
+              });
+            }
+            
+            break;
+          }
+        }
+      }
+      
+      currentSubjectIndex = (currentSubjectIndex + 1) % subjectOrder.length;
+      attempts++;
+    }
+    
+    // If all subjects are exhausted, break
+    if (attempts >= subjectOrder.length) {
+      break;
+    }
   }
-
+  
   return sessions;
 }
 
-/**
- * Generate a review session from topics that have been covered multiple times
- */
-function generateReviewSession(
-  topicHistory: Map<string, number>,
-  subjectsData: any[],
-  subjectQuotas: Map<string, number>,
-  subjectSessionCounts: Map<string, number>
-): SessionStub | null {
-  
-  // Create priority queue of topics by coverage frequency (max heap)
-  const reviewCandidates = new PriorityQueue<{topic: string, subject: string, frequency: number}>(
-    (a, b) => b.frequency - a.frequency
-  );
-
-  // Find topics that have been covered multiple times
-  for (const topicEntry of Array.from(topicHistory.entries())) {
-    const [topicKey, frequency] = topicEntry;
-    if (frequency > 1) {
-      const [subject, topic] = topicKey.split(':');
-      const currentCount = subjectSessionCounts.get(subject) || 0;
-      const quota = subjectQuotas.get(subject) || 0;
-      
-      // Only add if subject hasn't exceeded quota
-      if (currentCount < quota) {
-        reviewCandidates.enqueue({ topic, subject, frequency });
-      }
-    }
-  }
-
-  if (reviewCandidates.isEmpty()) return null;
-
-  const selected = reviewCandidates.dequeue();
-  
-  if (!selected) return null;
-  
-  // Update counters for review session
-  const currentCount = subjectSessionCounts.get(selected.subject) || 0;
-  subjectSessionCounts.set(selected.subject, currentCount + 1);
-
-  return {
-    subject: selected.subject,
-    topic: selected.topic,
-    pass: Math.floor(selected.frequency),
-    isReview: true
-  };
+function getSubjectTopicCount(subjectsData: any[], subjectName: string): number {
+  const subject = subjectsData.find(s => s.name === subjectName);
+  return subject ? subject.topics.length : 1;
 }
+
