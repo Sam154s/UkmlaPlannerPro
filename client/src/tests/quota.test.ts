@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionStream, SelectorConfig } from '@/algorithms/selector';
+import { buildSessionStream, SelectorConfig } from '../algorithms/selector';
 
 describe('Quota Management', () => {
   it('should ensure each subject emits exactly its quota of sessions', () => {
