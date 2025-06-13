@@ -44,7 +44,7 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
   const reviewHeap = new PriorityQueue<ReviewCandidate>((a, b) => b.reviewWeight - a.reviewWeight);
   const topicGaps: { [key: string]: number } = {}; // "subject:topic" -> gap since last study
   
-  // Initialize session counts and quotas from subjectsData order
+  // Initialize session counts from subjectsData order
   const subjectOrder = subjectsData.map(s => s.name);
   for (const subject of subjectOrder) {
     subjectSessionCounts[subject] = 0;
@@ -61,31 +61,29 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
     
     // Check if we should inject a review session
     if (sessionsEmitted > 0 && sessionsEmitted % k === 0) {
-      while (!reviewHeap.isEmpty()) {
+      if (!reviewHeap.isEmpty()) {
         const candidate = reviewHeap.dequeue();
-        if (!candidate) break;
-        
-        const subjectQuota = (baseBlockCounts[candidate.subject] || 5) * 5 * passCoverage;
-        
-        if (subjectSessionCounts[candidate.subject] < subjectQuota) {
-          const reviewSession: SessionStub = {
-            subject: candidate.subject,
-            topic: candidate.topic,
-            pass: Math.floor(subjectSessionCounts[candidate.subject] / getSubjectTopicCount(subjectsData, candidate.subject)) + 1,
-            isReview: true
-          };
+        if (candidate) {
+          const subjectQuota = (baseBlockCounts[candidate.subject] || 5) * 5 * passCoverage;
           
-          sessions.push(reviewSession);
-          subjectSessionCounts[candidate.subject]++;
-          sessionsEmitted++;
-          
-          // Reset gap for this topic
-          topicGaps[`${candidate.subject}:${candidate.topic}`] = 0;
-          break;
+          if (subjectSessionCounts[candidate.subject] < subjectQuota) {
+            const reviewSession: SessionStub = {
+              subject: candidate.subject,
+              topic: candidate.topic,
+              pass: Math.floor(subjectSessionCounts[candidate.subject] / getSubjectTopicCount(subjectsData, candidate.subject)) + 1,
+              isReview: true
+            };
+            
+            sessions.push(reviewSession);
+            subjectSessionCounts[candidate.subject]++;
+            sessionsEmitted++;
+            
+            // Reset gap for this topic
+            topicGaps[`${candidate.subject}:${candidate.topic}`] = 0;
+            continue;
+          }
         }
       }
-      
-      if (sessions.length === sessionsEmitted - 1) continue; // Review was added, continue to next iteration
     }
     
     // Get current subject from subjectsData order
@@ -171,4 +169,3 @@ function getSubjectTopicCount(subjectsData: any[], subjectName: string): number 
   const subject = subjectsData.find(s => s.name === subjectName);
   return subject ? subject.topics.length : 1;
 }
-

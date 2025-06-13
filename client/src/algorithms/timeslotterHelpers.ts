@@ -49,109 +49,55 @@ export function overlapsWithUserEvent(slot: TimeSlot, userEvents?: UserEvent[]):
 // Find the next available time slot that doesn't overlap with user events
 export function findNextAvailableSlot(
   date: Date,
-  startTime: string,
-  hours: number,
-  hoursPerDay: number,
-  dailyHoursUsed: number,
-  availableDays: number[],
-  userEvents?: UserEvent[]
-): { slot: TimeSlot, newDate: Date, newDailyHoursUsed: number } {
-  let currentDate = new Date(date);
-  let currDailyHoursUsed = dailyHoursUsed;
-  let requestedHours = hours; // Store the originally requested hours
-  
-  // Try to find a slot today
-  if (currDailyHoursUsed < hoursPerDay) {
-    const potentialSlot: TimeSlot = {
-      date: currentDate.toISOString().split('T')[0],
-      startTime: addHours(startTime, currDailyHoursUsed),
-      endTime: addHours(startTime, currDailyHoursUsed + hours),
-      hours
+  sessionHours: number,
+  userEvents?: UserEvent[],
+  hoursUsedToday: number = 0
+): { slot: TimeSlot | null, newDate: Date, newDailyHoursUsed: number } {
+  const maxDailyMinutes = timeToMinutes(DAILY_END_TIME) - timeToMinutes(DAILY_START_TIME);
+  const sessionMinutes = sessionHours * 60;
+  const usedMinutes = hoursUsedToday * 60;
+
+  if (usedMinutes + sessionMinutes > maxDailyMinutes) {
+    // No more time available today
+    return {
+      slot: null,
+      newDate: date,
+      newDailyHoursUsed: hoursUsedToday
     };
-    
+  }
+
+  // Calculate start time based on hours already used
+  const baseStartMinutes = timeToMinutes(DAILY_START_TIME) + usedMinutes;
+  let currentStartMinutes = baseStartMinutes;
+
+  while (currentStartMinutes + sessionMinutes <= timeToMinutes(DAILY_END_TIME)) {
+    const startTime = minutesToTime(currentStartMinutes);
+    const endTime = minutesToTime(currentStartMinutes + sessionMinutes);
+
+    const potentialSlot: TimeSlot = {
+      date: date.toISOString().split('T')[0],
+      startTime: startTime,
+      endTime: endTime,
+      hours: sessionHours
+    };
+
+    // Check for conflicts with user events
     if (!overlapsWithUserEvent(potentialSlot, userEvents)) {
       return {
         slot: potentialSlot,
-        newDate: currentDate,
-        newDailyHoursUsed: currDailyHoursUsed + hours
+        newDate: date,
+        newDailyHoursUsed: hoursUsedToday + sessionHours
       };
     }
-    
-    // If slot overlaps, try to find another slot later today
-    const startTimeMinutes = timeToMinutes(potentialSlot.startTime);
-    const endTimeMinutes = timeToMinutes(DAILY_END_TIME);
-    let nextStartMinutes = startTimeMinutes;
-    
-    // Try 1-minute increments for more precise scheduling
-    while (nextStartMinutes + hours * 60 <= endTimeMinutes) {
-      // Try 1-minute increments
-      nextStartMinutes += 1;
-      
-      const nextStartTime = minutesToTime(nextStartMinutes);
-      const nextEndTime = addHours(nextStartTime, hours);
-      
-      const nextSlot: TimeSlot = {
-        date: currentDate.toISOString().split('T')[0],
-        startTime: nextStartTime,
-        endTime: nextEndTime,
-        hours
-      };
-      
-      if (!overlapsWithUserEvent(nextSlot, userEvents)) {
-        // Calculate new daily hours used based on the end time
-        const newHoursUsed = (timeToMinutes(nextEndTime) - timeToMinutes(startTime)) / 60;
-        return {
-          slot: nextSlot,
-          newDate: currentDate,
-          newDailyHoursUsed: newHoursUsed > hoursPerDay ? hoursPerDay : newHoursUsed
-        };
-      }
-    }
-    
-    // If we couldn't find a slot with the requested hours, 
-    // and this is a main block (2 hours), try with 1 hour instead
-    if (hours === 2) {
-      return findNextAvailableSlot(
-        currentDate,
-        startTime,
-        1, // Fallback to 1 hour
-        hoursPerDay,
-        dailyHoursUsed,
-        availableDays,
-        userEvents
-      );
-    }
+
+    // Move to next possible start time (30-minute increments)
+    currentStartMinutes += 30;
   }
-  
-  // If we couldn't find a slot today, try the next day
-  do {
-    currentDate.setDate(currentDate.getDate() + 1);
-  } while (!availableDays.includes(currentDate.getDay() || 7));
-  
-  // Start fresh in the morning with the originally requested hours
-  const nextDaySlot: TimeSlot = {
-    date: currentDate.toISOString().split('T')[0],
-    startTime: DAILY_START_TIME,
-    endTime: addHours(DAILY_START_TIME, requestedHours),
-    hours: requestedHours
-  };
-  
-  // If this slot overlaps with events, recursively find the next one
-  if (overlapsWithUserEvent(nextDaySlot, userEvents)) {
-    return findNextAvailableSlot(
-      currentDate,
-      DAILY_START_TIME,
-      requestedHours,
-      hoursPerDay,
-      0,
-      availableDays,
-      userEvents
-    );
-  }
-  
+
+  // No slot found for this day
   return {
-    slot: nextDaySlot,
-    newDate: currentDate,
-    newDailyHoursUsed: requestedHours
+    slot: null,
+    newDate: date,
+    newDailyHoursUsed: hoursUsedToday
   };
 }
