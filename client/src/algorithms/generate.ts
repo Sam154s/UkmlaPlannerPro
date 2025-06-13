@@ -15,27 +15,25 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
     weeklyStudyHours,
     daysPerWeek,
     favouriteSubjects,
+    leastFavouriteSubjects = [],
     subjectsData,
     userPerformance,
     passCoverage = DEFAULT_PASS_COVERAGE,
     userEvents = []
   } = config;
 
-  // Filter subjects to only include those selected by user
-  const selectedSubjectsData = subjectsData.filter(subject => 
-    favouriteSubjects.includes(subject.name)
-  );
-
-  if (selectedSubjectsData.length === 0) {
+  // Pass entire subjectsData - weighting handled in selector via prefMultiplier
+  if (subjectsData.length === 0) {
     return [];
   }
 
   // Build selector configuration for the spiral algorithm
   const selectorConfig: SelectorConfig = {
-    subjectsData: selectedSubjectsData,
+    subjectsData: subjectsData,
     baseBlockCounts: BASE_BLOCK_COUNTS,
     passCoverage,
     favouriteSubjects,
+    leastFavouriteSubjects,
     userPerformance,
     k: 10 // Review injection interval
   };
@@ -44,7 +42,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const calendarConfig: CalendarConfig = {
     startDate: new Date(),
     daysPerWeek,
-    dailyStudyHours: weeklyStudyHours / daysPerWeek,
+    dailyStudyHours: weeklyStudyHours / daysPerWeek, // Pass as float
     userEvents
   };
 
