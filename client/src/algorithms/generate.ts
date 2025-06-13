@@ -1,56 +1,65 @@
-import { buildSessionStream, SelectorConfig } from './selector';
+import { buildHourPlan } from './selector';
+import { sliceConditions } from './sessionSlicer';
 import { placeSessions, CalendarConfig } from './timeslotter';
 import { SpiralConfig, StudyBlock } from '../types/spiral';
-import { BASE_BLOCK_COUNTS } from '../data/studyBlockCounts';
-import { DEFAULT_PASS_COVERAGE } from '../constants';
 
 /**
- * Canonical spiral timetable generator following the documented algorithm specification.
+ * Hour-based spiral timetable generator with flexible study days.
  * 
- * This is the main entry point that combines the pure session selector with the calendar placer
- * to produce a complete study schedule following spiral revision principles.
+ * Main entry point that combines hour planning, session slicing, and calendar placement
+ * to produce a complete study schedule with variable session lengths.
  */
 export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   const {
-    weeklyStudyHours,
-    daysPerWeek,
+    hoursPerWeek,
+    weeklyStudyHours, // legacy fallback
+    studyDays,
+    yearMultiplier,
     favouriteSubjects,
-    leastFavouriteSubjects = [],
     subjectsData,
     userPerformance,
-    passCoverage = DEFAULT_PASS_COVERAGE,
+    blocksTable,
     userEvents = []
   } = config;
 
-  // Pass entire subjectsData - weighting handled in selector via prefMultiplier
-  if (subjectsData.length === 0) {
-    return [];
-  }
+  // Use hoursPerWeek or fall back to weeklyStudyHours for backward compatibility
+  const totalHours = hoursPerWeek || weeklyStudyHours;
 
-  // Build selector configuration for the spiral algorithm
-  const selectorConfig: SelectorConfig = {
-    subjectsData: subjectsData,
-    baseBlockCounts: BASE_BLOCK_COUNTS,
-    passCoverage,
-    favouriteSubjects,
-    leastFavouriteSubjects,
-    userPerformance,
-    k: 10 // Review injection interval
-  };
+  // 1. Generate hour-based condition plans
+  const conditionPlans = buildHourPlan({
+    ...config,
+    hoursPerWeek: totalHours
+  });
 
-  // Build calendar configuration for time slot placement
+  // 2. Slice conditions into variable-length sessions (1-2h range, 30-min multiples)
+  const sessions = sliceConditions(conditionPlans, 60, 120);
+
+  // 3. Place sessions into calendar with user-chosen study days
   const calendarConfig: CalendarConfig = {
     startDate: new Date(),
-    daysPerWeek,
-    dailyStudyHours: weeklyStudyHours / daysPerWeek, // Pass as float
+    studyDays,
+    hoursPerWeek: totalHours,
     userEvents
   };
 
-  // Generate session stream using spiral algorithm
-  const sessionStream = buildSessionStream(selectorConfig);
-
-  // Place sessions in calendar slots
-  const studyBlocks = placeSessions(sessionStream, calendarConfig);
+  const studyBlocks = placeSessions(sessions, calendarConfig);
 
   return studyBlocks;
+}
+
+/**
+ * Regeneration trigger that rebuilds the entire timetable.
+ * Call this after mastery updates to recalculate difficulty factors.
+ */
+export function rebuildTimetable(config: SpiralConfig): StudyBlock[] {
+  return generateSpiralTimetable(config);
+}
+
+/**
+ * Legacy session-based generator for backward compatibility
+ */
+export function generateLegacyTimetable(config: any): StudyBlock[] {
+  // This would use the old buildSessionStream approach
+  // Keeping for backward compatibility with existing code
+  return generateSpiralTimetable(config);
 }

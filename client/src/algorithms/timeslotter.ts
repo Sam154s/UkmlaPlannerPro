@@ -1,88 +1,65 @@
-import { SessionStub } from './selector';
+import { SessionStub } from './sessionSlicer';
 import { StudyBlock, UserEvent } from '../types/spiral';
-import { TimeSlot, findNextAvailableSlot } from './timeslotterHelpers';
+import { TimeSlot, timeToMinutes, minutesToTime, overlapsWithUserEvent } from './timeslotterHelpers';
+import { DAILY_START_TIME, DAILY_END_TIME } from '../constants';
 
 export interface CalendarConfig {
   startDate: Date;
-  daysPerWeek: number;
-  dailyStudyHours: number;
+  studyDays: number[];  // weekday indices 0-6
+  hoursPerWeek: number;
   userEvents?: UserEvent[];
 }
 
 /**
- * Places session stubs into calendar time slots, respecting user events and daily limits.
- * Allows multiple 2-hour sessions per day based on dailyStudyHours.
+ * Places variable-length sessions into calendar time slots with user-chosen study days.
+ * Supports 30-min granularity and respects daily hour caps.
  */
 export function placeSessions(
-  sessionStream: SessionStub[],
+  sessions: SessionStub[],
   calendarConfig: CalendarConfig
 ): StudyBlock[] {
-  const { startDate, daysPerWeek, dailyStudyHours, userEvents = [] } = calendarConfig;
+  const { startDate, studyDays, hoursPerWeek, userEvents = [] } = calendarConfig;
   const studyBlocks: StudyBlock[] = [];
   
   let currentDate = new Date(startDate);
-  let sessionIndex = 0;
-
-  while (sessionIndex < sessionStream.length) {
-    // Check if current date is a valid study day
-    if (!isValidStudyDay(currentDate, daysPerWeek)) {
-      currentDate = addDays(currentDate, 1);
+  let dailyMinutesUsed = 0;
+  const maxMinutesPerDay = Math.round((hoursPerWeek * 60) / studyDays.length);
+  
+  for (const session of sessions) {
+    const sessionMinutes = session.minutes || 120; // Default 2 hours if not specified
+    
+    // Find next available time slot
+    const result = findNextAvailableSlotMinutes(
+      currentDate,
+      dailyMinutesUsed,
+      maxMinutesPerDay,
+      studyDays,
+      sessionMinutes,
+      userEvents
+    );
+    
+    if (!result.slot) {
+      console.warn(`Could not find slot for session: ${session.subject}`);
       continue;
     }
-
-    let hoursUsedToday = 0;
-    const maxSessionsPerDay = Math.floor(dailyStudyHours / 2) || 1; // 2-hour blocks, at least 1 session
-    let sessionsAddedToday = 0;
-
-    // Try to fit multiple sessions on this day
-    while (hoursUsedToday + 2 <= dailyStudyHours && 
-           sessionIndex < sessionStream.length && 
-           sessionsAddedToday < maxSessionsPerDay) {
-      
-      const result = findNextAvailableSlot(
-        currentDate,
-        2, // Each session is 2 hours
-        userEvents,
-        hoursUsedToday
-      );
-
-      if (!result.slot) {
-        break; // No more slots available today
-      }
-
-      // Create study block from session stub
-      const session = sessionStream[sessionIndex];
-      const studyBlock = createStudyBlock(session, result.slot);
-      studyBlocks.push(studyBlock);
-
-      hoursUsedToday += result.slot.hours;
-      sessionIndex++;
-      sessionsAddedToday++;
-    }
-
-    // Move to next day
-    currentDate = addDays(currentDate, 1);
+    
+    const studyBlock = createStudyBlockFromSession(session, result.slot);
+    studyBlocks.push(studyBlock);
+    
+    // Update tracking variables
+    currentDate = result.newDate;
+    dailyMinutesUsed = result.newDailyMinutesUsed;
   }
-
+  
   return studyBlocks;
 }
 
 /**
- * Check if a given date is a valid study day based on daysPerWeek setting
+ * Check if a given date is a valid study day based on studyDays array
  */
-function isValidStudyDay(date: Date, daysPerWeek: number): boolean {
-  const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-  
-  switch (daysPerWeek) {
-    case 7: return true; // All days
-    case 6: return dayOfWeek !== 0; // Monday-Saturday
-    case 5: return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday-Friday
-    case 4: return dayOfWeek >= 1 && dayOfWeek <= 4; // Monday-Thursday
-    case 3: return dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5; // Mon Wed Fri
-    case 2: return dayOfWeek === 2 || dayOfWeek === 4; // Tue Thu
-    case 1: return dayOfWeek === 3; // Wed
-    default: return dayOfWeek >= 1 && dayOfWeek <= 5; // Default to weekdays
-  }
+function isValidStudyDay(date: Date, studyDays: number[]): boolean {
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  return studyDays.includes(dayOfWeek);
 }
 
 /**
@@ -95,12 +72,95 @@ function addDays(date: Date, days: number): Date {
 }
 
 /**
+ * Find next available slot with minute-based scheduling
+ */
+function findNextAvailableSlotMinutes(
+  startDate: Date,
+  dailyMinutesUsed: number,
+  maxMinutesPerDay: number,
+  studyDays: number[],
+  sessionMinutes: number,
+  userEvents?: UserEvent[]
+): { slot: TimeSlot | null, newDate: Date, newDailyMinutesUsed: number } {
+  let currentDate = new Date(startDate);
+  let currentDailyMinutes = dailyMinutesUsed;
+
+  // Try up to 365 days to find a slot
+  for (let dayOffset = 0; dayOffset < 365; dayOffset++) {
+    if (!isValidStudyDay(currentDate, studyDays)) {
+      currentDate = addDays(currentDate, 1);
+      currentDailyMinutes = 0;
+      continue;
+    }
+
+    // Check if we can fit this session today
+    if (currentDailyMinutes + sessionMinutes <= maxMinutesPerDay) {
+      const slot = findSlotInDay(currentDate, sessionMinutes, userEvents, currentDailyMinutes);
+      if (slot) {
+        return {
+          slot,
+          newDate: currentDate,
+          newDailyMinutesUsed: currentDailyMinutes + sessionMinutes
+        };
+      }
+    }
+
+    // Move to next day
+    currentDate = addDays(currentDate, 1);
+    currentDailyMinutes = 0;
+  }
+
+  return { slot: null, newDate: currentDate, newDailyMinutesUsed: 0 };
+}
+
+/**
+ * Find a slot within a specific day
+ */
+function findSlotInDay(
+  date: Date,
+  sessionMinutes: number,
+  userEvents?: UserEvent[],
+  startFromMinutes: number = 0
+): TimeSlot | null {
+  const dayStartMinutes = timeToMinutes(DAILY_START_TIME);
+  const dayEndMinutes = timeToMinutes(DAILY_END_TIME);
+  
+  // Start from either the day start or where we left off
+  let currentMinutes = Math.max(dayStartMinutes, dayStartMinutes + startFromMinutes);
+  
+  while (currentMinutes + sessionMinutes <= dayEndMinutes) {
+    const startTime = minutesToTime(currentMinutes);
+    const endTime = minutesToTime(currentMinutes + sessionMinutes);
+    
+    const potentialSlot: TimeSlot = {
+      date: date.toISOString().split('T')[0],
+      startTime,
+      endTime,
+      hours: sessionMinutes / 60
+    };
+    
+    // Check for conflicts with user events
+    if (!overlapsWithUserEvent(potentialSlot, userEvents)) {
+      return potentialSlot;
+    }
+    
+    // Move forward by 30-minute intervals
+    currentMinutes += 30;
+  }
+  
+  return null;
+}
+
+/**
  * Create a StudyBlock from a SessionStub and TimeSlot
  */
-function createStudyBlock(session: SessionStub, timeSlot: TimeSlot): StudyBlock {
+function createStudyBlockFromSession(session: SessionStub, timeSlot: TimeSlot): StudyBlock {
   return {
     subject: session.subject,
-    topics: [{ name: session.topic, type: 'main' }],
+    topics: session.conditions.map(condition => ({
+      name: condition,
+      type: 'main' as const
+    })),
     hours: timeSlot.hours,
     date: timeSlot.date,
     startTime: timeSlot.startTime,
