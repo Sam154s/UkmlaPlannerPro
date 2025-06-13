@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
 
 interface StudyConfigProps {
-  weeklyHours: number;
+  hoursPerWeek: number;
   yearGroup: number;
-  daysPerWeek: number;
-  onWeeklyHoursChange: (hours: number) => void;
+  studyDays: number[];
+  onHoursPerWeekChange: (hours: number) => void;
   onYearGroupChange: (group: number) => void;
-  onDaysPerWeekChange: (days: number) => void;
+  onStudyDaysChange: (days: number[]) => void;
   onGenerate?: () => void;
 }
 
@@ -52,9 +52,9 @@ function NumberInput({
             onChange(newValue);
           }
         }}
-        className={`font-medium border-slate-300 ${className}`}
         min={min}
         max={max}
+        className={`number-input text-center pr-8 ${className}`}
       />
       <div className="number-input-arrows">
         <button
@@ -79,33 +79,56 @@ function NumberInput({
 }
 
 export function StudyConfig({
-  weeklyHours,
+  hoursPerWeek,
   yearGroup,
-  daysPerWeek,
-  onWeeklyHoursChange,
+  studyDays,
+  onHoursPerWeekChange,
   onYearGroupChange,
-  onDaysPerWeekChange,
+  onStudyDaysChange,
   onGenerate,
 }: StudyConfigProps) {
+  
+  const weekdays = [
+    { name: 'Sun', value: 0 },
+    { name: 'Mon', value: 1 },
+    { name: 'Tue', value: 2 },
+    { name: 'Wed', value: 3 },
+    { name: 'Thu', value: 4 },
+    { name: 'Fri', value: 5 },
+    { name: 'Sat', value: 6 }
+  ];
+
+  const toggleStudyDay = (dayValue: number) => {
+    if (studyDays.includes(dayValue)) {
+      // Remove day (but ensure at least one day remains)
+      if (studyDays.length > 1) {
+        onStudyDaysChange(studyDays.filter(d => d !== dayValue));
+      }
+    } else {
+      // Add day
+      onStudyDaysChange([...studyDays, dayValue].sort());
+    }
+  };
+
+  const dailyHours = studyDays.length > 0 ? (hoursPerWeek / studyDays.length).toFixed(1) : '0';
   
   return (
     <Card className="shadow-sm bg-white rounded-lg">
       <CardContent className="pt-6 space-y-6">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label htmlFor="weekly-hours" className="font-medium text-slate-800">Weekly Study Hours</Label>
-            <span className="text-sm font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{weeklyHours} hrs</span>
+            <Label htmlFor="hours-per-week" className="font-medium text-slate-800">Hours Per Week</Label>
+            <span className="text-sm font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{hoursPerWeek} hrs</span>
           </div>
           <div className="flex items-center space-x-2">
             <Slider
-              id="weekly-hours"
+              id="hours-per-week"
               min={1}
               max={40}
               step={1}
-              value={[weeklyHours]}
-              onValueChange={(value) => onWeeklyHoursChange(value[0])}
+              value={[hoursPerWeek]}
+              onValueChange={(value) => onHoursPerWeekChange(value[0])}
               className="flex-1 slider-enhanced"
-              // Enhanced styling for larger, more visible thumb
               style={{
                 "--track-background": "#e2e8f0",
                 "--range-background": "#3b82f6", 
@@ -117,23 +140,48 @@ export function StudyConfig({
               } as React.CSSProperties}
             />
             <NumberInput
-              value={weeklyHours}
-              onChange={onWeeklyHoursChange}
+              value={hoursPerWeek}
+              onChange={onHoursPerWeekChange}
               min={1}
               max={40}
               className="w-20"
             />
           </div>
-          <div className="flex justify-between text-xs text-slate-500">
-            <span>Min: 1</span>
-            <span>Max: 40</span>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label className="font-medium text-slate-800">Study Days</Label>
+            <span className="text-sm font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
+              {dailyHours}h/day
+            </span>
           </div>
+          <div className="grid grid-cols-7 gap-1">
+            {weekdays.map((day) => (
+              <Button
+                key={day.value}
+                variant={studyDays.includes(day.value) ? "default" : "outline"}
+                size="sm"
+                className={`h-10 text-xs font-medium transition-all ${
+                  studyDays.includes(day.value)
+                    ? "bg-blue-500 hover:bg-blue-600 text-white shadow-md"
+                    : "bg-white hover:bg-blue-50 text-slate-600 border-slate-200"
+                }`}
+                onClick={() => toggleStudyDay(day.value)}
+              >
+                {day.name}
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Select your preferred study days. Daily hours = {hoursPerWeek} ÷ {studyDays.length} days
+          </p>
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label htmlFor="year-group" className="font-medium text-slate-800">Year Group</Label>
-            <span className="text-sm font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Year {yearGroup}</span>
+            <span className="text-sm font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Year {yearGroup}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Slider
@@ -143,15 +191,15 @@ export function StudyConfig({
               step={1}
               value={[yearGroup]}
               onValueChange={(value) => onYearGroupChange(value[0])}
-              className="flex-1"
-              // Custom darker styling for the slider
+              className="flex-1 slider-enhanced"
               style={{
                 "--track-background": "#e2e8f0",
-                "--range-background": "#10b981", 
-                "--thumb-background": "#10b981",
-                "--thumb-border": "2px solid white",
-                "--thumb-width": "1.25rem",
-                "--thumb-height": "1.25rem"
+                "--range-background": "#8b5cf6", 
+                "--thumb-background": "#ffffff",
+                "--thumb-border": "4px solid #8b5cf6",
+                "--thumb-width": "2.25rem",
+                "--thumb-height": "2.25rem",
+                "--thumb-shadow": "0 4px 12px rgba(0, 0, 0, 0.2)"
               } as React.CSSProperties}
             />
             <NumberInput
@@ -162,91 +210,19 @@ export function StudyConfig({
               className="w-20"
             />
           </div>
-          <div className="grid grid-cols-5 gap-0.5 text-xs text-slate-500 text-center mt-1">
-            <button 
-              onClick={() => onYearGroupChange(1)}
-              className={`p-1 rounded cursor-pointer hover:bg-green-50 transition-colors ${yearGroup === 1 ? 'bg-green-100 text-green-800 font-medium' : 'hover:text-green-700'}`}
-            >
-              Y1
-            </button>
-            <button 
-              onClick={() => onYearGroupChange(2)}
-              className={`p-1 rounded cursor-pointer hover:bg-green-50 transition-colors ${yearGroup === 2 ? 'bg-green-100 text-green-800 font-medium' : 'hover:text-green-700'}`}
-            >
-              Y2
-            </button>
-            <button 
-              onClick={() => onYearGroupChange(3)}
-              className={`p-1 rounded cursor-pointer hover:bg-green-50 transition-colors ${yearGroup === 3 ? 'bg-green-100 text-green-800 font-medium' : 'hover:text-green-700'}`}
-            >
-              Y3
-            </button>
-            <button 
-              onClick={() => onYearGroupChange(4)}
-              className={`p-1 rounded cursor-pointer hover:bg-green-50 transition-colors ${yearGroup === 4 ? 'bg-green-100 text-green-800 font-medium' : 'hover:text-green-700'}`}
-            >
-              Y4
-            </button>
-            <button 
-              onClick={() => onYearGroupChange(5)}
-              className={`p-1 rounded cursor-pointer hover:bg-green-50 transition-colors ${yearGroup === 5 ? 'bg-green-100 text-green-800 font-medium' : 'hover:text-green-700'}`}
-            >
-              Y5
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="days-per-week" className="font-medium text-slate-800">Study Days Per Week</Label>
-            <span className="text-sm font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">{daysPerWeek} days</span>
-          </div>
-          <div className="grid grid-cols-7 gap-0.5 text-xs text-slate-500 text-center mt-1">
-            <button 
-              onClick={() => onDaysPerWeekChange(1)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 1 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              M
-            </button>
-            <button 
-              onClick={() => onDaysPerWeekChange(2)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 2 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              T
-            </button>
-            <button 
-              onClick={() => onDaysPerWeekChange(3)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 3 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              W
-            </button>
-            <button 
-              onClick={() => onDaysPerWeekChange(4)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 4 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              T
-            </button>
-            <button 
-              onClick={() => onDaysPerWeekChange(5)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 5 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              F
-            </button>
-            <button 
-              onClick={() => onDaysPerWeekChange(6)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 6 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              S
-            </button>
-            <button 
-              onClick={() => onDaysPerWeekChange(7)}
-              className={`p-1 rounded cursor-pointer hover:bg-purple-50 transition-colors ${daysPerWeek >= 7 ? 'bg-purple-100 text-purple-800 font-medium' : 'hover:text-purple-700'}`}
-            >
-              S
-            </button>
-          </div>
         </div>
       </CardContent>
+      {onGenerate && (
+        <CardFooter>
+          <Button 
+            onClick={onGenerate} 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 shadow-sm"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Generate Timetable
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

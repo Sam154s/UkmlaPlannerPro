@@ -369,17 +369,18 @@ export default function Timetable() {
     if (!preferencesLoaded.current) return;
 
     const preferencesToSave: UserPreferences = {
-      weeklyHours,
+      hoursPerWeek,
       yearGroup,
-      daysPerWeek,
+      studyDays,
       selectedSubjects,
     };
 
     // Save to localStorage for offline functionality
     localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferencesToSave));
-    localStorage.setItem('weekly-hours', weeklyHours.toString());
+    localStorage.setItem('hours-per-week', hoursPerWeek.toString());
+    localStorage.setItem('study-days', JSON.stringify(studyDays));
     localStorage.setItem('selected-subjects', JSON.stringify(selectedSubjects));
-  }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects, studyEvents, holidayEvents]);
+  }, [hoursPerWeek, yearGroup, studyDays, selectedSubjects, studyEvents, holidayEvents]);
 
   // Save holidays when they change
   useEffect(() => {
@@ -427,16 +428,37 @@ export default function Timetable() {
 
   // Generate timetable based on current settings
   const handleGenerate = () => {
+    const yearMultiplier = yearGroup <= 5 ? [2.0, 1.6, 1.3, 1.1, 1.0][yearGroup - 1] : 1.0;
     // Create blocks with the spiral algorithm
     const blocks = generateSpiralTimetable({
-      weeklyStudyHours: weeklyHours,
-      yearGroup,
-      daysPerWeek,
+      hoursPerWeek,
+      weeklyStudyHours: hoursPerWeek, // legacy fallback
+      studyDays,
+      yearMultiplier,
       favouriteSubjects: selectedSubjects,
       subjectsData: masterSubjects,
       userEvents, // Pass user events to avoid scheduling conflicts
       userPerformance, // Pass performance data for adaptive scheduling
-      revisionCount: revisionCount
+      blocksTable: {
+        'Acute and emergency': 8,
+        'Cardiovascular': 10,
+        'Respiratory': 8,
+        'Gastrointestinal': 9,
+        'Endocrinology': 6,
+        'Genitourinary': 7,
+        'Musculoskeletal': 8,
+        'Neurological': 9,
+        'Dermatology': 5,
+        'Ophthalmology': 4,
+        'ENT': 4,
+        'Psychiatry': 7,
+        'Obstetrics and gynaecology': 8,
+        'Paediatrics': 9,
+        'Pharmacology': 6,
+        'Pathology': 5,
+        'Clinical skills': 4,
+        'Ethics and law': 3
+      }
     });
 
     // Convert blocks to calendar events with unique IDs and force display in all views
@@ -996,12 +1018,12 @@ export default function Timetable() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <StudyConfig
-                  weeklyHours={weeklyHours}
-                  onWeeklyHoursChange={setWeeklyHours}
+                  hoursPerWeek={hoursPerWeek}
+                  onHoursPerWeekChange={setHoursPerWeek}
                   yearGroup={yearGroup}
                   onYearGroupChange={setYearGroup}
-                  daysPerWeek={daysPerWeek}
-                  onDaysPerWeekChange={setDaysPerWeek}
+                  studyDays={studyDays}
+                  onStudyDaysChange={setStudyDays}
                   onGenerate={handleGenerate}
                 />
               </div>
