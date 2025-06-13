@@ -1,0 +1,68 @@
+# 🛠  REFIT timetable page to hour-based spiral scheduler
+
+────────────────────────────────
+FILES TO MODIFY
+────────────────────────────────
+1.  src/pages/timetable.tsx
+2.  src/components/ui/StudyConfig.tsx  (and any child inputs)
+3.  (optional) migration util for localStorage keys
+
+────────────────────────────────
+TASKS
+────────────────────────────────
+A. **Replace weeklyHours + daysPerWeek with hour/week + studyDays**
+   * State:
+     ```ts
+     const [hoursPerWeek, setHoursPerWeek] = useState(14);
+     const [studyDays,   setStudyDays]   = useState<number[]>([1,2,3,4,5]); // default Mon-Fri
+     const yearMultiplier = 1;  // derived from yearGroup selection
+     ```
+   * Migration: on first load, if `daysPerWeek` exists, convert it to default weekday list
+     (Mon-Fri for 5, etc.) then delete old keys.
+
+B. **Update StudyConfig component**
+   * Replace “Days/week slider” with 7 toggle buttons (Sun-Sat).
+   * Prop interface:  
+     `studyDays:number[]`, `onStudyDaysChange:(d:number[])=>void`, `hoursPerWeek`, `onHoursPerWeekChange`.
+
+C. **Update generateSpiralTimetable call**
+   ```ts
+   const blocks = generateSpiralTimetable({
+       hoursPerWeek,
+       studyDays,
+       yearMultiplier,
+       favouriteSubjects: selectedSubjects,
+       subjectsData: masterSubjects,
+       userEvents,
+       userPerformance,
+       blocksTable: SUBJECT_BLOCK_TABLE    // import from data/studyBlockCountsHours
+   });
+D. Render variable-length sessions
+
+block.minutes returned by algorithm.
+
+Use addMinutes(parseISO(${block.date}T${block.startTime}), block.minutes) for end.
+
+Display duration in Session Detail (replace hard-coded “45 min”, etc.).
+
+E. Replace isValidStudyDay()
+
+ts
+Copy
+Edit
+const isValidStudyDay = (date:Date) => studyDays.includes(date.getDay());
+F. LocalStorage keys
+
+Save hoursPerWeek under "hours-per-week" and studyDays under "study-days".
+
+Provide backward-compat migration on load.
+
+G. Remove obsolete props
+
+Delete every reference to daysPerWeek, weeklyHours in this page and StudyConfig.
+
+H. Type updates
+
+Adjust UserPreferences interface for new fields.
+
+I. Run fixes

@@ -36,9 +36,9 @@ import '../styles/calendar.css';
 
 // Types
 interface UserPreferences {
-  weeklyHours: number;
+  hoursPerWeek: number;
   yearGroup: number;
-  daysPerWeek: number;
+  studyDays: number[];
   selectedSubjects: string[];
 }
 
@@ -59,9 +59,9 @@ interface CalendarEvent {
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
-  weeklyHours: 14,
+  hoursPerWeek: 14,
   yearGroup: 3,
-  daysPerWeek: 5,
+  studyDays: [1, 2, 3, 4, 5], // Mon-Fri
   selectedSubjects: [],
 };
 
@@ -84,10 +84,10 @@ export default function Timetable() {
   const { toast } = useToast();
   
   // State for user preferences
-  const [weeklyHours, setWeeklyHours] = useState(DEFAULT_PREFERENCES.weeklyHours);
-  const [yearGroup, setYearGroup] = useState(DEFAULT_PREFERENCES.yearGroup);
-  const [daysPerWeek, setDaysPerWeek] = useState(DEFAULT_PREFERENCES.daysPerWeek);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(DEFAULT_PREFERENCES.selectedSubjects);
+  const [hoursPerWeek, setHoursPerWeek] = useState(14);
+  const [yearGroup, setYearGroup] = useState(5);
+  const [studyDays, setStudyDays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri default
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   
   // State for events and calendar
   const [studyEvents, setStudyEvents] = useState<CalendarEvent[]>([]);
@@ -187,15 +187,36 @@ export default function Timetable() {
     
     // Automatically generate timetable when key settings change
     const generateTimetable = () => {
+      const yearMultiplier = yearGroup <= 5 ? [2.0, 1.6, 1.3, 1.1, 1.0][yearGroup - 1] : 1.0;
       const blocks = generateSpiralTimetable({
-        weeklyStudyHours: weeklyHours,
-        yearGroup,
-        daysPerWeek,
+        hoursPerWeek,
+        weeklyStudyHours: hoursPerWeek, // legacy fallback
+        studyDays,
+        yearMultiplier,
         favouriteSubjects: selectedSubjects,
         subjectsData: masterSubjects,
         userEvents,
         userPerformance,
-        revisionCount: revisionCount
+        blocksTable: {
+          'Acute and emergency': 8,
+          'Cardiovascular': 10,
+          'Respiratory': 8,
+          'Gastrointestinal': 9,
+          'Endocrinology': 6,
+          'Genitourinary': 7,
+          'Musculoskeletal': 8,
+          'Neurological': 9,
+          'Dermatology': 5,
+          'Ophthalmology': 4,
+          'ENT': 4,
+          'Psychiatry': 7,
+          'Obstetrics and gynaecology': 8,
+          'Paediatrics': 9,
+          'Pharmacology': 6,
+          'Pathology': 5,
+          'Clinical skills': 4,
+          'Ethics and law': 3
+        }
       });
 
       // Create calendar events with unique IDs and force display in all views
@@ -220,22 +241,43 @@ export default function Timetable() {
     };
 
     generateTimetable();
-  }, [weeklyHours, yearGroup, daysPerWeek, selectedSubjects, userEvents]);
+  }, [hoursPerWeek, yearGroup, studyDays, selectedSubjects, userEvents]);
 
   // Load saved preferences on first mount
   useEffect(() => {
     if (preferencesLoaded.current) return;
     
     // First load from localStorage for offline functionality
-    // Load user preferences
+    // Load user preferences with backward compatibility migration
     const savedPreferences = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
     if (savedPreferences) {
       try {
-        const parsedPreferences = JSON.parse(savedPreferences) as UserPreferences;
-        setWeeklyHours(parsedPreferences.weeklyHours);
-        setYearGroup(parsedPreferences.yearGroup);
-        setDaysPerWeek(parsedPreferences.daysPerWeek);
-        setSelectedSubjects(parsedPreferences.selectedSubjects);
+        const parsedPreferences = JSON.parse(savedPreferences);
+        
+        // Migration from old format
+        if (parsedPreferences.weeklyHours && !parsedPreferences.hoursPerWeek) {
+          parsedPreferences.hoursPerWeek = parsedPreferences.weeklyHours;
+          delete parsedPreferences.weeklyHours;
+        }
+        
+        if (parsedPreferences.daysPerWeek && !parsedPreferences.studyDays) {
+          // Convert daysPerWeek to studyDays array
+          const days = parsedPreferences.daysPerWeek;
+          if (days === 5) parsedPreferences.studyDays = [1, 2, 3, 4, 5]; // Mon-Fri
+          else if (days === 3) parsedPreferences.studyDays = [1, 3, 5]; // Mon, Wed, Fri
+          else if (days === 2) parsedPreferences.studyDays = [2, 4]; // Tue, Thu
+          else if (days === 1) parsedPreferences.studyDays = [3]; // Wed only
+          else parsedPreferences.studyDays = [1, 2, 3, 4, 5]; // Default Mon-Fri
+          delete parsedPreferences.daysPerWeek;
+        }
+        
+        setHoursPerWeek(parsedPreferences.hoursPerWeek || 14);
+        setYearGroup(parsedPreferences.yearGroup || 5);
+        setStudyDays(parsedPreferences.studyDays || [1, 2, 3, 4, 5]);
+        setSelectedSubjects(parsedPreferences.selectedSubjects || []);
+        
+        // Save migrated preferences
+        localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(parsedPreferences));
       } catch (error) {
         console.error('Failed to parse saved preferences', error);
       }
