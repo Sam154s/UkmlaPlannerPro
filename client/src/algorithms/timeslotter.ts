@@ -1,6 +1,14 @@
 import { addMinutes, format, parseISO, isSameDay } from 'date-fns';
-import { SessionStub, StudyBlock, CalendarConfig, UserEvent, TimeSlot } from '../types/session';
-import { MIN_SESSION_HOURS } from '../constants';
+import { SessionStub } from './selector';
+import { StudyBlock, UserEvent } from '../types/spiral';
+import { TimeSlot } from './timeslotterHelpers';
+
+export interface CalendarConfig {
+  startDate: Date;
+  daysPerWeek: number;
+  dailyStudyHours: number;
+  userEvents?: UserEvent[];
+}
 
 /**
  * Places session stubs into calendar time slots, respecting user events and daily limits.
@@ -81,7 +89,7 @@ export function findNextAvailableSlot(
   dailyStudyHours: number,
   userEvents: UserEvent[]
 ): TimeSlot | null {
-  const sessionHours = Math.max(MIN_SESSION_HOURS, Math.floor(dailyStudyHours));
+  const sessionHours = Math.max(1, Math.floor(dailyStudyHours));
   const startTime = '09:00';
   const endTime = addHoursToTime(startTime, sessionHours);
   

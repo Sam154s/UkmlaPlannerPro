@@ -1,5 +1,22 @@
-import { SessionStub, SelectorConfig } from '../types/session';
 import { PriorityQueue } from '@datastructures-js/priority-queue';
+import { UserPerformance } from '../types/spiral';
+
+export interface SessionStub {
+  subject: string;
+  topic: string;
+  pass: number;
+  isReview: boolean;
+}
+
+export interface SelectorConfig {
+  subjectsData: any[];
+  baseBlockCounts: { [key: string]: number };
+  passCoverage: number;
+  favouriteSubjects: string[];
+  leastFavouriteSubjects?: string[];
+  userPerformance?: UserPerformance;
+  k: number; // Review injection interval
+}
 
 /**
  * Pure generator that creates an ordered session stream following the spiral algorithm.

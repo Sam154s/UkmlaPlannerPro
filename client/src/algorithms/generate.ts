@@ -1,5 +1,5 @@
-import { buildSessionStream } from './selector';
-import { placeSessions } from './timeslotter';
+import { buildSessionStream, SelectorConfig } from './selector';
+import { placeSessions, CalendarConfig } from './timeslotter';
 import { SpiralConfig, StudyBlock } from '../types/spiral';
 import { BASE_BLOCK_COUNTS } from '../data/studyBlockCounts';
 import { DEFAULT_PASS_COVERAGE } from '../constants';
@@ -31,7 +31,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   }
 
   // Build selector configuration for the spiral algorithm
-  const selectorConfig = {
+  const selectorConfig: SelectorConfig = {
     subjectsData: selectedSubjectsData,
     baseBlockCounts: BASE_BLOCK_COUNTS,
     passCoverage,
@@ -41,7 +41,7 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   };
 
   // Build calendar configuration for time slot placement
-  const calendarConfig = {
+  const calendarConfig: CalendarConfig = {
     startDate: new Date(),
     daysPerWeek,
     dailyStudyHours: weeklyStudyHours / daysPerWeek,
