@@ -1,0 +1,137 @@
+# 🛠  UPGRADE: condition-weighted hour allocation & variable-length sessions
+# (One-shot prompt – make all edits & new files in this diff)
+
+────────────────────────────────────────
+SPEC CHANGES
+────────────────────────────────────────
+1. Subject block table → minutes  
+   * `1 block = 150 min` (2.5 h).  
+   * `subjectMinutes = blocksTable[s] × 150 × yearMultiplier`.
+
+2. Condition weight → minutes  
+   * `raw = 0.4·D + 0.3·C + 0.3·E`.  
+   * `adj = raw × (1 + (1-mastery)/2)` (mastery 0-1, default 0.7).  
+   * `minutes[c] = subjectMinutes × adj / Σadj`.
+
+3. Session slice  
+   * Greedy group consecutive conditions into **30-min multiples** (min 60 min, max 120 min).  
+   * Save `session.minutes`.
+
+4. Spiral review unchanged except it now moves whole *sessions* (the stubs already carry many topics).
+
+5. Timeslotter schedules variable minutes; end = start + session.minutes.
+
+6. Timetable page: compute `end` with `addMinutes`.
+
+────────────────────────────────────────
+CODE STEPS
+────────────────────────────────────────
+A. **types/spiral.ts**  
+```ts
+export interface SessionStub { subject:string; topics:string[]; minutes:number; isReview:boolean; }
+export interface StudyBlock  { subject:string; topics:any[];  minutes:number; date:string; startTime:string; endTime:string; }
+B. algorithms/buildHourPlan.ts (NEW)
+
+ts
+Copy
+Edit
+export function buildHourPlan({subjectsData, blocksTable, yearMultiplier, userPerformance}:{…})
+: {subject:string; condition:string; minutes:number}[] {
+  const plan: any[] = [];
+  subjectsData.forEach(sub=>{
+     const totalMin = (blocksTable[sub.name]||4)*150*yearMultiplier;
+     const weights   = sub.topics.map(t=>{
+        const raw = .4*t.ratings.difficulty + .3*t.ratings.clinicalImportance + .3*t.ratings.examRelevance;
+        const mastery = userPerformance?.topics?.[`${sub.name}:${t.name}`] ?? 0.7;
+        const adj = raw * (1 + (1-mastery)/2);
+        return {name:t.name, adj};
+     });
+     const adjSum = weights.reduce((s,w)=>s+w.adj,0);
+     weights.forEach(w=>{
+        const minutes = Math.round(totalMin * w.adj / adjSum);   // round to whole minutes
+        plan.push({subject:sub.name, condition:w.name, minutes});
+     });
+  });
+  return plan;
+}
+C. algorithms/sessionSlicer.ts (NEW)
+
+ts
+Copy
+Edit
+import { SessionStub } from './selector';
+export function sliceConditions(plan:{subject:string;condition:string;minutes:number}[]):SessionStub[]{
+  const stubs:SessionStub[]=[];
+  let buf:any[]=[]; let acc=0;
+  const flush=(sub:string)=>{
+    if(!buf.length) return;
+    stubs.push({subject:sub,topics:[...buf],minutes:acc,isReview:false});
+    buf=[]; acc=0;
+  };
+  plan.forEach(p=>{
+     const mins = p.minutes;
+     const chunk=Math.max(30, Math.min(120, Math.round(mins/30)*30));
+     if(acc+chunk>120) flush(p.subject);
+     buf.push(p.condition); acc+=chunk;
+     if(acc>=60 && (acc===120||chunk>=60)) flush(p.subject);
+  });
+  flush(plan[plan.length-1]?.subject);
+  return stubs;
+}
+D. algorithms/selector.ts – rip out fixed-topic loop:
+
+ts
+Copy
+Edit
+import { buildHourPlan } from './buildHourPlan';
+import { sliceConditions } from './sessionSlicer';
+…  
+const conditionPlan = buildHourPlan({subjectsData,blocksTable,yearMultiplier, userPerformance});
+let baseStream     = sliceConditions(conditionPlan);
+/// <- now wrap baseStream with existing spiral review injection logic
+///    (review picks from baseStream by (1/gap)*favMultiplier*difficultyFactor and marks isReview=true)
+return finalStream;
+Sleeve-note: remove old subjectSessionCounts quota math; use minutes instead (quota reached when Σminutes for that subject ≥ subjectMinutes).
+
+E. algorithms/timeslotter.ts
+
+Accept SessionStub.minutes.
+
+When placing:
+
+ts
+Copy
+Edit
+const endISO = addMinutes(parseISO(`${slot.date}T${slot.startTime}`), stub.minutes);
+slot.endTime = format(endISO,'HH:mm');
+F. timetable page (+ StudyConfig)
+
+Replace block.startTime / block.endTime build with:
+
+ts
+Copy
+Edit
+const startISO = `${block.date}T${block.startTime}`;
+const endISO   = addMinutes(parseISO(startISO), block.minutes).toISOString();
+Remove any 2-hour constants.
+
+Ensure hoursPerWeek, studyDays props flow into generate call (already done).
+
+G. constants.ts – keep DAILY_START_TIME = "08:00", DAILY_END_TIME = "22:00".
+
+H. Remove every reference to fixed 2-hour blocks, daysPerWeek, leastFavourite.
+
+────────────────────────────────────────
+TESTS
+────────────────────────────────────────
+
+allocation.test.ts – Σminutes per subject ≈ blocks×150×multiplier (±1 %).
+
+slice.test.ts – no session shorter than 60 min or longer than 120 min, minutes multiple of 30.
+
+studyDays.test.ts – timeslotter only schedules on user’s studyDays.
+
+────────────────────────────────────────
+DONE when:
+• npm run type && npm run lint && npm run test pass
+• Calendar now shows variable-length events containing ≥1 topic each.

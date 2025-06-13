@@ -157,15 +157,15 @@ function findSlotInDay(
 function createStudyBlockFromSession(session: SessionStub, timeSlot: TimeSlot): StudyBlock {
   return {
     subject: session.subject,
-    topics: session.conditions.map(condition => ({
-      name: condition,
+    topics: session.topics.map(topic => ({
+      name: topic,
       type: 'main' as const
     })),
-    hours: timeSlot.hours,
+    minutes: session.minutes,
     date: timeSlot.date,
     startTime: timeSlot.startTime,
     endTime: timeSlot.endTime,
-    passNumber: session.pass,
+    passNumber: 1,
     isInterjection: session.isReview
   };
 }

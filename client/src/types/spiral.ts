@@ -29,7 +29,7 @@ export interface UserEvent {
 export interface StudyBlock {
   subject: string;
   topics: { name: string; type: 'main' | 'connection'; connectionTopics?: string[] }[];
-  hours: number;
+  minutes: number;
   date: string;
   startTime: string;
   endTime: string;

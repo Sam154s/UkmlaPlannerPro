@@ -1,85 +1,59 @@
-import { ConditionPlan } from '../types/spiral';
-
-export interface SessionStub {
-  subject: string;
-  conditions: string[];
-  minutes: number;
-  isReview: boolean;
-  pass?: number;
-}
+import { SessionStub } from './selector';
+import { ConditionAllocation } from './buildHourPlan';
 
 /**
- * Slice condition plans into variable-length sessions (30-min multiples, 1-2h range).
+ * Slice condition allocations into variable-length sessions (30-min multiples, 1-2h range).
  * 
  * Algorithm:
  * 1. Greedy pack: add conditions until session ≥60min and ≤120min
  * 2. If adding next would exceed 120min, start new session
- * 3. Ensure minimum 60min per session
+ * 3. Ensure minimum 60min per session, round to 30-min multiples
  */
-export function sliceConditions(
-  plans: ConditionPlan[], 
-  minMinutes: number = 60, 
-  maxMinutes: number = 120
-): SessionStub[] {
-  const sessions: SessionStub[] = [];
-  let currentSession: {
-    subject: string;
-    conditions: string[];
-    minutes: number;
-    isReview: boolean;
-  } | null = null;
+export function sliceConditions(plan: ConditionAllocation[]): SessionStub[] {
+  const stubs: SessionStub[] = [];
+  let buffer: string[] = [];
+  let accumulatedMinutes = 0;
+  let currentSubject = '';
 
-  for (const plan of plans) {
-    // If no current session or different subject, start new session
-    if (!currentSession || currentSession.subject !== plan.subject) {
-      // Finalize previous session if it exists
-      if (currentSession && currentSession.minutes >= minMinutes) {
-        sessions.push({
-          ...currentSession
-        });
-      }
-      
-      // Start new session
-      currentSession = {
-        subject: plan.subject,
-        conditions: [plan.condition],
-        minutes: plan.minutes,
-        isReview: plan.isReview
-      };
-      continue;
-    }
-
-    // Check if adding this condition would exceed max
-    if (currentSession.minutes + plan.minutes > maxMinutes) {
-      // Finalize current session if it meets minimum
-      if (currentSession.minutes >= minMinutes) {
-        sessions.push({
-          ...currentSession
-        });
-      }
-      
-      // Start new session with this condition
-      currentSession = {
-        subject: plan.subject,
-        conditions: [plan.condition],
-        minutes: plan.minutes,
-        isReview: plan.isReview
-      };
-    } else {
-      // Add to current session
-      currentSession.conditions.push(plan.condition);
-      currentSession.minutes += plan.minutes;
-    }
-  }
-
-  // Finalize last session
-  if (currentSession && currentSession.minutes >= minMinutes) {
-    sessions.push({
-      ...currentSession
+  const flush = (subject: string) => {
+    if (!buffer.length) return;
+    stubs.push({
+      subject,
+      topics: [...buffer],
+      minutes: accumulatedMinutes,
+      isReview: false
     });
+    buffer = [];
+    accumulatedMinutes = 0;
+  };
+
+  plan.forEach(p => {
+    const minutes = p.minutes;
+    // Round to 30-minute chunks, minimum 30 minutes
+    const chunk = Math.max(30, Math.min(120, Math.round(minutes / 30) * 30));
+    
+    // If different subject or would exceed 120 minutes, flush current session
+    if (p.subject !== currentSubject || accumulatedMinutes + chunk > 120) {
+      if (currentSubject) flush(currentSubject);
+      currentSubject = p.subject;
+    }
+    
+    buffer.push(p.condition);
+    accumulatedMinutes += chunk;
+    
+    // If we've reached minimum session length and this is a good stopping point
+    if (accumulatedMinutes >= 60 && (accumulatedMinutes === 120 || chunk >= 60)) {
+      flush(p.subject);
+      currentSubject = '';
+    }
+  });
+
+  // Flush any remaining session
+  if (currentSubject && buffer.length > 0) {
+    flush(currentSubject);
   }
 
-  return sessions;
+  return stubs;
 }
 
 /**

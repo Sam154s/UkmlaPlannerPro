@@ -3,8 +3,8 @@ import { UserPerformance, SpiralConfig, ConditionPlan } from '../types/spiral';
 
 export interface SessionStub {
   subject: string;
-  topic: string;
-  pass: number;
+  topics: string[];
+  minutes: number;
   isReview: boolean;
 }
 

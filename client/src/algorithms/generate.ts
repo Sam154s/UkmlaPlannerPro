@@ -1,4 +1,4 @@
-import { buildHourPlan } from './selector';
+import { buildHourPlan } from './buildHourPlan';
 import { sliceConditions } from './sessionSlicer';
 import { placeSessions, CalendarConfig } from './timeslotter';
 import { SpiralConfig, StudyBlock } from '../types/spiral';
@@ -25,14 +25,16 @@ export function generateSpiralTimetable(config: SpiralConfig): StudyBlock[] {
   // Use hoursPerWeek or fall back to weeklyStudyHours for backward compatibility
   const totalHours = hoursPerWeek || weeklyStudyHours;
 
-  // 1. Generate hour-based condition plans
+  // 1. Generate minute-based condition plans
   const conditionPlans = buildHourPlan({
-    ...config,
-    hoursPerWeek: totalHours
+    subjectsData,
+    blocksTable,
+    yearMultiplier,
+    userPerformance
   });
 
   // 2. Slice conditions into variable-length sessions (1-2h range, 30-min multiples)
-  const sessions = sliceConditions(conditionPlans, 60, 120);
+  const sessions = sliceConditions(conditionPlans);
 
   // 3. Place sessions into calendar with user-chosen study days
   const calendarConfig: CalendarConfig = {
