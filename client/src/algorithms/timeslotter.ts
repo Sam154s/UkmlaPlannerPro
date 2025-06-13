@@ -1,4 +1,4 @@
-import { SessionStub } from './sessionSlicer';
+import { SessionStub } from './selector';
 import { StudyBlock, UserEvent } from '../types/spiral';
 import { TimeSlot, timeToMinutes, minutesToTime, overlapsWithUserEvent } from './timeslotterHelpers';
 import { DAILY_START_TIME, DAILY_END_TIME } from '../constants';

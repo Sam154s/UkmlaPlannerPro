@@ -142,8 +142,8 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
           
           const reviewSession: SessionStub = {
             subject: candidate.subject,
-            topic: candidate.topic,
-            pass: 2, // Reviews are pass 2+
+            topics: [candidate.topic],
+            minutes: 120, // Default 2 hours for review
             isReview: true
           };
           
@@ -157,8 +157,8 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
       
       const session: SessionStub = {
         subject: subject.name,
-        topic: topic.name,
-        pass: 1,
+        topics: [topic.name],
+        minutes: 120, // Default 2 hours
         isReview: false
       };
 

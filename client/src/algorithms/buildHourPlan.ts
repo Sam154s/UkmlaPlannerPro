@@ -1,7 +1,7 @@
-import { SubjectsData, UserPerformance } from '../types/spiral';
+import { UserPerformance } from '../types/spiral';
 
 export interface HourPlanConfig {
-  subjectsData: SubjectsData;
+  subjectsData: any[];
   blocksTable: Record<string, number>;
   yearMultiplier: number;
   userPerformance?: UserPerformance;

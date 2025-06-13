@@ -46,14 +46,15 @@ describe('Study Day Constraints', () => {
     const expectedDailyHours = 12 / 2; // 6 hours per day
 
     // Group sessions by date and check daily totals
-    const dailyHours: Record<string, number> = {};
+    const dailyMinutes: Record<string, number> = {};
     for (const block of studyBlocks) {
-      dailyHours[block.date] = (dailyHours[block.date] || 0) + block.hours;
+      dailyMinutes[block.date] = (dailyMinutes[block.date] || 0) + block.minutes;
     }
 
     // No day should exceed the calculated daily cap
-    for (const [date, hours] of Object.entries(dailyHours)) {
-      expect(hours).toBeLessThanOrEqual(expectedDailyHours + 0.5); // 0.5h tolerance
+    const expectedDailyMinutes = expectedDailyHours * 60;
+    for (const [date, minutes] of Object.entries(dailyMinutes)) {
+      expect(minutes).toBeLessThanOrEqual(expectedDailyMinutes + 30); // 30min tolerance
     }
   });
 
@@ -79,14 +80,14 @@ describe('Study Day Constraints', () => {
       expect(dayOfWeek).toBe(3);
     }
 
-    // Daily hours should not exceed weekly hours (since only 1 day)
-    const dailyHours: Record<string, number> = {};
+    // Daily minutes should not exceed weekly hours (since only 1 day)
+    const dailyMinutes: Record<string, number> = {};
     for (const block of studyBlocks) {
-      dailyHours[block.date] = (dailyHours[block.date] || 0) + block.hours;
+      dailyMinutes[block.date] = (dailyMinutes[block.date] || 0) + block.minutes;
     }
 
-    for (const hours of Object.values(dailyHours)) {
-      expect(hours).toBeLessThanOrEqual(8);
+    for (const minutes of Object.values(dailyMinutes)) {
+      expect(minutes).toBeLessThanOrEqual(8 * 60); // 8 hours = 480 minutes
     }
   });
 
