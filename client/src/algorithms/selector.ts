@@ -1,5 +1,5 @@
 import { PriorityQueue } from '@datastructures-js/priority-queue';
-import { UserPerformance } from '../types/spiral';
+import { UserPerformance, SpiralConfig, ConditionPlan } from '../types/spiral';
 
 export interface SessionStub {
   subject: string;
@@ -28,16 +28,82 @@ interface ReviewCandidate {
 }
 
 /**
- * Pure generator that creates an ordered session stream following the spiral algorithm.
+ * Hour-based generator that creates condition plans with time budgets.
  * 
  * Algorithm:
- * 1. Level-0 coverage: For each subject in subjectsData order, emit sessions sorted by composite score
- * 2. Review injection: Every k sessions, insert highest-priority review session 
- * 3. Respect quotas: Never exceed totalSessions = baseBlocks × 5 × passCoverage per subject
- * 4. Review weight = (1 / gap) × difficultyFactor × prefMultiplier
+ * 1. Calculate subject hour budgets: blocks × 2.5 × yearMultiplier
+ * 2. Weight conditions: raw = 0.4D + 0.3C + 0.3E, adj = raw × (1 + (1 - mastery)/2)
+ * 3. Allocate hours: subjectHours × adj / Σadj
+ * 4. Review injection based on session gaps, not time
+ */
+export function buildHourPlan(config: SpiralConfig): ConditionPlan[] {
+  const { subjectsData, blocksTable, yearMultiplier, favouriteSubjects, userPerformance } = config;
+  
+  // 1. Calculate subject hour budgets
+  const subjectHoursMap: Record<string, number> = {};
+  for (const subject of subjectsData) {
+    const baseBlocks = blocksTable[subject.name] || 5;
+    subjectHoursMap[subject.name] = baseBlocks * 2.5 * yearMultiplier;
+  }
+  
+  const conditionPlans: ConditionPlan[] = [];
+  
+  // 2. Process each subject
+  for (const subject of subjectsData) {
+    const subjectHours = subjectHoursMap[subject.name];
+    if (subjectHours <= 0) continue;
+    
+    // Calculate condition weights
+    const conditionWeights: { condition: string; rawWeight: number; adjustedWeight: number }[] = [];
+    let totalAdjustedWeight = 0;
+    
+    for (const topic of subject.topics) {
+      const difficulty = topic.ratings.difficulty;
+      const clinical = topic.ratings.clinicalImportance;
+      const exam = topic.ratings.examRelevance;
+      
+      const rawWeight = 0.4 * difficulty + 0.3 * clinical + 0.3 * exam;
+      
+      // Get mastery (default 0.7 if no performance data)
+      const topicKey = `${subject.name}: ${topic.name}`;
+      const mastery = userPerformance?.topics?.[topicKey] || 0.7;
+      
+      const adjustedWeight = rawWeight * (1 + (1 - mastery) / 2);
+      
+      conditionWeights.push({
+        condition: topic.name,
+        rawWeight,
+        adjustedWeight
+      });
+      
+      totalAdjustedWeight += adjustedWeight;
+    }
+    
+    // 3. Allocate hours to conditions
+    for (const weightData of conditionWeights) {
+      const conditionHours = (subjectHours * weightData.adjustedWeight) / totalAdjustedWeight;
+      const conditionMinutes = Math.round(conditionHours * 60);
+      
+      if (conditionMinutes >= 30) { // Minimum 30 minutes
+        conditionPlans.push({
+          subject: subject.name,
+          condition: weightData.condition,
+          minutes: conditionMinutes,
+          adjustedWeight: weightData.adjustedWeight,
+          isReview: false
+        });
+      }
+    }
+  }
+  
+  return conditionPlans;
+}
+
+/**
+ * Legacy session-based generator for backward compatibility
  */
 export function buildSessionStream(config: SelectorConfig): SessionStub[] {
-  const { subjectsData, baseBlockCounts, passCoverage, favouriteSubjects, leastFavouriteSubjects = [], userPerformance, k } = config;
+  const { subjectsData, baseBlockCounts, passCoverage, favouriteSubjects, userPerformance, k } = config;
   
   const sessions: SessionStub[] = [];
   const subjectSessionCounts: { [key: string]: number } = {};
@@ -45,134 +111,77 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
   const topicGaps: { [key: string]: number } = {}; // "subject:topic" -> gap since last study
   
   // Initialize session counts from subjectsData order
-  const subjectOrder = subjectsData.map(s => s.name);
-  for (const subject of subjectOrder) {
-    subjectSessionCounts[subject] = 0;
+  for (const s of subjectsData) {
+    subjectSessionCounts[s.name] = 0;
   }
-  
-  let currentSubjectIndex = 0;
-  let sessionsEmitted = 0;
-  
-  while (true) {
-    // Check if all subjects have reached their quotas
-    const allQuotasReached = subjectOrder.every(subject => {
-      const quota = (baseBlockCounts[subject] || 5) * 5 * passCoverage;
-      return subjectSessionCounts[subject] >= quota;
-    });
+
+  // Process each subject in order
+  for (const subject of subjectsData) {
+    const maxSessionsForSubject = (baseBlockCounts[subject.name] || 5) * passCoverage;
+    if (subjectSessionCounts[subject.name] >= maxSessionsForSubject) continue;
     
-    if (allQuotasReached) {
-      break;
-    }
-    
-    // Update gaps for all topics
-    for (const key in topicGaps) {
-      topicGaps[key]++;
-    }
-    
-    // Check if we should inject a review session
-    if (sessionsEmitted > 0 && sessionsEmitted % k === 0) {
-      if (!reviewHeap.isEmpty()) {
+    // Get and sort topics by composite score
+    const topics = subject.topics
+      .map((topic: any) => ({
+        ...topic,
+        compositeScore: 0.4 * topic.ratings.difficulty + 
+                       0.3 * topic.ratings.clinicalImportance + 
+                       0.3 * topic.ratings.examRelevance
+      }))
+      .sort((a: any, b: any) => b.compositeScore - a.compositeScore);
+
+    // Emit sessions for this subject, checking for review interjection
+    for (const topic of topics) {
+      // Check if we should inject a review
+      if (sessions.length > 0 && sessions.length % k === 0 && reviewHeap.size() > 0) {
         const candidate = reviewHeap.dequeue();
-        if (candidate) {
-          const subjectQuota = (baseBlockCounts[candidate.subject] || 5) * 5 * passCoverage;
+        if (candidate && 
+            subjectSessionCounts[candidate.subject] < (baseBlockCounts[candidate.subject] || 5) * passCoverage) {
           
-          if (subjectSessionCounts[candidate.subject] < subjectQuota) {
-            const reviewSession: SessionStub = {
-              subject: candidate.subject,
-              topic: candidate.topic,
-              pass: Math.floor(subjectSessionCounts[candidate.subject] / getSubjectTopicCount(subjectsData, candidate.subject)) + 1,
-              isReview: true
-            };
-            
-            sessions.push(reviewSession);
-            subjectSessionCounts[candidate.subject]++;
-            sessionsEmitted++;
-            
-            // Reset gap for this topic
-            topicGaps[`${candidate.subject}:${candidate.topic}`] = 0;
-            continue;
-          }
-        }
-      }
-    }
-    
-    // Get current subject from subjectsData order
-    let attempts = 0;
-    while (attempts < subjectOrder.length) {
-      const currentSubject = subjectOrder[currentSubjectIndex];
-      const subjectQuota = (baseBlockCounts[currentSubject] || 5) * 5 * passCoverage;
-      
-      // Check if current subject has reached its quota
-      if (subjectSessionCounts[currentSubject] < subjectQuota) {
-        // Find subject data
-        const subjectData = subjectsData.find(s => s.name === currentSubject);
-        if (subjectData) {
-          // Get next topic for this subject, sorted by composite score
-          const topics = subjectData.topics.slice().sort((a: any, b: any) => {
-            const scoreA = 0.4 * a.ratings.difficulty + 0.3 * a.ratings.clinicalImportance + 0.3 * a.ratings.examRelevance;
-            const scoreB = 0.4 * b.ratings.difficulty + 0.3 * b.ratings.clinicalImportance + 0.3 * b.ratings.examRelevance;
-            return scoreB - scoreA;
-          });
+          subjectSessionCounts[candidate.subject] += 1;
           
-          const topicIndex = subjectSessionCounts[currentSubject] % topics.length;
-          const topic = topics[topicIndex];
+          const reviewSession: SessionStub = {
+            subject: candidate.subject,
+            topic: candidate.topic,
+            pass: 2, // Reviews are pass 2+
+            isReview: true
+          };
           
-          if (topic) {
-            // Calculate difficulty factor based on user performance
-            const perfKey = `${currentSubject}:${topic.name}`;
-            const rawScore = userPerformance?.topics?.[perfKey] ?? 0.7; // default 0.7
-            const difficultyFactor = Math.min(2, Math.max(0.5, 1 + (1 - rawScore)));
-            
-            const session: SessionStub = {
-              subject: currentSubject,
-              topic: topic.name,
-              pass: Math.floor(subjectSessionCounts[currentSubject] / topics.length) + 1,
-              isReview: false
-            };
-            
-            sessions.push(session);
-            subjectSessionCounts[currentSubject]++;
-            sessionsEmitted++;
-            
-            // Initialize or reset gap for this topic
-            const topicKey = `${currentSubject}:${topic.name}`;
-            topicGaps[topicKey] = 0;
-            
-            // Add to review heap if this is a repeat topic
-            if (session.pass > 1) {
-              const gap = topicGaps[topicKey] || 1;
-              
-              let prefMultiplier = 1.0;
-              if (favouriteSubjects.includes(currentSubject)) {
-                prefMultiplier = 1.5;
-              } else if (leastFavouriteSubjects.includes(currentSubject)) {
-                prefMultiplier = 0.6;
-              }
-              
-              const reviewWeight = (1 / Math.max(gap, 1)) * difficultyFactor * prefMultiplier;
-              
-              reviewHeap.enqueue({
-                subject: currentSubject,
-                topic: topic.name,
-                gap,
-                difficultyFactor,
-                prefMultiplier,
-                reviewWeight
-              });
-            }
-            
-            break;
-          }
+          sessions.push(reviewSession);
+          subjectSessionCounts[candidate.subject] += 1;
         }
       }
       
-      currentSubjectIndex = (currentSubjectIndex + 1) % subjectOrder.length;
-      attempts++;
-    }
-    
-    // If all subjects are exhausted, break
-    if (attempts >= subjectOrder.length) {
-      break;
+      // Check quota before adding main session
+      if (subjectSessionCounts[subject.name] >= maxSessionsForSubject) break;
+      
+      const session: SessionStub = {
+        subject: subject.name,
+        topic: topic.name,
+        pass: 1,
+        isReview: false
+      };
+
+      sessions.push(session);
+      subjectSessionCounts[subject.name] += 1;
+      
+      // Add to review heap for future review
+      const topicKey = `${subject.name}:${topic.name}`;
+      topicGaps[topicKey] = 0; // Reset gap
+      
+      // Calculate review weight
+      const rawScore = userPerformance?.topics?.[`${subject.name}: ${topic.name}`] || 0.7;
+      const difficultyFactor = Math.min(2, Math.max(0.5, 1 + (1 - rawScore)));
+      const prefMultiplier = favouriteSubjects.includes(subject.name) ? 1.5 : 1.0;
+      
+      reviewHeap.enqueue({
+        subject: subject.name,
+        topic: topic.name,
+        gap: 1, // Will be updated later
+        difficultyFactor,
+        prefMultiplier,
+        reviewWeight: (1 / 1) * difficultyFactor * prefMultiplier
+      });
     }
   }
   
@@ -181,5 +190,5 @@ export function buildSessionStream(config: SelectorConfig): SessionStub[] {
 
 function getSubjectTopicCount(subjectsData: any[], subjectName: string): number {
   const subject = subjectsData.find(s => s.name === subjectName);
-  return subject ? subject.topics.length : 1;
+  return subject ? subject.topics.length : 0;
 }

@@ -1,14 +1,14 @@
 export interface SpiralConfig {
-  weeklyStudyHours: number;
-  yearGroup: number;
-  daysPerWeek: number;
+  weeklyStudyHours: number;  // legacy - convert to hoursPerWeek
+  hoursPerWeek: number;
+  studyDays: number[];       // weekday indices 0-6
+  yearMultiplier: number;    // 1.0 for 5th-year
   favouriteSubjects: string[];
-  leastFavouriteSubjects?: string[];
   subjectsData: import('../data/masterSubjects').SubjectsData;
   userPerformance?: UserPerformance;
-  passCoverage?: number;
+  blocksTable: Record<string, number>;
+  yearGroup?: number;        // keep for back-compat
   userEvents?: UserEvent[];
-  revisionCount?: number;
 }
 
 export interface UserPerformance {
@@ -35,4 +35,13 @@ export interface StudyBlock {
   endTime: string;
   passNumber?: number;
   isInterjection?: boolean;
+}
+
+export interface ConditionPlan {
+  subject: string;
+  condition: string;
+  minutes: number;
+  adjustedWeight: number;
+  isReview: boolean;
+  pass?: number;
 }

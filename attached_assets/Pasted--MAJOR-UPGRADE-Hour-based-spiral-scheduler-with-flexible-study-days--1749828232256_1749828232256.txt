@@ -1,0 +1,124 @@
+# 🛠  MAJOR UPGRADE · Hour-based spiral scheduler with flexible study days
+
+────────────────────────────────
+CONTEXT (current code)
+────────────────────────────────
+• Selector builds a SessionStub list by *counting* 2-hour sessions per subject.
+• Timeslotter packs fixed 2-h blocks into preset weekday masks.
+We must switch to **hour budgets** and **user-chosen study-day list**, plus variable 30-min granularity.
+
+────────────────────────────────
+NEW SPEC TO IMPLEMENT
+────────────────────────────────
+1. **Subject hour budget**
+   * Table supplied → blocks × 2.5 h = baseline hours for a 5th-year.
+   * Multiply by `yearMultiplier` (1st-year ≈ 1.8, 2nd 1.6 … 5th 1.0).
+   * Store in `subjectHoursMap`.
+
+2. **Condition weight & hours**
+   * `raw = 0.4D + 0.3C + 0.3E`
+   * `adj = raw × (1 + (1 − mastery)/2)`  (mastery default 0.7)
+   * Hours for condition = `subjectHours × adj / Σadj`.
+
+3. **Session slicer**
+   * Break or group conditions into sessions sized **30-min multiples**, min 1 h, max 2 h.
+   * Greedy pack: add next condition until session ≥1 h and ≤2 h; if adding would exceed, start new session.
+
+4. **Favourite boost only**
+   * Remove least-favourite logic entirely.
+   * In review weight use `favMultiplier = 1.5` if subject in favourites else 1.
+
+5. **Spiral review unchanged** except: `difficultyFactor` recalculated from latest mastery each time the timetable is regenerated.
+
+6. **User-chosen study days**
+   * `studyDays: number[]` (array of weekday indices 0-6) replaces daysPerWeek mask.
+   * Timeslotter only schedules on these exact days.
+
+7. **Weekly workload**
+   * User supplies `hoursPerWeek`.
+   * Daily cap = `hoursPerWeek / studyDays.length`.
+   * Place sessions (30-min grid, DAILY_START_TIME→DAILY_END_TIME) until daily cap reached.
+
+8. **Regeneration trigger**
+   * Expose `rebuildTimetable(userConfig)` that calls selector + timeslotter; UI triggers it after every mastery update.
+
+────────────────────────────────
+CODE CHANGES
+────────────────────────────────
+**A. types/spiral.ts**
+```ts
+export interface SpiralConfig {
+  weeklyStudyHours: number;  // now legacy (convert)
+  hoursPerWeek: number;
+  studyDays: number[];       // e.g. [1,3,5]
+  yearMultiplier: number;    // 1.0 for 5th-year
+  favouriteSubjects: string[];
+  subjectsData: import('../data/masterSubjects').SubjectsData;
+  userPerformance?: UserPerformance;
+  blocksTable: Record<string, number>;
+  yearGroup?: number;        // keep for back-compat
+}
+B. algorithms/selector.ts → REPLACE with hour-driven generator
+
+New function buildHourPlan(config) → ConditionPlan[] where each item {subject, condition, minutes}.
+
+Compute subjectHoursMap, weights, hours as per spec.
+
+Spiral review operates on minutes: track gap in sessions, not minutes.
+
+C. algorithms/sessionSlicer.ts (NEW)
+
+sliceConditions(plan, min=30, max=120) → SessionStub[].
+
+D. algorithms/timeslotter.ts
+
+Accept studyDays:number[] instead of daysPerWeek.
+
+maxMinutesPerDay = (hoursPerWeek / studyDays.length) × 60.
+
+Place variable-length sessions using helper.
+
+E. constants.ts
+
+Keep DAILY_START_TIME / DAILY_END_TIME.
+
+F. api/spiral.ts
+
+ts
+Copy
+Edit
+export { rebuildTimetable } from '../algorithms'; // new entry
+G. Remove least-favourite logic from all files.
+
+────────────────────────────────
+TESTS (vitest)
+────────────────────────────────
+
+quotaHours.test.ts – subject total minutes ≈ blocks×150×yearMultiplier.
+
+favBias.test.ts – favourite subject gets ≥1.4× review insertions.
+
+dayConstraint.test.ts – sessions only on supplied studyDays.
+
+────────────────────────────────
+DELIVERABLES
+────────────────────────────────
+
+Updated types, new selector, new slicer, modified timeslotter.
+
+Migrations compile under npm run type.
+
+All tests green, lint clean.
+
+────────────────────────────────
+AFTER APPLY
+────────────────────────────────
+
+bash
+Copy
+Edit
+npm install
+npm run type
+npm run lint
+npm run test
+Stop when all pass.
