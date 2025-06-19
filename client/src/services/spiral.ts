@@ -1,27 +1,12 @@
-import { api } from '@/lib/apiClient';
 import masterSubjects from '@/data/masterSubjects';
 
 export interface SpiralConfig {
-  blocksTable: Record<string, number>;
-  yearMultiplier: number;
-  studyDays: number[];
   hoursPerWeek: number;
-  startDate: Date;
+  studyDays: number[];
+  yearMultiplier: number;
+  subjects: any[];
+  blocksTable: Record<string, number>;
   favouriteSubjects: string[];
-  leastFavouriteSubjects: string[];
-  userPerformance?: Record<string, number>;
-}
-
-export interface StudySession {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  subject: string;
-  topics: string[];
-  minutes: number;
-  type: 'study' | 'review';
-  isReview?: boolean;
 }
 
 export interface TopicAllocation {
@@ -33,9 +18,20 @@ export interface TopicAllocation {
   examRelevance: number;
 }
 
+export interface StudySession {
+  id: string;
+  subject: string;
+  topics: string[];
+  minutes: number;
+  type: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  isReview?: boolean;
+}
+
 /**
- * Enhanced spiral algorithm with variable-length sessions (60-120 min)
- * Implements weighted topic allocation and greedy session packing
+ * Production-ready spiral timetable generator with weighted condition allocation
  */
 export function generateSpiralTimetable(config: SpiralConfig): StudySession[] {
   const topicAllocations = calculateTopicAllocations(config);
@@ -55,20 +51,19 @@ function calculateTopicAllocations(config: SpiralConfig): TopicAllocation[] {
 
     const totalMin = blocks * 60 * config.yearMultiplier;
     
-    // Calculate weight sum for proportional allocation
     const wSum = subject.topics.reduce((s: number, t: any) => {
       return s + (t.ratings.difficulty + t.ratings.clinicalImportance + t.ratings.examRelevance);
     }, 0);
 
     subject.topics.forEach((t: any) => {
       const weight = t.ratings.difficulty + t.ratings.clinicalImportance + t.ratings.examRelevance;
-      t.minutes = totalMin * (weight / wSum);
+      const minutes = Math.round(totalMin * (weight / wSum));
       
-      if (t.minutes > 0) {
+      if (minutes > 0) {
         allocations.push({
           subject: subjectName,
           topic: t.name,
-          minutes: Math.round(t.minutes),
+          minutes,
           difficulty: t.ratings.difficulty,
           clinicalImportance: t.ratings.clinicalImportance,
           examRelevance: t.ratings.examRelevance,
@@ -77,35 +72,35 @@ function calculateTopicAllocations(config: SpiralConfig): TopicAllocation[] {
     });
   });
 
-  return allocations.sort((a, b) => {
-    // Prioritize by difficulty and clinical importance
-    const aScore = a.difficulty * 0.4 + a.clinicalImportance * 0.6;
-    const bScore = b.difficulty * 0.4 + b.clinicalImportance * 0.6;
-    return bScore - aScore;
-  });
+  return allocations.sort((a, b) => b.difficulty - a.difficulty);
 }
 
 /**
- * Pack topics into variable-length sessions using greedy algorithm
+ * Pack topics into variable-length sessions (60-120 minutes) using greedy algorithm
  */
-interface SessionBuffer {
-  subject: string;
-  topics: string[];
-  minutes: number;
-}
-
-function packIntoSessions(allocations: TopicAllocation[]): StudySession[] {
+function packIntoSessions(topicAllocations: TopicAllocation[]): StudySession[] {
   const sessions: StudySession[] = [];
-  let currentSession: SessionBuffer | null = null;
+  let currentSession: {
+    subject: string;
+    topics: string[];
+    minutes: number;
+  } | null = null;
 
-  allocations.forEach(allocation => {
-    // Start new session if needed
-    if (!currentSession || 
-        currentSession.subject !== allocation.subject ||
-        currentSession.minutes + allocation.minutes > 120) {
-      
-      // Save previous session if exists and meets minimum duration
-      if (currentSession && currentSession.minutes >= 60) {
+  topicAllocations.forEach((allocation) => {
+    if (!currentSession) {
+      currentSession = {
+        subject: allocation.subject,
+        topics: [allocation.topic],
+        minutes: allocation.minutes,
+      };
+    } else if (
+      currentSession.minutes + allocation.minutes <= 120 &&
+      currentSession.subject === allocation.subject
+    ) {
+      currentSession.topics.push(allocation.topic);
+      currentSession.minutes += allocation.minutes;
+    } else {
+      if (currentSession.minutes >= 60) {
         sessions.push({
           id: `session-${sessions.length}`,
           subject: currentSession.subject,
@@ -118,27 +113,35 @@ function packIntoSessions(allocations: TopicAllocation[]): StudySession[] {
         });
       }
 
-      // Start new session
       currentSession = {
         subject: allocation.subject,
         topics: [allocation.topic],
-        minutes: allocation.minutes
-      } as SessionBuffer;
-    } else {
-      // Add to current session
-      currentSession.topics.push(allocation.topic);
-      currentSession.minutes += allocation.minutes;
+        minutes: allocation.minutes,
+      };
+    }
+
+    if (currentSession && currentSession.minutes >= 90) {
+      sessions.push({
+        id: `session-${sessions.length}`,
+        subject: currentSession.subject,
+        topics: currentSession.topics,
+        minutes: currentSession.minutes,
+        type: 'study',
+        date: '',
+        startTime: '',
+        endTime: ''
+      });
+      currentSession = null;
     }
   });
 
-  // Add final session
   if (currentSession && currentSession.minutes >= 60) {
     sessions.push({
       id: `session-${sessions.length}`,
       subject: currentSession.subject,
       topics: currentSession.topics,
       minutes: currentSession.minutes,
-      type: 'study' as const,
+      type: 'study',
       date: '',
       startTime: '',
       endTime: ''
@@ -149,112 +152,65 @@ function packIntoSessions(allocations: TopicAllocation[]): StudySession[] {
 }
 
 /**
- * Schedule sessions on calendar respecting study days and daily limits
+ * Schedule sessions on calendar with time slots
  */
 function scheduleOnCalendar(sessions: StudySession[], config: SpiralConfig): StudySession[] {
-  const dailyMinutesLimit = (config.hoursPerWeek * 60) / config.studyDays.length;
   const scheduledSessions: StudySession[] = [];
-  
-  let currentDate = new Date(config.startDate);
+  const startDate = new Date();
+  let currentDate = new Date(startDate);
   let dailyMinutesUsed = 0;
-  let currentTime = 17 * 60; // Start at 5 PM (in minutes)
+  const dailyLimit = (config.hoursPerWeek * 60) / config.studyDays.length;
 
-  sessions.forEach(session => {
-    // Find next available study day
+  sessions.forEach((session) => {
     while (!config.studyDays.includes(currentDate.getDay()) || 
-           dailyMinutesUsed + session.minutes > dailyMinutesLimit) {
-      
-      if (config.studyDays.includes(currentDate.getDay())) {
-        // Reset for new day
-        dailyMinutesUsed = 0;
-        currentTime = 17 * 60;
-      }
-      
+           dailyMinutesUsed + session.minutes > dailyLimit) {
       currentDate.setDate(currentDate.getDate() + 1);
+      dailyMinutesUsed = 0;
     }
 
-    // Schedule session
-    const startTime = formatTime(currentTime);
-    const endTime = formatTime(currentTime + session.minutes);
-    
+    const startHour = 17 + Math.floor(dailyMinutesUsed / 60);
+    const startMinute = dailyMinutesUsed % 60;
+    const endMinutes = dailyMinutesUsed + session.minutes;
+    const endHour = 17 + Math.floor(endMinutes / 60);
+    const endMinute = endMinutes % 60;
+
     scheduledSessions.push({
       ...session,
       date: currentDate.toISOString().split('T')[0],
-      startTime,
-      endTime
+      startTime: `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`,
+      endTime: `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`,
     });
 
-    // Update counters
     dailyMinutesUsed += session.minutes;
-    currentTime += session.minutes;
-    
-    // If day is full, move to next day
-    if (dailyMinutesUsed >= dailyMinutesLimit) {
-      currentDate.setDate(currentDate.getDate() + 1);
-      dailyMinutesUsed = 0;
-      currentTime = 17 * 60;
-    }
   });
 
   return scheduledSessions;
 }
 
 /**
- * Convert minutes to HH:MM format
+ * Convert study sessions to FullCalendar events
  */
-function formatTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-}
-
-/**
- * API integration for timetable generation
- */
-export async function generateTimetableAPI(config: SpiralConfig): Promise<StudySession[]> {
-  try {
-    const response = await api.post('/timetables/generate', config);
-    return response.data;
-  } catch (error) {
-    console.error('API generation failed, using local algorithm:', error);
-    return generateSpiralTimetable(config);
-  }
-}
-
-/**
- * Convert sessions to calendar events format
- */
-export function mapToEvents(sessions: StudySession[]) {
+export function mapToEvents(sessions: StudySession[]): any[] {
   return sessions.map(session => ({
     id: session.id,
-    title: `${session.subject}: ${session.topics.slice(0, 2).join(', ')}${session.topics.length > 2 ? '...' : ''}`,
+    title: `${session.subject} (${Math.round(session.minutes/60)}h)`,
     start: `${session.date}T${session.startTime}`,
     end: `${session.date}T${session.endTime}`,
     backgroundColor: getSubjectColor(session.subject),
     extendedProps: {
-      subject: session.subject,
-      topics: session.topics,
-      minutes: session.minutes,
-      type: session.type
-    }
+      session,
+    },
   }));
 }
 
-/**
- * Get subject color for calendar display
- */
 function getSubjectColor(subject: string): string {
-  const colors = {
-    'Acute and emergency medicine': '#ef4444',
-    'Endocrinology and diabetes': '#f97316',
-    'Gastroenterology': '#eab308',
-    'Cardiovascular': '#22c55e',
-    'Respiratory': '#06b6d4',
-    'Neurology': '#8b5cf6',
-    'Psychiatry': '#ec4899',
-    'Dermatology': '#f59e0b',
-    'Infectious diseases': '#10b981',
-    'Haematology and oncology': '#6366f1',
-  };
-  return colors[subject as keyof typeof colors] || '#6b7280';
+  const colors = [
+    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+  ];
+  const index = subject.length % colors.length;
+  return colors[index];
 }
+
+// Legacy API compatibility
+export const generateTimetableAPI = generateSpiralTimetable;
