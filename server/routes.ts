@@ -31,7 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // Timetable data endpoints
-  app.get("/api/timetable", async (req, res) => {
+  app.get("/api/timetables", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -46,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/timetable", async (req, res) => {
+  app.put("/api/timetables", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -89,6 +89,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error saving subject ratings:", error);
       res.status(500).json({ message: "Failed to save subject ratings" });
+    }
+  });
+  
+  // User events endpoints
+  app.get("/api/user-events", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      const userEvents = await storage.getSubjectRatings(userId); // Using subject ratings storage for user events
+      res.json(userEvents?.userEvents || []);
+    } catch (error) {
+      console.error("Error fetching user events:", error);
+      res.status(500).json({ message: "Failed to fetch user events" });
+    }
+  });
+  
+  app.put("/api/user-events", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user?.id;
+      const existingData = await storage.getSubjectRatings(userId) || {};
+      const updatedData = { ...existingData, userEvents: req.body.events };
+      await storage.saveSubjectRatings(userId, updatedData);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving user events:", error);
+      res.status(500).json({ message: "Failed to save user events" });
     }
   });
   
