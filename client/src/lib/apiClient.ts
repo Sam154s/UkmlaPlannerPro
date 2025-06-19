@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-const apiClient = axios.create({
+export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
+  withCredentials: true,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -9,7 +10,7 @@ const apiClient = axios.create({
 });
 
 // Request interceptor for JWT token
-apiClient.interceptors.request.use(
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('jwt_token');
     if (token) {
@@ -23,7 +24,7 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor for error handling
-apiClient.interceptors.response.use(
+api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -34,4 +35,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-export default apiClient;
+export default api;
