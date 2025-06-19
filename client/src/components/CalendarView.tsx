@@ -3,16 +3,16 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { EventApi, EventInput } from '@fullcalendar/core';
+import { EventInput, EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core';
 import { getSubjectColor, getEventColor } from '@/constants/colors';
 import { SessionBlock } from '@/services/spiral';
 
 interface CalendarViewProps {
   events: SessionBlock[];
   userEvents: any[];
-  onEventClick: (event: EventApi) => void;
-  onDateSelect: (selectInfo: any) => void;
-  onEventDrop: (eventDropInfo: any) => void;
+  onEventClick: (eventClickInfo: EventClickArg) => void;
+  onDateSelect: (selectInfo: DateSelectArg) => void;
+  onEventDrop: (eventDropInfo: EventDropArg) => void;
 }
 
 export default function CalendarView({

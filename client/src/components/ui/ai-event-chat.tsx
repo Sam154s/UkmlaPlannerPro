@@ -90,124 +90,56 @@ export function AIEventChat({ onAddEvent, onReflowSchedule }: AIChatProps) {
     setInputValue('');
     setIsLoading(true);
     
-    // Simulate AI processing delay
-    setTimeout(() => {
-      // This is a mock implementation - in a real app, this would call the backend
-      const mockParseEvent = (input: string): [ParsedEvent[], string] => {
-        // Very simplistic parsing - real implementation would use NLP or AI
-        const eventTypes = ['personal', 'placement', 'meal', 'sleep', 'study'] as const;
-        const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
-        
-        let mockEvent: ParsedEvent | null = null;
-        let responseMessage = '';
-        
-        // Create date for "tomorrow"
-        const tomorrow = addDays(new Date(), 1);
-        
-        if (input.toLowerCase().includes('gym') || input.toLowerCase().includes('workout')) {
-          mockEvent = {
-            title: 'Gym Session',
-            date: formatISO(tomorrow, { representation: 'date' }),
-            startTime: '18:00',
-            endTime: '19:00',
-            type: 'personal',
-            color: '#f87171'
-          };
-          responseMessage = `I've scheduled a gym session for tomorrow from 6:00 PM to 7:00 PM. Would you like to add this to your calendar?`;
-        } 
-        else if (input.toLowerCase().includes('placement') || input.toLowerCase().includes('hospital')) {
-          mockEvent = {
-            title: 'Hospital Placement',
-            date: formatISO(tomorrow, { representation: 'date' }),
-            startTime: '08:00',
-            endTime: '12:00',
-            type: 'placement',
-            recurring: true,
-            recurringDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-            color: '#60a5fa'
-          };
-          responseMessage = `I've created a recurring hospital placement for weekdays from 8:00 AM to 12:00 PM. Would you like to add this to your schedule?`;
-        }
-        else if (input.toLowerCase().includes('study') || input.toLowerCase().includes('revision')) {
-          // Extract subject if mentioned
-          const subjects = ['Cardiology', 'Neurology', 'Respiratory', 'Gastroenterology', 'Endocrinology'];
-          const mentionedSubject = subjects.find(subject => 
-            input.toLowerCase().includes(subject.toLowerCase())
-          ) || 'General Medicine';
-          
-          mockEvent = {
-            title: `${mentionedSubject} Study`,
-            date: formatISO(tomorrow, { representation: 'date' }),
-            startTime: '14:00',
-            endTime: '16:00',
-            type: 'study',
-            color: '#a78bfa'
-          };
-          responseMessage = `I've scheduled a ${mentionedSubject} study session for tomorrow from 2:00 PM to 4:00 PM. Would you like to add this to your calendar?`;
-        }
-        else if (input.toLowerCase().includes('exam') || input.toLowerCase().includes('test')) {
-          mockEvent = {
-            title: 'Exam Preparation',
-            date: formatISO(tomorrow, { representation: 'date' }),
-            startTime: '09:00',
-            endTime: '11:00',
-            type: 'study',
-            color: '#fbbf24'
-          };
-          responseMessage = `I've scheduled an exam preparation session for tomorrow from 9:00 AM to 11:00 AM. Would you like to add this to your calendar?`;
-        }
-        else {
-          // Generic event if no specific type detected
-          mockEvent = {
-            title: 'New Event',
-            date: formatISO(tomorrow, { representation: 'date' }),
-            startTime: '12:00',
-            endTime: '13:00',
-            type: 'personal',
-            color: '#a3e635'
-          };
-          responseMessage = `I've created a new event for tomorrow from 12:00 PM to 1:00 PM. Would you like to add this to your schedule?`;
-        }
-        
-        return mockEvent ? [[mockEvent], responseMessage] : [[], "I couldn't understand that. Could you try again with a simpler format?"];
+    try {
+      // Call backend AI chat endpoint
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: inputValue,
+          context: 'schedule_management',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      
+      // Add AI response message
+      const aiMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date()
       };
       
-      try {
-        // In a real app, this would be an API call
-        const [events, message] = mockParseEvent(inputValue);
-        
-        // Add AI response message
-        const aiMessage: Message = {
+      setMessages(prev => [...prev, aiMessage]);
+      
+      // If events were parsed, add them to state
+      if (data.events && data.events.length > 0) {
+        setParsedEvents(data.events);
+      }
+    } catch (error) {
+      console.error('Error in AI Chat:', error);
+      
+      // Add error message
+      setMessages(prev => [
+        ...prev, 
+        {
           id: generateId(),
           role: 'assistant',
-          content: message,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, aiMessage]);
-        
-        // If events were parsed, add them to state
-        if (events.length > 0) {
-          setParsedEvents(events);
+          content: "I'm having trouble processing your request. Please try again with a simpler format.",
+          timestamp: new Date(),
+          status: 'error'
         }
-      } catch (error) {
-        console.error('Error in AI Chat:', error);
-        
-        // Add error message
-        setMessages(prev => [
-          ...prev, 
-          {
-            id: generateId(),
-            role: 'assistant',
-            content: "I'm having trouble processing your request. Please try again with a simpler format.",
-            timestamp: new Date(),
-            status: 'error'
-          }
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1500);
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleAddEvent = (event: ParsedEvent) => {
