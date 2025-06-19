@@ -6,6 +6,12 @@ import { AuthProvider } from "./hooks/use-auth";
 import App from "./App";
 import "./index.css";
 
+// Initialize Sentry if DSN is provided
+if (import.meta.env.VITE_SENTRY_DSN) {
+  // Placeholder for Sentry initialization - install @sentry/react when needed
+  console.log('Sentry DSN detected but @sentry/react not installed');
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

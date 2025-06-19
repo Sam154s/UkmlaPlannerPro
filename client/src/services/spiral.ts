@@ -53,25 +53,25 @@ function calculateTopicAllocations(config: SpiralConfig): TopicAllocation[] {
     const subject = masterSubjects.find((s: any) => s.name === subjectName);
     if (!subject) return;
 
-    const totalMinutes = blocks * 60 * config.yearMultiplier;
+    const totalMin = blocks * 60 * config.yearMultiplier;
     
     // Calculate weight sum for proportional allocation
-    const weightSum = subject.topics.reduce((sum: number, topic: any) => {
-      return sum + (topic.ratings.difficulty + topic.ratings.clinicalImportance + topic.ratings.examRelevance);
+    const wSum = subject.topics.reduce((s: number, t: any) => {
+      return s + (t.ratings.difficulty + t.ratings.clinicalImportance + t.ratings.examRelevance);
     }, 0);
 
-    subject.topics.forEach((topic: any) => {
-      const weight = topic.ratings.difficulty + topic.ratings.clinicalImportance + topic.ratings.examRelevance;
-      const minutes = Math.round(totalMinutes * (weight / weightSum));
+    subject.topics.forEach((t: any) => {
+      const weight = t.ratings.difficulty + t.ratings.clinicalImportance + t.ratings.examRelevance;
+      t.minutes = totalMin * (weight / wSum);
       
-      if (minutes > 0) {
+      if (t.minutes > 0) {
         allocations.push({
           subject: subjectName,
-          topic: topic.name,
-          minutes,
-          difficulty: topic.ratings.difficulty,
-          clinicalImportance: topic.ratings.clinicalImportance,
-          examRelevance: topic.ratings.examRelevance,
+          topic: t.name,
+          minutes: Math.round(t.minutes),
+          difficulty: t.ratings.difficulty,
+          clinicalImportance: t.ratings.clinicalImportance,
+          examRelevance: t.ratings.examRelevance,
         });
       }
     });

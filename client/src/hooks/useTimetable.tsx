@@ -1,39 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/apiClient';
-import { generateTimetableAPI, mapToEvents, type SpiralConfig, type StudySession } from '@/services/spiral';
+import { generateSpiralTimetable, mapToEvents, type SpiralConfig, type StudySession } from '@/services/spiral';
 import { useToast } from '@/hooks/use-toast';
 
 export function useTimetable() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const timetableQuery = useQuery({
-    queryKey: ['/api/timetables'],
-    queryFn: async () => {
-      const response = await api.get('/api/timetables');
-      return response.data;
-    },
-    enabled: false, // Only fetch when explicitly called
-  });
-
   const generateTimetable = useMutation({
-    mutationFn: async (config: SpiralConfig) => {
-      // Try API first, fallback to local algorithm
+    mutationFn: async (payload: SpiralConfig) => {
       try {
-        const response = await api.post('/api/timetables/generate', config);
+        const response = await api.post('/timetables/generate', payload);
         return response.data;
       } catch (error) {
-        console.log('API unavailable, using local algorithm');
-        return generateTimetableAPI(config);
+        // Fallback to local algorithm
+        return generateSpiralTimetable(payload);
       }
     },
-    onSuccess: (sessions: StudySession[]) => {
-      // Update local cache
-      queryClient.setQueryData(['/api/timetables'], { sessions });
+    onSuccess: (data: StudySession[]) => {
+      // Store in React Query cache
+      queryClient.setQueryData(['timetables'], data);
       
       toast({
         title: "Timetable Generated",
-        description: `Created ${sessions.length} study sessions`,
+        description: `Created ${data.length} study sessions`,
       });
     },
     onError: (error: any) => {
@@ -45,25 +35,23 @@ export function useTimetable() {
     },
   });
 
-  const saveTimetable = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await api.put('/api/timetables', data);
-      return response.data;
+  const timetableQuery = useQuery({
+    queryKey: ['timetables'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/timetables');
+        return response.data;
+      } catch (error) {
+        return [];
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/timetables'] });
-      toast({
-        title: "Timetable Saved",
-        description: "Your study schedule has been saved",
-      });
-    },
+    enabled: false,
   });
 
   return {
     timetable: timetableQuery.data,
     isLoading: timetableQuery.isLoading || generateTimetable.isPending,
     generateTimetable: generateTimetable.mutate,
-    saveTimetable: saveTimetable.mutate,
     refetch: timetableQuery.refetch,
   };
 }

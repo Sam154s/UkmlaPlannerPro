@@ -24,7 +24,7 @@ export default function AIEventChat({ onEventsCreated }: AIEventChatProps) {
 
     try {
       if (import.meta.env.VITE_OPENAI_ENABLED === 'true') {
-        const result = await api.post('/api/ai/chat', {
+        const result = await api.post('/ai/suggest', {
           message,
           context: 'schedule_management'
         });
@@ -34,7 +34,7 @@ export default function AIEventChat({ onEventsCreated }: AIEventChatProps) {
           onEventsCreated(result.data.events);
         }
       } else {
-        setResponse('AI chat is disabled. Please enable OpenAI in your environment variables.');
+        setResponse('Enable OpenAI in .env to use AI features');
       }
     } catch (error) {
       setResponse('Sorry, I cannot process your request right now. Please try again later.');

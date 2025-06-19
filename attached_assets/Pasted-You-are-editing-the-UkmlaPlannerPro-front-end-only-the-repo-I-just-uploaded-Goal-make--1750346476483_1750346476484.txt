@@ -1,0 +1,113 @@
+You are editing the **UkmlaPlannerPro** **front-end** only (the repo I just uploaded).  
+Goal: make the React/Vite app production-ready and self-contained so that I can later drop in an API key & point to the backend.  
+
+────────────────────────────────────
+CORE FIXES
+────────────────────────────────────
+1. **Environment scaffolding**  
+   * add `frontend/.env.example`
+     ```
+     VITE_API_URL=http://localhost:3000        # change later
+     VITE_OPENAI_ENABLED=false                 # flip to true when key set
+     VITE_SENTRY_DSN=
+     ```
+   * inject `import.meta.env.VITE_API_URL` wherever hard-coded URLs exist.
+
+2. **API client layer** (`src/lib/apiClient.ts`)  
+   ```ts
+   import axios from 'axios';
+   export const api = axios.create({
+     baseURL: import.meta.env.VITE_API_URL,
+     withCredentials: true,
+   });
+React-Query integration
+
+Install @tanstack/react-query & @tanstack/react-query-persist-client.
+
+Wrap App with PersistQueryClientProvider (localStorage persister).
+
+Convert stale generateSpiralTimetable side-effect into a mutation:
+
+ts
+Copy
+Edit
+const generateTimetable = useMutation({
+  mutationFn: (payload)=>api.post('/timetables/generate',payload),
+  onSuccess: (data)=>setStudyEvents(mapToEvents(data))
+});
+Expose helper hooks (useSubjects, useTimetable, useUserEvents) in src/hooks/.
+
+Spiral algorithm patch (src/services/spiral.ts)
+
+Accept blocksTable, yearMultiplier, studyDays[].
+
+For each subject:
+
+ts
+Copy
+Edit
+const totalMin = blocksTable[subj]*60*yearMultiplier;
+const wSum = topics.reduce((s,t)=>s+(t.ratings.difficulty+t.ratings.clinicalImportance+t.ratings.examRelevance),0);
+topics.forEach(t=>{
+  t.minutes = totalMin*((t.ratings.difficulty+t.ratings.clinicalImportance+t.ratings.examRelevance)/wSum);
+});
+Greedy pack topics into 60- or 120-min sessions until exhausted.
+
+Return array of {date,startTime,endTime,subject,topics}; honour studyDays round-robin.
+
+Timetable page refactor
+
+Replace raw state with hooks from step 3.
+
+Remove legacy daysPerWeek logic; use studyDays.
+
+Ensure handleGenerate triggers the mutation not local algorithm directly.
+
+AI panel
+
+In AIEventChat call POST /ai/suggest only if import.meta.env.VITE_OPENAI_ENABLED==="true" else show tip “Enable OpenAI in .env”.
+
+Sanitise user text and display streaming UI placeholder.
+
+UI/UX polish
+
+Split bulky component into: CalendarView.tsx, SessionModal.tsx, SettingsDialog.tsx.
+
+Use radix ToggleGroup for day picker.
+
+Make FullCalendar responsive: pass height="auto" and wrap in ResizeObserver hook.
+
+Add skeleton loaders while queries fetch.
+
+Error tracking
+
+If VITE_SENTRY_DSN present, init Sentry in main.tsx.
+
+Testing & lint
+
+Add Vitest + React-Testing-Library test: “generates ≥ 3 topics when hours/week > 5”.
+
+Add "lint":"eslint 'src/**/*.{ts,tsx}' --max-warnings 0" in package.json.
+
+Docs
+
+Update root README.md with Setup → Dev → Build → Env vars.
+
+Add 30-sec Loom GIF placeholder link.
+
+────────────────────────────────────
+EXECUTION ORDER (agent must run)
+────────────────────────────────────
+
+pnpm i @tanstack/react-query @tanstack/react-query-persist-client axios eslint vitest @testing-library/react
+
+Scaffold files/changes from steps 1-10 (produce git diff).
+
+pnpm run lint && pnpm test
+
+pnpm run dev success message.
+
+Commit: chore(frontend): polish for launch.
+
+Return only the multi-file git diff and final console summary:
+🎉 Front-end passes lint+tests – ready for backend integration

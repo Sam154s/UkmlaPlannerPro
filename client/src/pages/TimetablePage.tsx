@@ -14,8 +14,8 @@ import { EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core';
 
 export default function TimetablePage() {
   // React Query hooks
-  const { timetable, isLoading, generateTimetable, saveTimetable } = useTimetable();
-  const { userEvents, saveUserEvents } = useUserEvents();
+  const { timetable, isLoading, generateTimetable } = useTimetable();
+  const { userEvents } = useUserEvents();
   
   // State management
   const [studyBlocks, setStudyBlocks] = useState<StudySession[]>([]);
