@@ -21,6 +21,7 @@ export interface StudySession {
   topics: string[];
   minutes: number;
   type: 'study' | 'review';
+  isReview?: boolean;
 }
 
 export interface TopicAllocation {

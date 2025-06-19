@@ -6,15 +6,19 @@ import { Loader2, RefreshCw, Settings, Calendar } from 'lucide-react';
 import CalendarView from '@/components/CalendarView';
 import SessionModal from '@/components/SessionModal';
 import { StudyConfig } from '@/components/ui/study-config';
-import { useTimetableQuery, useSaveTimetableMutation, useUserEventsQuery, useSaveEventsMutation } from '@/hooks/use-timetable';
-import { generate as generateSpiral, SessionBlock } from '@/services/spiral';
+import { useTimetable, useUserEvents } from '@/hooks/useTimetable';
+import { generateSpiralTimetable, mapToEvents, StudySession, type SpiralConfig } from '@/services/spiral';
 import masterSubjects from '@/data/masterSubjects';
 import { BASE_BLOCK_COUNTS, YEAR_MULTIPLIERS } from '@/data/studyBlockCounts';
 import { EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core';
 
 export default function TimetablePage() {
+  // React Query hooks
+  const { timetable, isLoading, generateTimetable, saveTimetable } = useTimetable();
+  const { userEvents, saveUserEvents } = useUserEvents();
+  
   // State management
-  const [studyBlocks, setStudyBlocks] = useState<SessionBlock[]>([]);
+  const [studyBlocks, setStudyBlocks] = useState<StudySession[]>([]);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
