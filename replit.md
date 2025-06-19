@@ -133,7 +133,8 @@ This is a medical learning platform designed for UKMLA (UK Medical Licensing Ass
 
 ## Changelog
 
-- June 19, 2025. Initial setup
+- June 19, 2025: Frontend refactored to production-ready state with environment-based configuration, React Query persistence, variable-length sessions, and comprehensive test suite
+- June 19, 2025: Initial setup
 
 ## User Preferences
 
