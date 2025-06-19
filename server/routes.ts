@@ -205,17 +205,19 @@ Always maintain a helpful and supportive tone. If you don't know something, be h
     }
   });
   
-  app.post("/api/chat-events", async (req, res) => {
+  // AI chat endpoint for event creation
+  app.post("/api/ai/chat", async (req, res) => {
     try {
-      const { message } = req.body;
+      const { message, context } = req.body;
       
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are an AI assistant that helps medical students add events to their timetable.
+      if (context === 'schedule_management') {
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are an AI assistant that helps medical students add events to their timetable.
 Your job is to parse natural language requests for calendar events and extract structured data.
 
 For each event mentioned in the message, extract:
@@ -223,7 +225,7 @@ For each event mentioned in the message, extract:
 2. Date - When it occurs (specific date or day of week)
 3. Start time - When it begins
 4. End time - When it ends
-5. Type - What category of event this is (personal, placement, meal, sleep)
+5. Type - What category of event this is (personal, placement, meal, sleep, study)
 6. If it's recurring - Whether this happens weekly
 7. If recurring, which days of the week it occurs on
 
@@ -236,41 +238,65 @@ When you identify an event, format your response as a JSON object with these exa
       "date": "YYYY-MM-DD",
       "startTime": "HH:MM",
       "endTime": "HH:MM",
-      "type": "personal|placement|meal|sleep",
+      "type": "personal|placement|meal|sleep|study",
       "recurring": true|false,
       "recurringDays": ["monday", "wednesday", "friday"] // Only if recurring is true
     }
   ]
 }
 
+Support slash commands like /lunch, /sleep to create recurring events.
 If no events are mentioned, respond conversationally and set events to an empty array.
 Assume all dates are in the current year unless specified otherwise.
 For days of the week without a specific date, use the upcoming occurrence of that day for the date field.`
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 1000,
-        response_format: { type: "json_object" }
-      });
-      
-      try {
-        const responseContent = completion.choices[0]?.message?.content || "{}";
-        const parsedResponse = JSON.parse(responseContent);
+            },
+            {
+              role: "user",
+              content: message
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 1000,
+          response_format: { type: "json_object" }
+        });
         
-        res.json(parsedResponse);
-      } catch (parseError) {
-        console.error("Error parsing AI response for chat events:", parseError);
+        try {
+          const responseContent = completion.choices[0]?.message?.content || "{}";
+          const parsedResponse = JSON.parse(responseContent);
+          
+          res.json(parsedResponse);
+        } catch (parseError) {
+          console.error("Error parsing AI response for chat events:", parseError);
+          res.json({ 
+            message: "I'm having trouble understanding that. Could you try rephrasing?",
+            events: []
+          });
+        }
+      } else {
+        // Generic chat response for non-schedule context
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful AI assistant for medical students studying for the UKMLA exam. Provide concise, accurate responses."
+            },
+            {
+              role: "user",
+              content: message
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        });
+
         res.json({ 
-          message: "I'm having trouble understanding that. Could you try rephrasing?",
+          message: completion.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.",
           events: []
         });
       }
     } catch (error: any) {
-      console.error("OpenAI API error in Chat Events:", error);
+      console.error("OpenAI API error in AI Chat:", error);
       
       res.json({ 
         message: "I'm sorry, I couldn't process that request right now. Please try again later.",
