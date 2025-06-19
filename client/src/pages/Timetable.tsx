@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SelectSubjects } from '@/components/ui/select-subjects';
 import { StudyConfig } from '@/components/ui/study-config';
-import { AIEventChat } from '@/components/ui/ai-event-chat';
+import AIEventChat from '@/components/ui/ai-event-chat';
 import { BreakSettings, DEFAULT_USER_PREFERENCES, UserPreferences as LifestylePreferences } from '@/components/ui/break-settings';
 import { ExamCountdown, ExamDate } from '@/components/ui/exam-countdown';
 import { useToast } from '@/hooks/use-toast';
