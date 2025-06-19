@@ -1,5 +1,5 @@
 import { api } from '@/lib/apiClient';
-import { masterSubjects } from '@/data/masterSubjects';
+import masterSubjects from '@/data/masterSubjects';
 
 export interface SpiralConfig {
   blocksTable: Record<string, number>;
@@ -49,17 +49,17 @@ function calculateTopicAllocations(config: SpiralConfig): TopicAllocation[] {
   const allocations: TopicAllocation[] = [];
 
   Object.entries(config.blocksTable).forEach(([subjectName, blocks]) => {
-    const subject = masterSubjects.find(s => s.name === subjectName);
+    const subject = masterSubjects.find((s: any) => s.name === subjectName);
     if (!subject) return;
 
     const totalMinutes = blocks * 60 * config.yearMultiplier;
     
     // Calculate weight sum for proportional allocation
-    const weightSum = subject.topics.reduce((sum, topic) => {
+    const weightSum = subject.topics.reduce((sum: number, topic: any) => {
       return sum + (topic.ratings.difficulty + topic.ratings.clinicalImportance + topic.ratings.examRelevance);
     }, 0);
 
-    subject.topics.forEach(topic => {
+    subject.topics.forEach((topic: any) => {
       const weight = topic.ratings.difficulty + topic.ratings.clinicalImportance + topic.ratings.examRelevance;
       const minutes = Math.round(totalMinutes * (weight / weightSum));
       
@@ -87,13 +87,15 @@ function calculateTopicAllocations(config: SpiralConfig): TopicAllocation[] {
 /**
  * Pack topics into variable-length sessions using greedy algorithm
  */
+interface SessionBuffer {
+  subject: string;
+  topics: string[];
+  minutes: number;
+}
+
 function packIntoSessions(allocations: TopicAllocation[]): StudySession[] {
   const sessions: StudySession[] = [];
-  let currentSession: {
-    subject: string;
-    topics: string[];
-    minutes: number;
-  } | null = null;
+  let currentSession: SessionBuffer | null = null;
 
   allocations.forEach(allocation => {
     // Start new session if needed
@@ -120,7 +122,7 @@ function packIntoSessions(allocations: TopicAllocation[]): StudySession[] {
         subject: allocation.subject,
         topics: [allocation.topic],
         minutes: allocation.minutes
-      };
+      } as SessionBuffer;
     } else {
       // Add to current session
       currentSession.topics.push(allocation.topic);
@@ -135,7 +137,7 @@ function packIntoSessions(allocations: TopicAllocation[]): StudySession[] {
       subject: currentSession.subject,
       topics: currentSession.topics,
       minutes: currentSession.minutes,
-      type: 'study',
+      type: 'study' as const,
       date: '',
       startTime: '',
       endTime: ''

@@ -5,10 +5,10 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { EventInput, EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core';
 import { getSubjectColor, getEventColor } from '@/constants/colors';
-import { SessionBlock } from '@/services/spiral';
+import { StudySession } from '@/services/spiral';
 
 interface CalendarViewProps {
-  events: SessionBlock[];
+  events: StudySession[];
   userEvents: any[];
   onEventClick: (eventClickInfo: EventClickArg) => void;
   onDateSelect: (selectInfo: DateSelectArg) => void;
