@@ -1,0 +1,44 @@
+You are editing the public Replit project **UkmlaPlannerPro-frontend**.  
+Goal: wire it cleanly to the new Express/Drizzle backend, add real ChatGPT support, and refactor the timetable page for maintainability.
+
+Tasks
+1️⃣  **API layer**  
+    • Add `src/lib/apiClient.ts` – Axios instance with baseURL `${import.meta.env.VITE_API_URL}` and JWT interceptor.  
+    • Add React Query provider in `src/main.tsx`.
+
+2️⃣  **Queries & mutations**  
+    • Replace all localStorage persistence in Timetable with queries:  
+        - `useTimetableQuery` (GET /timetables)  
+        - `useSaveTimetableMutation` (PUT)  
+        - `useUserEventsQuery` / `useSaveEventsMutation`  
+        - `usePerformanceMutation` called when “Mark as Completed”.  
+    • Keep localStorage only as offline cache via React-Query’s `persistQueryClient-experimental`.
+
+3️⃣  **Spiral service**  
+    • Move `generateSpiralTimetable` import to `src/services/spiral.ts`, expose `generate({ hoursPerWeek, studyDays, yearMultiplier, subjects, userPerf })`.  
+    • Inside service, group topics into sessions:  
+        - Compute `topicMinutes = totalSubjectMinutes * topicScore / sumTopicScores`.  
+        - Fill sessions until `>=60` or `>=120` min; return blocks with 1 h or 2 h depending on remainder.  
+    • Remove `leastFavouriteSubjects` from calls.
+
+4️⃣  **Component refactor**  
+    • `pages/TimetablePage.tsx` – state + hooks only.  
+    • `components/CalendarView.tsx` wraps FullCalendar.  
+    • `components/SessionModal.tsx` – reuse existing modal JSX.  
+    • Colors → `constants/colors.ts`.
+
+5️⃣  **AI Planning Chat**  
+    • Backend already has `/api/ai/chat` proxy.  In `AIEventChat` use `useMutation` to stream completions.  
+    • Accept slash-commands (`/lunch`, `/sleep`) to create recurring user events.
+
+6️⃣  **Env & build**  
+    • Add `.env.example` with `VITE_API_URL` and `VITE_OPENAI_ENABLED=true`.  
+    • Update `vite.config.ts` to define process.env vars for dev preview.
+
+7️⃣  **Testing & lint**  
+    • Add ESLint + Prettier config; run `npm run lint`.  
+    • Add `__tests__/TimetablePage.test.tsx` smoke test using Testing Library.
+
+After edits run `npm i`, `npm run dev` – calendar should load data from backend, create blocks with multiple topics per session, and AI chat should create events via OpenAI.
+
+Return only the file-by-file diff (git patch) ready to commit.
